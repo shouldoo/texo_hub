@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <template id="oauth_consent" name="Texo: connect an MCP client">
+        <t t-call="web.login_layout">
+            <form method="post" action="/texo/oauth/authorize" class="oe_login_form">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <t t-foreach="params" t-as="key">
+                    <input type="hidden" t-att-name="key" t-att-value="params[key]"/>
+                </t>
+                <h4>Connect <t t-out="client.name"/></h4>
+                <p>The MCP client <strong t-out="client.name"/> asks to work with the memory of Texo
+                    as <strong t-out="user.name"/>: it reads and, after your yes in the session, writes what your
+                    role allows. Its access lasts one hour and renews itself; an administrator revokes it.</p>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" name="decision" value="allow" class="btn btn-primary">Allow</button>
+                    <button type="submit" name="decision" value="deny" class="btn btn-secondary">Deny</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+    <template id="oauth_error" name="Texo: the MCP client cannot connect">
+        <t t-call="web.login_layout">
+            <div class="alert alert-danger" t-out="message"/>
+        </t>
+    </template>
+</odoo>

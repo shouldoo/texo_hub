@@ -1,0 +1,48 @@
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: ["20.0"]
+
+jobs:
+  odoo:
+    name: Install the modules on Odoo 20.0 and run their tests
+    runs-on: ubuntu-latest
+    container:
+      image: odoo:20.0
+      options: --user root
+    services:
+      postgres:
+        # PostgreSQL 17 with pgvector: the tests of texo_vector run with the extension
+        # (the module also installs without it, lexical only, and its tests say so)
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U odoo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools of the check (markdown2 silences the warning of the mail module)
+        run: python3 -m pip install --quiet --break-system-packages checklog-odoo markdown2
+      - name: Install and test
+        # ODOO_RC: the image's own odoo.conf names /mnt/extra-addons, absent here, and the
+        # environment variable wins over -c
+        env:
+          ODOO_RC: /dev/null
+        # bash: the container's default shell is dash, which has no ${var//,/,/}
+        shell: bash
+        run: |
+          MODULES=texo,texo_project,texo_memory,texo_timesheet,texo_mcp,texo_vector,texo_sources,texo_sources_vector
+          odoo -d test_ci20 --db_host postgres --db_user odoo --db_password odoo \
+            --addons-path "/usr/lib/python3/dist-packages/odoo/addons,$GITHUB_WORKSPACE" \
+            -i "$MODULES" --test-tags "/${MODULES//,/,/}" \
+            --http-interface=127.0.0.1 --stop-after-init 2>&1 | tee run.log
+          grep -E "odoo.tests.result: 0 failed, 0 error\(s\)" run.log
+      - name: Zero warnings
+        run: checklog-odoo --no-echo run.log

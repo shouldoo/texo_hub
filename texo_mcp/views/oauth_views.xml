@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_oauth_grant_list" model="ir.ui.view">
+        <field name="name">texo.oauth.grant.list</field>
+        <field name="model">texo.oauth.grant</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="user_id"/>
+                <field name="client_id"/>
+                <field name="create_date" string="Renewed"/>
+                <field name="expires"/>
+                <field name="revoked" widget="boolean"/>
+                <button name="action_revoke" type="object" string="Revoke" icon="block" invisible="revoked"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_oauth_grant_search" model="ir.ui.view">
+        <field name="name">texo.oauth.grant.search</field>
+        <field name="model">texo.oauth.grant</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="client_id"/>
+                <filter name="live" string="In use" domain="[('revoked', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_oauth_grant" model="ir.actions.act_window">
+        <field name="name">MCP Connections</field>
+        <field name="res_model">texo.oauth.grant</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_live': 1}</field>
+    </record>
+
+    <menuitem id="menu_oauth_grant" name="MCP Connections" parent="texo_memory.menu_memory_config"
+              action="action_oauth_grant" sequence="95" groups="texo.group_texo_admin"/>
+</odoo>

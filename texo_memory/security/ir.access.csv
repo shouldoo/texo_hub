@@ -1,0 +1,18 @@
+id,name,model_id,group_id/id,operation,domain
+access_memory_note_member,Memory note: members read and write,memory.note,texo.group_texo_member,crud,
+memory_note_chain_rule,Memory note: visible with the organisation or the task or project or customer it belongs to,memory.note,,crud,"['|', '|', '|', ('task_id', 'access', 'read'), ('project_id', 'access', 'read'), ('partner_id', 'access', 'read'), ('company_id', 'in', user.company_ids.ids)]"
+access_memory_note_activity_member,Rule activity: every member reads,memory.note.activity,texo.group_texo_member,r,
+access_memory_note_activity_lead,Rule activity: leads define them,memory.note.activity,texo.group_texo_lead,crud,
+access_memory_lesson_member,Memory lesson: every member reads,memory.lesson,texo.group_texo_member,r,
+access_memory_lesson_lead,Memory lesson: leads curate,memory.lesson,texo.group_texo_lead,crud,
+memory_lesson_company_rule,Memory lesson: of my companies or shared by all,memory.lesson,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', user.company_ids.ids)]"
+access_memory_optout_name_admin,Memory opt-out names: administrators only,memory.optout.name,texo.group_texo_admin,crud,
+access_memory_optout_wizard_admin,Memory opt-out wizard: administrators only,memory.optout.wizard,texo.group_texo_admin,crud,
+access_memory_section_member,Memory section: every member reads,memory.section,texo.group_texo_member,r,
+access_memory_section_lead,Memory section: leads define them,memory.section,texo.group_texo_lead,crud,
+access_memory_document_passage_admin,Memory document passage: derived from the documents; the search reads it as the system,memory.document.passage,texo.group_texo_admin,r,
+access_memory_search_member,Memory search: every member searches,memory.search,texo.group_texo_member,crud,
+access_memory_search_line_member,Memory search result: every member searches,memory.search.line,texo.group_texo_member,crud,
+access_memory_review_member,Memory review: every member reviews what they may act on,memory.review,texo.group_texo_member,crud,
+access_memory_review_area_member,Memory review area: every member reads the dashboard of the review,memory.review.area,texo.group_texo_member,r,
+memory_review_area_group_rule,Memory review area: an area of a group only for that group,memory.review.area,,r,"['|', ('group_id', '=', False), ('group_id', 'in', user.all_group_ids.ids)]"

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo noupdate="1">
+    <!-- The embedding service, texo_vector.endpoint, has no default: the administrator
+         names it (http://tei:80 is the tei service of the coordination stack, Text Embeddings
+         Inference in the compose network) and until then no text leaves Odoo and the search is
+         lexical. A host outside the local network is refused unless
+         texo_vector.allow_remote_endpoint is True: an explicit opt-in. -->
+    <record id="config_model" model="ir.config_parameter">
+        <field name="key">texo_vector.model</field>
+        <field name="value">BAAI/bge-m3</field>
+    </record>
+    <record id="config_dimensions" model="ir.config_parameter">
+        <field name="key">texo_vector.dimensions</field>
+        <field name="value">1024</field>
+    </record>
+    <!-- The search mode when the call gives none: lexical, semantic or hybrid. -->
+    <record id="config_mode" model="ir.config_parameter">
+        <field name="key">texo_vector.mode</field>
+        <field name="value">hybrid</field>
+    </record>
+    <!-- Two lessons whose vectors are at least this close (cosine) are near-duplicates for the
+         housekeeping: 0.80 fits bge-m3 (its unrelated pairs sit around 0.46); multilingual-e5-small
+         packs everything above 0.8, so 0.93 there. -->
+    <!-- The optional reranker, texo_vector.rerank_endpoint, has no default either: off until the
+         administrator names one (tei: Text Embeddings Inference, POST /rerank; llamacpp: llama.cpp server
+         with reranking, POST /v1/rerank, for AMD and Intel GPUs through Vulkan). It reorders the first
+         rerank_pool results of the hybrid search, reading rerank_chars characters of each; past
+         rerank_timeout seconds the hybrid order stays. Worth it only with an accelerator: on a CPU
+         it costs seconds per search (README, «The reranker»). -->
+    <record id="config_rerank_api" model="ir.config_parameter">
+        <field name="key">texo_vector.rerank_api</field>
+        <field name="value">tei</field>
+    </record>
+    <record id="config_rerank_pool" model="ir.config_parameter">
+        <field name="key">texo_vector.rerank_pool</field>
+        <field name="value">10</field>
+    </record>
+    <record id="config_rerank_chars" model="ir.config_parameter">
+        <field name="key">texo_vector.rerank_chars</field>
+        <field name="value">800</field>
+    </record>
+    <record id="config_rerank_timeout" model="ir.config_parameter">
+        <field name="key">texo_vector.rerank_timeout</field>
+        <field name="value">5</field>
+    </record>
+    <record id="config_duplicate_similarity" model="ir.config_parameter">
+        <field name="key">texo_vector.duplicate_similarity</field>
+        <field name="value">0.80</field>
+    </record>
+</odoo>

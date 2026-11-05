@@ -1,0 +1,360 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo_mcp
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20260926\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-02 12:27+0000\n"
+"PO-Revision-Date: 2026-11-02 12:27+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: texo_mcp
+#: model:ir.module.module,description:base.module_texo_mcp
+msgid ""
+"# Texo - MCP\n"
+"\n"
+"Odoo 20.0 · LGPL-3\n"
+"\n"
+"The memory of Texo as a **remote MCP server**: any MCP client that speaks Streamable HTTP\n"
+"reaches the same tools as the local client of `texo_core` (`texo mcp`, over stdio), with\n"
+"nothing installed on the person's machine.\n"
+"\n"
+"## The endpoint\n"
+"\n"
+"`POST /texo/mcp`, one JSON-RPC 2.0 message per request, a JSON answer (no streams, no\n"
+"sessions), with a Texo token as bearer: a personal one (Odoo, Preferences, Security, New API\n"
+"Key, scope Texo), or the access token a client got through OAuth (below). The tools run as the\n"
+"person, with Odoo's access rights and record rules. Without a valid token the answer is `401` with\n"
+"`WWW-Authenticate: Bearer resource_metadata=\"…\"`, which tells a client where to start OAuth. A token\n"
+"whose user has no hub role gets the error `-32001`; a notification gets `202`; batches are refused.\n"
+"\n"
+"| Method | Answer |\n"
+"|---|---|\n"
+"| `initialize` | the server and its **instructions**: the rules of the session (`memory/rules`: the common rules, the active rules of the organisation with their severity, the role, the activities) |\n"
+"| `tools/list` | the tools below |\n"
+"| `tools/call` | the answer of the route, as JSON text, or, asked with `format: okf`, the files of the OKF bundle as markdown, each after a `<!-- okf: path -->` line; a refusal of the route (no access, a leak, a wrong argument) comes back as a result with `isError`, and what the call wrote is rolled back |\n"
+"| `ping` | `{}` |\n"
+"\n"
+"## Tools\n"
+"\n"
+"Each tool calls the controller method of its route, so the two give the same answers and make the\n"
+"same checks: `whoami`, `rules`, `my_work`, `task`, `task_note`, `context`, `search`, `read`, `note` (a rule,\n"
+"a fact or a procedure), `note_append`, `note_update`, `fact`, `fact_append`, `fact_update` (aliases), `lesson`, `project`, `log`, `update`, `state`, `log_time` (with\n"
+"`texo_timesheet`), `review`, `confirm`, `documents`, `document`, `document_write`, `document_remove`,\n"
+"`query` (`search_read`). A write (`task_note`, `note`, `note_append`, `note_update`, `fact`, `fact_append`,\n"
+"`fact_update`, `lesson`,\n"
+"`update`, `state`, `log_time`, `confirm`, `document_write`, `document_remove`) needs `confirm: true`, after the person's yes; without it the answer says so and\n"
+"nothing is written. The `texo` client keeps two tools of its own that need the person's\n"
+"machine: the download of an attachment for the local conversion and the upload of a local file.\n"
+"`search` takes `scope` (`tasks` for the episodes) and `mode` (`lexical`, `semantic`, `hybrid`: meaningful\n"
+"where `texo_vector` is installed, lexical otherwise).\n"
+"\n"
+"## OAuth\n"
+"\n"
+"The hub is the OAuth 2.1 authorization server of its own endpoint, as the MCP authorization\n"
+"specification asks, so a client connects with the URL alone (the connectors of claude.ai, Claude Code\n"
+"without a header):\n"
+"\n"
+"| Step | Where |\n"
+"|---|---|\n"
+"| Discovery | `/.well-known/oauth-protected-resource` (RFC 9728) and `/.well-known/oauth-authorization-server` (RFC 8414), also with the path of the endpoint appended |\n"
+"| Registration of the client | `POST /texo/oauth/register` (RFC 7591): a public client, with its redirect addresses (https, or http on localhost) |\n"
+"| Consent | `/texo/oauth/authorize`: the person logs in to Odoo and allows or denies the client, on a page that is never framed; only a person with a hub role can allow |\n"
+"| Tokens | `POST /texo/oauth/token`: the code (one use, ten minutes, PKCE S256 required) for an access token and a refresh token; a refresh token works once and brings a new pair |\n"
+"\n"
+"The access token is an API key of the hub scope that lasts one hour: the endpoint and the routes accept\n"
+"it as any other token, and the hub checks the role of the person at every issue. The refresh token lasts\n"
+"thirty days. Codes and refresh tokens are stored as their sha256 only. A hub administrator sees the\n"
+"connections in *Memory > MCP Connections* and revokes one: its key goes at once, its refresh token no\n"
+"longer works. The expired codes and grants are removed by the autovacuum.\n"
+"\n"
+"The hub must be reachable over https at the address the client uses: the issuer and the resource are\n"
+"built from the host of the request (with `proxy_mode` behind a reverse proxy).\n"
+"\n"
+"## A client\n"
+"\n"
+"With OAuth, the URL alone, for example in the connectors of claude.ai or in Claude Code:\n"
+"\n"
+"```bash\n"
+"claude mcp add --transport http memoria https://<hub>/texo/mcp\n"
+"```\n"
+"\n"
+"Or with a personal token, for a client that sends a header:\n"
+"\n"
+"```bash\n"
+"claude mcp add --transport http memoria https://<hub>/texo/mcp --header \"Authorization: Bearer <token>\"\n"
+"```\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -c <conf> -d test_cohub20 -i texo_mcp --test-tags /texo_mcp --http-interface=127.0.0.1 --stop-after-init\n"
+"```\n"
+"\n"
+"7 tests: the instructions with the rules, the versions and the notifications; the tools as the person, a\n"
+"write that waits for the yes; a refusal as an error result that writes nothing; the token and the role;\n"
+"OAuth discovery and the 401 that points to it, the refusal of a foreign redirect address; the whole flow\n"
+"(registration, consent, code with PKCE, a wrong verifier, a code used twice, the refresh that rotates and\n"
+"revokes the old key, the revocation by an administrator); the person who denies, the person with no role,\n"
+"an unknown redirect, a request without PKCE.\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+"\n"
+"## Author\n"
+"\n"
+"Daniele Lucarelli\n"
+msgstr ""
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid ""
+": it reads and, after your yes in the session, writes what your\n"
+"                    role allows. Its access lasts one hour and renews itself; an administrator revokes it."
+msgstr ""
+": legge e, dopo il tuo sì nella sessione, scrive ciò che il tuo\n"
+"                    ruolo consente. L'accesso dura un'ora e si rinnova da solo; un amministratore lo revoca."
+
+#. module: texo_mcp
+#. odoo-python
+#: code:addons/texo_mcp/models/oauth.py:0
+msgid "A redirect URI is https, or http on localhost, without a fragment: %s"
+msgstr ""
+"Un indirizzo di ritorno è https, o http su localhost, senza frammento: %s"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid "Allow"
+msgstr "Consenti"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__client_id
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__client_id
+msgid "Client"
+msgstr "Client"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__client_id
+msgid "Client ID"
+msgstr "ID client"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__code_challenge
+msgid "Code Challenge"
+msgstr "Challenge del codice"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__code_hash
+msgid "Code Hash"
+msgstr "Hash del codice"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid "Connect"
+msgstr "Collega"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__create_uid
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__create_uid
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__create_uid
+msgid "Created by"
+msgstr "Creato da"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__create_date
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__create_date
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__create_date
+msgid "Created on"
+msgstr "Creato il"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid "Deny"
+msgstr "Nega"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__display_name
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__display_name
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__expires
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__expires
+msgid "Expires"
+msgstr "Scade"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__grant_ids
+msgid "Grants"
+msgstr "Autorizzazioni"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__id
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__id
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__id
+msgid "ID"
+msgstr "ID"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.view_oauth_grant_search
+msgid "In use"
+msgstr "In uso"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__key_name
+msgid "Key Name"
+msgstr "Nome della chiave"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__write_uid
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__write_uid
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__write_uid
+msgid "Last Updated by"
+msgstr "Ultimo aggiornamento di"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__write_date
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__write_date
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__write_date
+msgid "Last Updated on"
+msgstr "Ultimo aggiornamento il"
+
+#. module: texo_mcp
+#: model:ir.actions.act_window,name:texo_mcp.action_oauth_grant
+#: model:ir.ui.menu,name:texo_mcp.menu_oauth_grant
+msgid "MCP Connections"
+msgstr "Connessioni MCP"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__name
+msgid "Name"
+msgstr "Nome"
+
+#. module: texo_mcp
+#: model:ir.model.fields,help:texo_mcp.field_texo_oauth_client__redirect_uris
+msgid "One address per line."
+msgstr "Un indirizzo per riga."
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__redirect_uri
+msgid "Redirect Uri"
+msgstr "Indirizzo di ritorno"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__redirect_uris
+msgid "Redirect Uris"
+msgstr "Indirizzi di ritorno"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__refresh_hash
+msgid "Refresh Hash"
+msgstr "Hash del refresh"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.view_oauth_grant_list
+msgid "Renewed"
+msgstr "Rinnovata"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.view_oauth_grant_list
+msgid "Revoke"
+msgstr "Revoca"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__revoked
+msgid "Revoked"
+msgstr "Revocata"
+
+#. module: texo_mcp
+#: model:ir.module.module,shortdesc:base.module_texo_mcp
+msgid "Texo - MCP"
+msgstr "Texo - MCP"
+
+#. module: texo_mcp
+#: model:ir.model,name:texo_mcp.model_texo_oauth_client
+msgid "Texo OAuth Client"
+msgstr "Client OAuth del Texo"
+
+#. module: texo_mcp
+#: model:ir.model,name:texo_mcp.model_texo_oauth_code
+msgid "Texo OAuth Code"
+msgstr "Codice OAuth del Texo"
+
+#. module: texo_mcp
+#: model:ir.model,name:texo_mcp.model_texo_oauth_grant
+msgid "Texo OAuth Grant"
+msgstr "Autorizzazione OAuth del Texo"
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid "The MCP client"
+msgstr "Il client MCP"
+
+#. module: texo_mcp
+#: model:ir.model.constraint,message:texo_mcp.constraint_texo_oauth_client_client_id_unique
+msgid "The client ID must be unique."
+msgstr "L'ID del client deve essere unico."
+
+#. module: texo_mcp
+#: model:ir.module.module,summary:base.module_texo_mcp
+msgid ""
+"The memory of Texo as a remote MCP server: the same tools for any MCP "
+"client, with the person's token"
+msgstr ""
+"La memoria del Texo come server MCP remoto: gli stessi strumenti per ogni "
+"client MCP, con il token della persona"
+
+#. module: texo_mcp
+#: model:ir.model.fields,help:texo_mcp.field_texo_oauth_grant__key_name
+msgid "The name of the API key of the current access token."
+msgstr "Il nome della chiave API del token di accesso attuale."
+
+#. module: texo_mcp
+#. odoo-python
+#: code:addons/texo_mcp/controllers/oauth.py:0
+msgid "Unknown client or redirect address."
+msgstr "Client o indirizzo di ritorno sconosciuto."
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__used
+msgid "Used"
+msgstr "Usato"
+
+#. module: texo_mcp
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__user_id
+#: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__user_id
+msgid "User"
+msgstr "Utente"
+
+#. module: texo_mcp
+#. odoo-python
+#: code:addons/texo_mcp/controllers/oauth.py:0
+msgid "You have no Texo role: ask an administrator."
+msgstr "Non hai un ruolo nel Texo: chiedilo a un amministratore."
+
+#. module: texo_mcp
+#: model_terms:ir.ui.view,arch_db:texo_mcp.oauth_consent
+msgid ""
+"asks to work with the memory of Texo\n"
+"                    as"
+msgstr ""
+"chiede di lavorare con la memoria del Texo\n"
+"                    come"
+
+#. module: texo_mcp
+#. odoo-python
+#: code:addons/texo_mcp/models/oauth.py:0
+msgid "redirect_uris is a list of 1 to %s addresses."
+msgstr "redirect_uris è un elenco da 1 a %s indirizzi."

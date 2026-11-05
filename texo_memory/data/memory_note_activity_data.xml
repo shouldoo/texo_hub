@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo noupdate="1">
+    <record id="activity_code" model="memory.note.activity">
+        <field name="name">Code</field>
+        <field name="code">code</field>
+        <field name="sequence">10</field>
+        <field name="description">Writing, reviewing or testing code: modules, scripts, configuration in a repository.</field>
+    </record>
+    <record id="activity_deploy" model="memory.note.activity">
+        <field name="name">Deploy and environments</field>
+        <field name="code">deploy</field>
+        <field name="sequence">20</field>
+        <field name="description">Instances, databases, servers and releases: local, stage and production.</field>
+    </record>
+    <record id="activity_data" model="memory.note.activity">
+        <field name="name">Customer data</field>
+        <field name="code">data</field>
+        <field name="sequence">30</field>
+        <field name="description">Reading, copying, importing or converting the data and documents of a customer.</field>
+    </record>
+    <record id="activity_communication" model="memory.note.activity">
+        <field name="name">Customer communication</field>
+        <field name="code">communication</field>
+        <field name="sequence">40</field>
+        <field name="description">Texts that reach a customer: proposals, diagnoses, messages, documentation.</field>
+    </record>
+    <record id="activity_analysis" model="memory.note.activity">
+        <field name="name">Analysis</field>
+        <field name="code">analysis</field>
+        <field name="sequence">50</field>
+        <field name="description">Studying requirements, processes or an instance before deciding what to do.</field>
+    </record>
+    <record id="activity_migration" model="memory.note.activity">
+        <field name="name">Migration</field>
+        <field name="code">migration</field>
+        <field name="sequence">60</field>
+        <field name="description">Moving an instance or a module to another version of Odoo.</field>
+    </record>
+</odoo>

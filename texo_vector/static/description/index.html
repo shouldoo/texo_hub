@@ -1,0 +1,18 @@
+<section style="max-width: 860px; margin: 0 auto; padding: 16px;">
+    <h2>Texo - Vector</h2>
+    <p>Vectors for the memory of Texo: a search by meaning over the episodes, the facts and the
+        lessons, fused with the lexical search, and the near-duplicate lessons found by meaning. Optional:
+        without it the hub is lexical, as before.</p>
+    <ul>
+        <li>One table of vectors (pgvector, HNSW index) kept by a cron: the vectors missing, of a changed text
+            or of another model are computed, those of records out of the scope are dropped. Never the rules.</li>
+        <li>The search takes <code>mode</code>: <code>lexical</code>, <code>semantic</code> or <code>hybrid</code>
+            (reciprocal rank fusion, the default); every hit says which search found it.</li>
+        <li>The embeddings come from a local service (Text Embeddings Inference, <code>POST /embed</code>) named in
+            the system parameters; an endpoint outside the local network is refused unless the administrator
+            opts in: no text of the memory leaves the machine by default.</li>
+        <li>Without the extension <code>vector</code> on the database the module installs, warns, and the search
+            stays lexical.</li>
+    </ul>
+    <p>Routes and parameters: the README of the module.</p>
+</section>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_groups_privilege_texo" model="res.groups.privilege">
+        <field name="name">Texo</field>
+        <field name="sequence">90</field>
+        <field name="category_id" ref="base.module_category_administration"/>
+    </record>
+
+    <record id="group_texo_member" model="res.groups">
+        <field name="name">Member</field>
+        <field name="comment">Member: reads and records facts on the clients they work on.</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_texo"/>
+        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_texo_lead" model="res.groups">
+        <field name="name">Lead</field>
+        <field name="comment">Lead: also archives facts or marks them as superseded.</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_texo"/>
+        <field name="implied_ids" eval="[Command.link(ref('group_texo_member'))]"/>
+    </record>
+
+    <record id="group_texo_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="comment">Administrator: reviews every Texo token.</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_texo"/>
+        <field name="implied_ids" eval="[Command.link(ref('group_texo_lead'))]"/>
+        <field name="user_ids" eval="[Command.link(ref('base.user_admin'))]"/>
+    </record>
+</odoo>

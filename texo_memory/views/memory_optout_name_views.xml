@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_optout_name_list" model="ir.ui.view">
+        <field name="name">memory.optout.name.list</field>
+        <field name="model">memory.optout.name</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="reason"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_memory_optout_name" model="ir.actions.act_window">
+        <field name="name">Opt-out Names</field>
+        <field name="res_model">memory.optout.name</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

@@ -1,0 +1,1809 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo_sources
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20260926\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-03 15:40+0000\n"
+"PO-Revision-Date: 2026-11-03 15:40+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: texo_sources
+#: model:ir.module.module,description:base.module_texo_sources
+msgid ""
+"# Texo - External Sources\n"
+"\n"
+"What others publish, in the memory of the organisation: the channels it follows, read on request, a triage of the\n"
+"new links, and structured cards with the public persons, bodies, places, themes and dates they are about. For an\n"
+"organisation that works on material written by others: a press review for a civic list, calls for proposals and\n"
+"regulatory news for an association, legislation and tenders for a design studio.\n"
+"\n"
+"## The models\n"
+"\n"
+"| Model | What | Who writes it |\n"
+"|---|---|---|\n"
+"| `memory.source.channel` | who publishes: a newspaper, a broadcaster, a video channel, a public body, a portal of calls, a source of legislation; what to look for in it, how often to read it, the project it serves | leads (members read) |\n"
+"| `memory.source.feed` | how a channel is read: an RSS or Atom feed, the feed of a video channel, a search feed, or a page to check by hand; the outcome of the last reading | leads |\n"
+"| `memory.source.item` | a thing published: a candidate from a feed or a pasted link, then a card (abstract, short quotes, public persons, bodies, places, themes, acts, event date, stance, relevance, related cards, review date) | members triage and write; leads approve |\n"
+"| `memory.source.segment` | a passage of a video card: start, end, speaker, summary, short quote | whoever watched the video |\n"
+"| `memory.source.tag` | the labels of the cards: public persons, bodies, places, themes | members add; leads curate |\n"
+"\n"
+"- **Read on request, never on a schedule.** «Read Now» on a channel (or the agent, when asked) reads its feeds and\n"
+"  creates a candidate for every new link; the pages to check by hand are listed for the person. A reading never\n"
+"  changes a card that exists: links are unique per organisation.\n"
+"- **No text of others is kept.** A candidate holds title, link, date and channel; the summary of the feed is read\n"
+"  only to match the words to look for. A card holds an abstract written by whoever fills it in and at most 600\n"
+"  characters of quotes.\n"
+"- **A public person is a label, not a contact.** Nobody becomes a partner of the organisation for being named.\n"
+"- **Approval.** A card that names public persons waits for a lead («To Approve»); the others are active when\n"
+"  written. An approved card is changed only by a lead, or sent back.\n"
+"- **Review.** Every card has a review date (a year by default): at the weekly review it is confirmed or archived.\n"
+"- **Access.** Channels and cards of the organisation are for every member of its companies; those of a project only\n"
+"  for who may read the project.\n"
+"\n"
+"## Using it in Odoo\n"
+"\n"
+"Menu *Memory > External Sources*:\n"
+"\n"
+"1. **Channels**: add the channels, their feeds and the words to look for; overdue channels are highlighted.\n"
+"2. **Triage**: the candidates, by channel, those holding the watched words first; keep them with a theme and a line,\n"
+"   or discard them.\n"
+"3. **Cards**: list, kanban by state, calendar by event date (the chronology of a theme or a person), pivot and graph\n"
+"   by theme, week and stance; the form has the content, the labels, the video segments and the related cards.\n"
+"4. **To Approve**: the cards waiting for a lead.\n"
+"5. **Source Labels** (leads, under *Configuration*): persons, bodies, places and themes of the organisation.\n"
+"\n"
+"The queues of the sources are in *Memory > To Review*; a project shows the cards of its channels with a button.\n"
+"\n"
+"Reading a feed is an HTTP request from the server to the address of the feed (http or https only, at most 5 MB,\n"
+"20 s); external XML entities are never resolved.\n"
+"\n"
+"## The cards in the search of the memory\n"
+"\n"
+"The **active** cards are part of the search of the memory (`memory/search`, the tool `search`, *Search the Memory*):\n"
+"scope `sources`, and in `all` with the rules, facts, procedures, documents and lessons. By their words: the title\n"
+"weighs most, then what the card is about (public persons, bodies, places, themes, acts, keywords), then what it says\n"
+"(abstract, quotes, note of the triage); a renamed label finds its cards by the new name. By their meaning where\n"
+"`texo_vector` is installed, through `texo_sources_vector`. A candidate, a card waiting for its\n"
+"approval or an archived card is not found there; `sources_find` searches all of them, by words and by filters\n"
+"(period: the date of the event, or the day of publication when it is not known; person, theme, channel).\n"
+"\n"
+"## The triage in the session of the agent\n"
+"\n"
+"The same candidates, states and cards as in Odoo: the triage is one process with two interfaces. The\n"
+"routes `/texo/v1/sources/*`, the tools `sources_*` of the MCP server (`texo_mcp`, shown only when this\n"
+"module is installed) and the `sources-*` commands of the `texo` CLI:\n"
+"\n"
+"| Tool | What |\n"
+"|---|---|\n"
+"| `sources_due` | the channels overdue; the context pack carries them too, with the candidates to sort and the cards to approve |\n"
+"| `sources_find` | the cards and candidates already collected: words, public persons, themes, channel, period (event date, else publication day) |\n"
+"| `sources_inbox` | the candidates to sort, the watched first, with the proposals |\n"
+"| `sources_collect` | read the channels now, on request |\n"
+"| `sources_search` | «search news about X»: what the memory has, then the channels asked now through their **search feeds with placeholder** (an address with `{q}` where the subject goes, e.g. `https://site/?s={q}&feed=rss2`) |\n"
+"| `sources_link` | a pasted link becomes a candidate on the channel of its site |\n"
+"| `sources_propose` | the agent's proposal kept on a candidate: action (keep, discard, check), themes, the card in short, **doubts** from a fixed list (event date uncertain, private person, who is it, opinion or unconfirmed, quote not verifiable, article not readable, duplicate, partisan source, unknown channel, video to watch), questions |\n"
+"| `sources_triage` | the person's decision: keep, keep as proposed, discard |\n"
+"| `sources_card` | the card, after the person's yes; **every quote is checked on the page, word for word** (read for the check, not kept) or the card is refused |\n"
+"| `sources_channel` | a new channel (leads) |\n"
+"\n"
+"In Odoo the triage shows the agent's proposal and its doubts, and **Keep as Proposed** applies it.\n"
+"\n"
+"A member reads the channels without deciding them: the date and the outcome of a reading are written as the system.\n"
+"The scheduled reading exists but is **off**: *Memory: read the overdue external source channels* in Scheduled\n"
+"Actions, for an organisation that wants the candidates to arrive by themselves.\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -d <test db> --db-filter '^<test db>$' -i texo_sources --test-tags /texo_sources \\\n"
+"  --http-interface=127.0.0.1 --stop-after-init\n"
+"```\n"
+"\n"
+"The feeds are patched: no network in the tests.\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+msgstr ""
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+msgid "%(new)s new candidates from %(read)s feeds."
+msgstr "%(new)s candidati nuovi da %(read)s punti di lettura."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+#: code:addons/texo_sources/models/memory_source_feed.py:0
+msgid "%(new)s new of %(all)s"
+msgstr "%(new)s nuovi su %(all)s"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "<span class=\"o_stat_text\">Candidates to Sort</span>"
+msgstr "<span class=\"o_stat_text\">Candidati da smistare</span>"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "<span class=\"o_stat_text\">Cards to Approve</span>"
+msgstr "<span class=\"o_stat_text\">Schede da approvare</span>"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "<span class=\"o_stat_text\">Cards to Review</span>"
+msgstr "<span class=\"o_stat_text\">Schede da rivedere</span>"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "<span class=\"o_stat_text\">Channels Overdue</span>"
+msgstr "<span class=\"o_stat_text\">Canali in ritardo</span>"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "A card needs its abstract."
+msgstr "Una scheda ha bisogno del suo abstract."
+
+#. module: texo_sources
+#: model:ir.model.constraint,message:texo_sources.constraint_memory_source_flag_unique_code
+msgid "A doubt with this code already exists."
+msgstr "Esiste già un dubbio con questo codice."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_feed.py:0
+msgid "A feed is read over http or https: %s"
+msgstr "Un feed si legge in http o https: %s"
+
+#. module: texo_sources
+#: model:ir.model.constraint,message:texo_sources.constraint_memory_source_tag_unique_name
+msgid "A label with this name and kind already exists."
+msgstr "Esiste già un'etichetta con questo nome e questo tipo."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__sent_back
+msgid ""
+"A lead sent the card back: the chatter says what to change; written again, "
+"it is cleared."
+msgstr ""
+"Un lead ha rimandato indietro la scheda: il chatter dice che cosa cambiare; "
+"quando è scritta di nuovo, il segno si toglie."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_homonym
+msgid "A name or a role that could be more than one person or body."
+msgstr "Un nome o un ruolo che potrebbe indicare più persone o enti."
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_channel
+msgid ""
+"A newspaper, a broadcaster, a video channel, a public body, a portal of calls: say what to look for in it\n"
+"               and how often it should be read. Nothing is read on a schedule: use <b>Read Now</b>, or ask the agent."
+msgstr ""
+"Una testata, un'emittente, un canale video, un ente pubblico, un portale di bandi: indica che cosa cercarci\n"
+"               e ogni quanto va letto. Nulla si legge in automatico: usa <b>Leggi ora</b>, oppure chiedilo all'agente."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_partisan
+msgid "A party note, a press release of one side: say so in the card."
+msgstr "Una nota di partito, un comunicato di una parte: dillo nella scheda."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_feed.py:0
+msgid "A search feed needs a subject to search."
+msgstr "Un feed di ricerca ha bisogno di un argomento da cercare."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_feed.py:0
+msgid ""
+"A search feed with placeholder has %(q)s in its address, where the subject "
+"goes; the other feeds have none: %(url)s"
+msgstr ""
+"Un feed di ricerca con modello ha %(q)s nell'indirizzo, dove va l'argomento;"
+" gli altri feed non ce l'hanno: %(url)s"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_segment__quote
+msgid "A short quote, between quotation marks."
+msgstr "Una citazione breve, tra virgolette."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_unknown_channel
+msgid "A site the organisation does not follow: add the channel or discard."
+msgstr "Un sito che l'organizzazione non segue: aggiungi il canale o scarta."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__abstract
+msgid "Abstract"
+msgstr "Sintesi"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__act
+msgid "Act"
+msgstr "Atto"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_needaction
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_needaction
+msgid "Action Needed"
+msgstr "Azione richiesta"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__active
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__active
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__active
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__active
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__active
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Active"
+msgstr "Attiva"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__acts
+msgid "Acts"
+msgstr "Atti"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__acts
+msgid "Acts named: resolutions, motions, laws, articles."
+msgstr "Atti nominati: delibere, mozioni, leggi, articoli."
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_channel
+msgid "Add the first channel the organisation follows"
+msgstr "Aggiungi il primo canale che l'organizzazione segue"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__url
+msgid "Address"
+msgstr "Indirizzo"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_triage
+msgid "Agent"
+msgstr "Agente"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "An approved card is changed by a lead: ask for it, or send it back."
+msgstr ""
+"Una scheda approvata la modifica un lead: chiediglielo, oppure rimandala "
+"indietro."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_unconfirmed
+msgid "An opinion told as a fact, a rumour, a claim with no source."
+msgstr ""
+"Un'opinione presentata come fatto, una voce, un'affermazione senza fonte."
+
+#. module: texo_sources
+#: model:ir.actions.server,name:texo_sources.action_server_memory_source_approve
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Approve"
+msgstr "Approva"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Approved"
+msgstr "Approvata"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__approved_by_id
+msgid "Approved By"
+msgstr "Approvata da"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__approved_on
+msgid "Approved On"
+msgstr "Approvata il"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Archive"
+msgstr "Archivia"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__archived
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_search
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Archived"
+msgstr "Archiviata"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__article
+msgid "Article"
+msgstr "Articolo"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_unreadable
+msgid "Article not readable"
+msgstr "Articolo non leggibile"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_triage
+msgid "As Proposed"
+msgstr "Come proposto"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__quotes
+msgid ""
+"At most a couple of short quotes, each between quotation marks and "
+"attributed."
+msgstr ""
+"Al massimo un paio di citazioni brevi, ognuna tra virgolette e attribuita."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_attachment_count
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_attachment_count
+msgid "Attachment Count"
+msgstr "Numero di allegati"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__body_ids
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Bodies"
+msgstr "Enti"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_tag__kind__body
+msgid "Body"
+msgstr "Ente"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__broadcaster
+msgid "Broadcaster"
+msgstr "Emittente"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__call
+msgid "Call for Proposals"
+msgstr "Bando"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__calls
+msgid "Calls Portal"
+msgstr "Portale bandi"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__candidate
+msgid "Candidate"
+msgstr "Candidato"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Candidates"
+msgstr "Candidati"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_area_kanban_sources
+msgid "Candidates to Sort"
+msgstr "Candidati da smistare"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__item_id
+msgid "Card"
+msgstr "Scheda"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "Card %s does not exist or is not visible to you."
+msgstr "La scheda %s non esiste o non è visibile per te."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Card Written"
+msgstr "Scheda scritta"
+
+#. module: texo_sources
+#: model:ir.actions.act_window,name:texo_sources.action_memory_source_item
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__item_ids
+#: model:ir.ui.menu,name:texo_sources.menu_memory_source_item
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_list
+msgid "Cards"
+msgstr "Schede"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "Cards that name public persons, waiting for a lead"
+msgstr "Schede che nominano persone pubbliche, in attesa di un lead"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+msgid "Cards to Approve"
+msgstr "Schede da approvare"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_area_kanban_sources
+msgid "Cards to Review"
+msgstr "Schede da rivedere"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_area_kanban_sources
+msgid "Cards to Write"
+msgstr "Schede da scrivere"
+
+#. module: texo_sources
+#: model:memory.review.area,description:texo_sources.review_area_sources
+msgid ""
+"Cards to approve, candidates to sort, cards to write, cards due for review, "
+"channels overdue"
+msgstr ""
+"Schede da approvare, candidati da smistare, schede da rivedere, canali in "
+"ritardo"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "Cards whose review date has come: confirm or archive them"
+msgstr "Schede arrivate alla data di revisione: confermale o archiviale"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__channel_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__channel_id
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Channel"
+msgstr "Canale"
+
+#. module: texo_sources
+#: model:ir.actions.act_window,name:texo_sources.action_memory_source_channel
+#: model:ir.ui.menu,name:texo_sources.menu_memory_source_channel
+msgid "Channels"
+msgstr "Canali"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_area_kanban_sources
+msgid "Channels Overdue"
+msgstr "Canali in ritardo"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "Channels not read for longer than their frequency: read them now"
+msgstr "Canali non letti da più della loro frequenza: leggili ora"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+msgid "Channels read"
+msgstr "Canali letti"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__proposal_action__check
+msgid "Check First"
+msgstr "Da verificare"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+msgid "Choose the channels to read."
+msgstr "Scegli i canali da leggere."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__code
+msgid "Code"
+msgstr "Codice"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__color
+msgid "Color"
+msgstr "Colore"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__watch_terms
+msgid ""
+"Comma-separated words that matter in this channel: the candidates that hold "
+"them come first in the triage."
+msgstr ""
+"Parole che contano in questo canale, separate da virgola: i candidati che le"
+" contengono vengono primi nel triage."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Confirm for a Year"
+msgstr "Conferma per un anno"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Content"
+msgstr "Contenuto"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__create_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__create_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__create_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__create_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__create_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__create_uid
+msgid "Created by"
+msgstr "Creato da"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__create_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__create_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__create_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__create_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__create_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__create_date
+msgid "Created on"
+msgstr "Creato il"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__period_date
+msgid "Date"
+msgstr "Data"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__description
+msgid "Description"
+msgstr "Descrizione"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__proposal_action__discard
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_triage
+msgid "Discard"
+msgstr "Scarta"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__discarded
+msgid "Discarded"
+msgstr "Scartato"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_note__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_search__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_search_line__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__display_name
+#: model:ir.model.fields,field_description:texo_sources.field_project_project__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__domain
+msgid "Domain"
+msgstr "Dominio"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_flag_ids
+msgid "Doubts"
+msgstr "Dubbi"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_duplicate
+msgid "Duplicate"
+msgstr "Doppione"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__end
+msgid "End"
+msgstr "Fine"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_search__scope
+msgid ""
+"Episodes are the tasks with their chatter: what happened, not what holds."
+msgstr ""
+"Gli episodi sono i task con il loro chatter: ciò che è successo, non ciò che"
+" vale."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__last_outcome__error
+msgid "Error"
+msgstr "Errore"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__event_date
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Event Date"
+msgstr "Data dell'evento"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Event Week"
+msgstr "Settimana dell'evento"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_event_date
+msgid "Event date uncertain"
+msgstr "Data dell'evento incerta"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_item
+msgid "External Source Card"
+msgstr "Scheda di fonte esterna"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_channel
+msgid "External Source Channel"
+msgstr "Canale di fonte esterna"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_flag
+msgid "External Source Doubt"
+msgstr "Dubbio su una fonte esterna"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_feed
+msgid "External Source Feed"
+msgstr "Punto di lettura di fonte esterna"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_tag
+msgid "External Source Label"
+msgstr "Etichetta delle fonti esterne"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_source_segment
+msgid "External Source Video Segment"
+msgstr "Segmento video di fonte esterna"
+
+#. module: texo_sources
+#: model:ir.ui.menu,name:texo_sources.menu_memory_sources
+#: model:memory.review.area,name:texo_sources.review_area_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "External Sources"
+msgstr "Fonti esterne"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__feed_id
+msgid "Feed"
+msgstr "Punto di lettura"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__feed_ids
+msgid "Feeds"
+msgstr "Punti di lettura"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_follower_ids
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_follower_ids
+msgid "Followers"
+msgstr "Follower"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_partner_ids
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Follower (contatti)"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__has_message
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__has_message
+msgid "Has Message"
+msgstr "Ha messaggi"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__relevance__3
+msgid "High"
+msgstr "Alta"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+msgid "How It Is Read"
+msgstr "Come si legge"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__frequency_days
+msgid "How often the channel should be read; later than this it is overdue."
+msgstr "Ogni quanto va letto il canale; oltre questo intervallo è in ritardo."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_note__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_search__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_search_line__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__id
+#: model:ir.model.fields,field_description:texo_sources.field_project_project__id
+msgid "ID"
+msgstr "ID"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_needaction
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Se selezionato, ci sono nuovi messaggi che richiedono attenzione."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_has_error
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_has_sms_error
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__message_has_error
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Se selezionato, alcuni messaggi hanno un errore di consegna."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_is_follower
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_is_follower
+msgid "Is Follower"
+msgstr "È un follower"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__item_count
+msgid "Item Count"
+msgstr "Numero di schede"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__proposal_action__keep
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_triage
+msgid "Keep"
+msgstr "Tieni"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Keep as Proposed"
+msgstr "Tieni come proposto"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__keywords
+msgid "Keywords"
+msgstr "Parole chiave"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__kind
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__kind
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__kind
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__kind
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_search
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Kind"
+msgstr "Tipo"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__last_message
+msgid "Last Message"
+msgstr "Ultimo messaggio"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__last_outcome
+msgid "Last Outcome"
+msgstr "Ultimo esito"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__last_read
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__last_read
+msgid "Last Read"
+msgstr "Ultima lettura"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__write_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__write_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__write_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__write_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__write_uid
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__write_uid
+msgid "Last Updated by"
+msgstr "Ultimo aggiornamento di"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__write_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__write_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__write_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__write_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__write_date
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__write_date
+msgid "Last Updated on"
+msgstr "Ultimo aggiornamento il"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__legislation
+msgid "Legislation"
+msgstr "Fonte normativa"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__url
+msgid "Link"
+msgstr "Link"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__watch_terms
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__watch_terms
+msgid "Look For"
+msgstr "Da cercare"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__relevance__1
+msgid "Low"
+msgstr "Bassa"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__relevance__2
+msgid "Medium"
+msgstr "Media"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_note
+msgid "Memory Note"
+msgstr "Nota della memoria"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_review_area
+msgid "Memory: Area of the Review"
+msgstr "Memoria: area della revisione"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_review
+msgid "Memory: To Review"
+msgstr "Memoria: da rivedere"
+
+#. module: texo_sources
+#: model:ir.actions.server,name:texo_sources.ir_cron_memory_source_collect_ir_actions_server
+msgid "Memory: read the overdue external source channels"
+msgstr "Memoria: leggi i canali delle fonti esterne in ritardo"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_has_error
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_has_error
+msgid "Message Delivery error"
+msgstr "Errore di consegna del messaggio"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_ids
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_ids
+msgid "Messages"
+msgstr "Messaggi"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__name
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__name
+msgid "Name"
+msgstr "Nome"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Names Persons"
+msgstr "Nomina persone"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__needs_approval
+msgid "Needs Approval"
+msgstr "Da approvare"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__stance__negative
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Negative"
+msgstr "Negativa"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__stance__neutral
+msgid "Neutral"
+msgstr "Neutra"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_review_form_sources
+msgid "New links from the channels: keep them as cards or discard them"
+msgstr "Nuovi link dai canali: tienili come schede o scartali"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__press
+msgid "Newspaper"
+msgstr "Testata"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "No candidate to sort."
+msgstr "Nessun candidato da smistare."
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_triage
+msgid "No candidates to sort"
+msgstr "Nessun candidato da smistare"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "No channel has the site of %s: add the channel first."
+msgstr "Nessun canale ha il sito di %s: aggiungi prima il canale."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__stance__none
+msgid "Not Relevant"
+msgstr "Non pertinente"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid ""
+"Not in the page, word for word: %s. Correct the quotes or leave them out."
+msgstr ""
+"Non sono nella pagina, alla lettera: %s. Correggi le citazioni o toglile."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__overdue
+msgid "Not read for longer than its frequency."
+msgstr "Non letto da più tempo della sua frequenza."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+msgid "Not read: %s."
+msgstr "Non letti: %s."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__note
+msgid "Note"
+msgstr "Nota"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__note
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+msgid "Notes"
+msgstr "Note"
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_to_approve
+msgid "Nothing waits for approval"
+msgstr "Niente da approvare"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_needaction_counter
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Numero di azioni"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_has_error_counter
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_has_error_counter
+msgid "Number of errors"
+msgstr "Numero di errori"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_needaction_counter
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Numero di messaggi che richiedono un'azione"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_has_error_counter
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Numero di messaggi con errore di consegna"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "Only a Texo lead approves a card that names persons."
+msgstr "Solo un lead del Texo approva una scheda che nomina persone."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "Only a Texo lead approves or archives a card that names persons."
+msgstr ""
+"Solo un lead del Texo approva o archivia una scheda che nomina persone."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "Only a Texo lead sends a card back."
+msgstr "Solo un lead del Texo rimanda indietro una scheda."
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_unconfirmed
+msgid "Opinion or unconfirmed"
+msgstr "Opinione o non confermata"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__company_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_feed__company_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__company_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__company_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__company_id
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_search
+msgid "Organisation"
+msgstr "Organizzazione"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__other
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__other
+msgid "Other"
+msgstr "Altro"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__overdue
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_search
+msgid "Overdue"
+msgstr "In ritardo"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__kind__manual
+msgid "Page to Check by Hand"
+msgstr "Pagina da controllare a mano"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_partisan
+msgid "Partisan source"
+msgstr "Fonte di parte"
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_unreadable
+msgid "Paywall, refused, removed: only the headline is known."
+msgstr "Abbonamento, rifiutato, rimosso: si conosce solo il titolo."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "People, Bodies, Places, Themes"
+msgstr "Persone, enti, luoghi, temi"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_tag__kind__place
+msgid "Place"
+msgstr "Luogo"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__place_ids
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Places"
+msgstr "Luoghi"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__stance__positive
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Positive"
+msgstr "Positiva"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_private_person
+msgid "Private person named"
+msgstr "Persona privata nominata"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_project_project
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__project_id
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__project_id
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_search
+msgid "Project"
+msgstr "Progetto"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_action
+msgid "Proposed Action"
+msgstr "Azione proposta"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_by
+msgid "Proposed By"
+msgstr "Proposta da"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_abstract
+msgid "Proposed Card"
+msgstr "Scheda proposta"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_on
+msgid "Proposed On"
+msgstr "Proposta il"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_theme_ids
+msgid "Proposed Themes"
+msgstr "Temi proposti"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Proposed by the Agent"
+msgstr "Proposte dall'agente"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__public_body
+msgid "Public Body"
+msgstr "Ente pubblico"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_tag__kind__person
+msgid "Public Person"
+msgstr "Persona pubblica"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__person_ids
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Public Persons"
+msgstr "Persone pubbliche"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__published_on
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Published On"
+msgstr "Pubblicato il"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__proposal_questions
+msgid "Questions"
+msgstr "Domande"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__quote
+msgid "Quote"
+msgstr "Citazione"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_quote
+msgid "Quote not verifiable"
+msgstr "Citazione non verificabile"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__quotes
+msgid "Quotes"
+msgstr "Citazioni"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid ""
+"Quotes are short: at most %(max)s characters together, not %(len)s. A card "
+"quotes, it does not copy."
+msgstr ""
+"Le citazioni sono brevi: al massimo %(max)s caratteri in tutto, non %(len)s."
+" Una scheda cita, non copia."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__kind__rss
+msgid "RSS or Atom Feed"
+msgstr "Feed RSS o Atom"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__rating_ids
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__rating_ids
+msgid "Ratings"
+msgstr "Valutazioni"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__last_outcome__ok
+msgid "Read"
+msgstr "Letto"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__frequency_days
+msgid "Read Every (Days)"
+msgstr "Leggi ogni (giorni)"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_list
+msgid "Read Now"
+msgstr "Leggi ora"
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_triage
+msgid ""
+"Read the channels (Channels, <b>Read Now</b>) or ask the agent to do the press review: the new links\n"
+"               arrive here. Keep what matters, with a theme and a line; discard the rest."
+msgstr ""
+"Leggi i canali (Canali, <b>Leggi ora</b>) o chiedi all'agente di fare la rassegna: i link nuovi\n"
+"               arrivano qui. Tieni ciò che conta, con un tema e una riga; scarta il resto."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__last_outcome__refused
+msgid "Refused"
+msgstr "Rifiutato"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Related"
+msgstr "Collegate"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__related_ids
+msgid "Related Cards"
+msgstr "Schede collegate"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__relevance
+msgid "Relevance"
+msgstr "Rilevanza"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__review_date
+msgid "Review On"
+msgstr "Da rivedere il"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__message_has_sms_error
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "Errore di consegna SMS"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "Say what to search."
+msgstr "Di' che cosa cercare."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_search__scope
+msgid "Scope"
+msgstr "Ambito"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__kind__search
+msgid "Search Feed"
+msgstr "Feed di ricerca"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__kind__search_template
+msgid "Search Feed with Placeholder"
+msgstr "Feed di ricerca con modello"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_search
+msgid "Search the Memory"
+msgstr "Cerca nella memoria"
+
+#. module: texo_sources
+#: model:ir.model,name:texo_sources.model_memory_search_line
+msgid "Search the Memory: Result"
+msgstr "Cerca nella memoria: risultato"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Send Back"
+msgstr "Rimanda indietro"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__sent_back
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Sent Back"
+msgstr "Rimandata indietro"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_flag__sequence
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__sequence
+msgid "Sequence"
+msgstr "Sequenza"
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_watch_video
+msgid "Someone must watch it to write the segments and the abstract."
+msgstr "Qualcuno deve guardarlo per scrivere i segmenti e l'abstract."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_private_person
+msgid "Someone who is not a public figure: not filed as a label."
+msgstr "Qualcuno che non è una figura pubblica: non diventa un'etichetta."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__source_candidates
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__source_candidates
+msgid "Source Candidates"
+msgstr "Candidati delle fonti"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_search.py:0
+msgid "Source Card"
+msgstr "Scheda delle fonti"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_project_project__texo_source_count
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_search__scope__sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.edit_project_texo_sources
+msgid "Source Cards"
+msgstr "Schede delle fonti"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+msgid "Source Cards of %s"
+msgstr "Schede delle fonti di %s"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__source_channels_overdue
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__source_channels_overdue
+msgid "Source Channels Overdue"
+msgstr "Canali delle fonti in ritardo"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__source_due
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__source_due
+msgid "Source Due"
+msgstr "Schede da rivedere"
+
+#. module: texo_sources
+#: model:ir.actions.act_window,name:texo_sources.action_memory_source_tag
+#: model:ir.ui.menu,name:texo_sources.menu_memory_source_tag
+msgid "Source Labels"
+msgstr "Etichette"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__source_to_approve
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__source_to_approve
+msgid "Source To Approve"
+msgstr "Schede da approvare"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review__source_to_write
+#: model:ir.model.fields,field_description:texo_sources.field_memory_review_area__source_to_write
+msgid "Source To Write"
+msgstr "Schede da scrivere"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__speaker
+msgid "Speaker"
+msgstr "Chi parla"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__stance
+msgid "Stance"
+msgstr "Posizione"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__start
+msgid "Start"
+msgstr "Inizio"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__state
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "State"
+msgstr "Stato"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__statement
+msgid "Statement"
+msgstr "Comunicato"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_segment__summary
+msgid "Summary"
+msgstr "Sintesi"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__keywords
+msgid ""
+"Synonyms and other names, comma-separated, to find the card by other words."
+msgstr ""
+"Sinonimi e altri nomi, separati da virgola, per ritrovare la scheda con "
+"altre parole."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__terms_of_use
+msgid "Terms of Use"
+msgstr "Condizioni d'uso"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__territory
+msgid "Territory"
+msgstr "Territorio"
+
+#. module: texo_sources
+#: model:ir.module.module,shortdesc:base.module_texo_sources
+msgid "Texo - External Sources"
+msgstr "Texo - Fonti esterne"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "The Agent's Proposal"
+msgstr "La proposta dell'agente"
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_event_date
+msgid ""
+"The article does not say when it happened, or it is not the date of "
+"publication."
+msgstr ""
+"L'articolo non dice quando è successo, oppure non è la data di "
+"pubblicazione."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__watch_match
+msgid "The candidate holds words the channel or the feed looks for."
+msgstr ""
+"Il candidato contiene parole che il canale o il punto di lettura cercano."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__proposal_abstract
+msgid "The card as the agent would write it, in short."
+msgstr "La scheda come la scriverebbe l'agente, in breve."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__needs_approval
+msgid "The card names public persons: a lead approves it."
+msgstr "La scheda nomina persone pubbliche: la approva un lead."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid ""
+"The card names public persons: a lead approves it. Every statement about a person\n"
+"                                needs its source and its date; no invented quotes."
+msgstr ""
+"La scheda nomina persone pubbliche: la approva un lead. Ogni affermazione su una persona\n"
+"                                ha la sua fonte e la sua data; nessuna citazione inventata."
+
+#. module: texo_sources
+#: model_terms:ir.actions.act_window,help:texo_sources.action_memory_source_to_approve
+msgid "The cards that name public persons wait here for a lead."
+msgstr "Le schede che nominano persone pubbliche aspettano qui un lead."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__period_date
+msgid ""
+"The date of the event, or the day it was published when the event date is "
+"not known: what a search by period reads."
+msgstr ""
+"La data dell'evento o, quando non è nota, il giorno della pubblicazione: è "
+"la data che legge una ricerca per periodo."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "The decision is keep, keep_as_proposed or discard."
+msgstr "La decisione è keep, keep_as_proposed o discard."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid ""
+"The page could not be read to check the quotes (%(error)s): write the card "
+"without quotes, or mark the doubt «quote»."
+msgstr ""
+"Non è stato possibile leggere la pagina per verificare le citazioni "
+"(%(error)s): scrivi la scheda senza citazioni, oppure segna il dubbio "
+"«quote»."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__project_id
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__project_id
+msgid "The project the channel serves; empty, the whole organisation."
+msgstr ""
+"Il progetto per cui si segue il canale; vuoto, tutta l'organizzazione."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "The proposed action is one of: %s."
+msgstr "L'azione proposta è una di queste: %s."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_quote
+msgid "The quote is not in the text, or the text cannot be read."
+msgstr "La citazione non è nel testo, oppure il testo non si può leggere."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "The relevance is 1, 2 or 3."
+msgstr "La rilevanza è 1, 2 o 3."
+
+#. module: texo_sources
+#: model:memory.source.flag,description:texo_sources.flag_duplicate
+msgid "The same fact is already in a card: relate them instead."
+msgstr "Lo stesso fatto è già in una scheda: collegale invece."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__website
+msgid ""
+"The site of the channel: a link pasted by hand is tied to the channel of its"
+" domain."
+msgstr ""
+"Il sito del canale: un link incollato a mano si attacca al canale del suo "
+"dominio."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "The stance is one of: %s."
+msgstr "La posizione è una di queste: %s."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_tag__kind__theme
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Theme"
+msgstr "Tema"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__theme_ids
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_tag_search
+msgid "Themes"
+msgstr "Temi"
+
+#. module: texo_sources
+#: model:ir.model.constraint,message:texo_sources.constraint_memory_source_item_unique_url
+msgid "This link is already in the external sources."
+msgstr "Questo link è già nelle fonti esterne."
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__title
+msgid "Title"
+msgstr "Titolo"
+
+#. module: texo_sources
+#: model:ir.actions.act_window,name:texo_sources.action_memory_source_to_approve
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__to_approve
+#: model:ir.ui.menu,name:texo_sources.menu_memory_source_to_approve
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "To Approve"
+msgstr "Da approvare"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "To Review"
+msgstr "Da rivedere"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__state__todo
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "To Write"
+msgstr "Da scrivere"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_channel.py:0
+msgid "To check by hand: %s."
+msgstr "Da controllare a mano: %s."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__stance
+msgid "Towards the organisation: an internal judgement."
+msgstr "Verso l'organizzazione: un giudizio interno."
+
+#. module: texo_sources
+#: model:ir.actions.act_window,name:texo_sources.action_memory_source_triage
+#: model:ir.ui.menu,name:texo_sources.menu_memory_source_triage
+msgid "Triage"
+msgstr "Triage"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__triage_note
+msgid "Triage Note"
+msgstr "Nota di triage"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_unknown_channel
+msgid "Unknown channel"
+msgstr "Canale sconosciuto"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "Unknown doubts: %(unknown)s. The doubts are: %(all)s."
+msgstr "Dubbi sconosciuti: %(unknown)s. I dubbi sono: %(all)s."
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__video
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Video"
+msgstr "Video"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__video
+msgid "Video Channel"
+msgstr "Canale video"
+
+#. module: texo_sources
+#: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_feed__kind__video
+msgid "Video Channel Feed"
+msgstr "Feed di un canale video"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__segment_ids
+msgid "Video Segments"
+msgstr "Segmenti video"
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_watch_video
+msgid "Video to watch"
+msgstr "Video da guardare"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__watch_match
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "Watched Words"
+msgstr "Parole seguite"
+
+#. module: texo_sources
+#: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__website
+msgid "Website"
+msgstr "Sito"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_segment__summary
+msgid "What is said, in your words."
+msgstr "Che cosa si dice, con le tue parole."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__abstract
+msgid ""
+"What it says, in words of whoever fills the card in (60-120 words): who, "
+"what, where, which acts."
+msgstr ""
+"Che cosa dice, con le parole di chi scrive la scheda (60-120 parole): chi, "
+"che cosa, dove, quali atti."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__terms_of_use
+msgid "What may be kept of it: reserved reproduction, paywall, licence."
+msgstr ""
+"Che cosa se ne può conservare: riproduzione riservata, abbonamento, licenza."
+
+#. module: texo_sources
+#: model:ir.module.module,summary:base.module_texo_sources
+msgid ""
+"What others publish, in the memory: channels to follow, feeds read on "
+"request, triage, structured cards with their people, themes and dates, "
+"approval"
+msgstr ""
+"Ciò che pubblicano gli altri, nella memoria: canali da seguire, feed letti "
+"su richiesta, triage, schede strutturate con persone, temi e date, "
+"approvazione"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__proposal_questions
+msgid "What the agent needs to know to write the card."
+msgstr "Che cosa deve sapere l'agente per scrivere la scheda."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__note
+msgid ""
+"What the organisation knows of it: its orientation, how reliable it is. An "
+"internal note, never quoted."
+msgstr ""
+"Che cosa ne sa l'organizzazione: orientamento, affidabilità. Una nota "
+"interna, mai citata."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+msgid "What the organisation knows of this channel: orientation, reliability"
+msgstr ""
+"Che cosa sa l'organizzazione di questo canale: orientamento, affidabilità"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_flag__description
+msgid "What to check when the flag is raised."
+msgstr "Che cosa controllare quando il dubbio è segnalato."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__review_date
+msgid "When the card is reviewed: confirmed or archived."
+msgstr "Quando si rivede la scheda: confermata o archiviata."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__event_date
+msgid "When what the card tells happened: often earlier than the publication."
+msgstr ""
+"Quando è successo ciò che la scheda racconta: spesso prima della "
+"pubblicazione."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_segment__end
+msgid "Where it ends, as minutes:seconds."
+msgstr "Dove finisce, come minuti:secondi."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_channel__territory
+msgid "Where it reports from or about (a city, a region)."
+msgstr "Da dove o su dove scrive (una città, una regione)."
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_segment__start
+msgid "Where it starts, as minutes:seconds (e.g. 1:20)."
+msgstr "Dove comincia, come minuti:secondi (es. 1:20)."
+
+#. module: texo_sources
+#: model:memory.source.flag,name:texo_sources.flag_homonym
+msgid "Who is it?"
+msgstr "Chi è?"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_tag__note
+msgid "Who or what it is, in a few words (e.g. the role of a public person)."
+msgstr ""
+"Chi o che cosa è, in poche parole (es. il ruolo di una persona pubblica)."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "Who, what, where, which acts: in your words, 60-120 words"
+msgstr "Chi, che cosa, dove, quali atti: con parole tue, 60-120 parole"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_item__triage_note
+msgid "Why it was kept, in a line."
+msgstr "Perché è stato tenuto, in una riga."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_search
+msgid "With Doubts"
+msgstr "Con dubbi"
+
+#. module: texo_sources
+#: model:ir.model.fields,help:texo_sources.field_memory_source_feed__watch_terms
+msgid "Words that matter in this feed, besides those of the channel."
+msgstr ""
+"Parole che contano in questo punto di lettura, oltre a quelle del canale."
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_item.py:0
+msgid "Write the abstract of «%s» first."
+msgstr "Scrivi prima l'abstract di «%s»."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "e.g. TUEL art. 52; motion of no confidence"
+msgstr "es. TUEL art. 52; mozione di sfiducia"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+msgid "e.g. The local newspaper"
+msgstr "es. Il quotidiano locale"
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_channel_form
+msgid "e.g. city council, hospital, waste"
+msgstr "es. consiglio comunale, ospedale, rifiuti"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+msgid "overdue"
+msgstr ""
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+msgid "review_date"
+msgstr ""
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_review.py:0
+msgid "state"
+msgstr ""
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_feed.py:0
+msgid "the feed is larger than %s MB"
+msgstr "il feed supera %s MB"
+
+#. module: texo_sources
+#. odoo-python
+#: code:addons/texo_sources/models/memory_source_agent.py:0
+msgid "«%s» is approved: a lead changes it, or sends it back."
+msgstr "«%s» è approvata: la modifica un lead, oppure la rimanda indietro."
+
+#. module: texo_sources
+#: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
+msgid "«A short quote», who said it"
+msgstr "«Una citazione breve», chi l'ha detta"

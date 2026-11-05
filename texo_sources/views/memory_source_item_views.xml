@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <!-- The triage: the candidates, those holding the watched words first, kept or discarded in the list -->
+    <record id="view_memory_source_item_triage" model="ir.ui.view">
+        <field name="name">memory.source.item.triage</field>
+        <field name="model">memory.source.item</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list editable="top" create="0" decoration-bf="watch_match" default_order="watch_match desc, published_on desc">
+                <field name="watch_match" widget="boolean_favorite" nolabel="1" readonly="1"/>
+                <field name="published_on" readonly="1"/>
+                <field name="channel_id" readonly="1"/>
+                <field name="title" readonly="1"/>
+                <field name="url" widget="url" readonly="1" optional="show"/>
+                <field name="proposal_action" readonly="1" string="Agent" decoration-success="proposal_action == 'keep'"
+                       decoration-danger="proposal_action == 'discard'" decoration-warning="proposal_action == 'check'"
+                       widget="badge" optional="show"/>
+                <field name="proposal_flag_ids" widget="many2many_tags" readonly="1" optional="show"/>
+                <field name="proposal_abstract" readonly="1" optional="hide"/>
+                <field name="proposal_questions" readonly="1" optional="hide"/>
+                <field name="theme_ids" widget="many2many_tags" options="{'no_create_edit': True}"/>
+                <field name="triage_note"/>
+                <field name="state" column_invisible="1"/>
+                <field name="proposal_on" column_invisible="1"/>
+                <button name="action_keep_as_proposed" type="object" string="As Proposed" icon="thumb_up"
+                        class="text-success" invisible="not proposal_on or proposal_action != 'keep'"/>
+                <button name="action_keep" type="object" string="Keep" icon="check" class="text-success"
+                        invisible="state not in ('candidate', 'discarded')"/>
+                <button name="action_discard" type="object" string="Discard" icon="close" class="text-danger"
+                        invisible="state != 'candidate'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_list" model="ir.ui.view">
+        <field name="name">memory.source.item.list</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <list default_order="event_date desc, published_on desc" decoration-muted="state in ('discarded', 'archived')">
+                <field name="event_date"/>
+                <field name="published_on" optional="hide"/>
+                <field name="channel_id"/>
+                <field name="title"/>
+                <field name="kind" optional="hide"/>
+                <field name="person_ids" widget="many2many_tags" optional="show"/>
+                <field name="theme_ids" widget="many2many_tags" options="{'color_field': 'color'}" optional="show"/>
+                <field name="stance" optional="show"/>
+                <field name="relevance" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'to_approve'"
+                       decoration-info="state in ('candidate', 'todo')"/>
+                <field name="review_date" optional="hide"/>
+                <field name="project_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_kanban" model="ir.ui.view">
+        <field name="name">memory.source.item.kanban</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" group_create="0" group_delete="0" group_edit="0" quick_create="0">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <field class="fw-bold" name="title"/>
+                        <div class="text-muted">
+                            <field name="channel_id"/><span invisible="not event_date"> · <field name="event_date"/></span>
+                        </div>
+                        <field name="person_ids" widget="many2many_tags"/>
+                        <field name="theme_ids" widget="many2many_tags"/>
+                        <footer>
+                            <field name="stance"/>
+                            <field name="needs_approval" invisible="not needs_approval" widget="boolean_favorite"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_form" model="ir.ui.view">
+        <field name="name">memory.source.item.form</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_keep_as_proposed" type="object" string="Keep as Proposed" class="btn-primary"
+                            invisible="state not in ('candidate', 'discarded') or not proposal_on or proposal_action != 'keep'"/>
+                    <button name="action_keep" type="object" string="Keep"
+                            invisible="state not in ('candidate', 'discarded')"/>
+                    <button name="action_discard" type="object" string="Discard" invisible="state not in ('candidate', 'todo')"/>
+                    <button name="action_submit" type="object" string="Card Written" class="btn-primary" invisible="state != 'todo'"/>
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary"
+                            invisible="state != 'to_approve'" groups="texo.group_texo_lead"/>
+                    <button name="action_send_back" type="object" string="Send Back"
+                            invisible="state not in ('to_approve', 'active')" groups="texo.group_texo_lead"/>
+                    <button name="action_review_later" type="object" string="Confirm for a Year" invisible="state != 'active'"/>
+                    <button name="action_archive_card" type="object" string="Archive" invisible="state in ('archived', 'discarded')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="candidate,todo,to_approve,active"/>
+                </header>
+                <sheet>
+                    <field name="needs_approval" invisible="1"/>
+                    <widget name="web_ribbon" title="Approved" bg_color="text-bg-success" invisible="not approved_on"/>
+                    <widget name="web_ribbon" title="Sent Back" bg_color="text-bg-warning" invisible="not sent_back"/>
+                    <h1><field name="title" class="w-100"/></h1>
+                    <group>
+                        <group>
+                            <field name="channel_id"/>
+                            <field name="url" widget="url"/>
+                            <field name="kind"/>
+                            <field name="published_on"/>
+                            <field name="event_date"/>
+                        </group>
+                        <group>
+                            <field name="stance"/>
+                            <field name="relevance" widget="priority"/>
+                            <field name="triage_note"/>
+                            <field name="review_date"/>
+                            <field name="approved_by_id" invisible="not approved_by_id"/>
+                            <field name="approved_on" invisible="not approved_on"/>
+                            <field name="sent_back" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="proposal_on" invisible="1"/>
+                    <group string="The Agent's Proposal" name="proposal" invisible="not proposal_on">
+                        <group>
+                            <field name="proposal_action" readonly="1"/>
+                            <field name="proposal_theme_ids" widget="many2many_tags" readonly="1"/>
+                            <field name="proposal_flag_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="proposal_by"/>
+                            <field name="proposal_on"/>
+                        </group>
+                        <field name="proposal_abstract" readonly="1" colspan="2"/>
+                        <field name="proposal_questions" readonly="1" colspan="2"/>
+                    </group>
+                    <notebook>
+                        <page string="Content" name="content">
+                            <group>
+                                <field name="abstract" placeholder="Who, what, where, which acts: in your words, 60-120 words"/>
+                                <field name="quotes" placeholder="«A short quote», who said it"/>
+                                <field name="acts" placeholder="e.g. TUEL art. 52; motion of no confidence"/>
+                                <field name="keywords"/>
+                            </group>
+                            <div class="text-warning" invisible="not needs_approval or state not in ('todo', 'to_approve')">
+                                The card names public persons: a lead approves it. Every statement about a person
+                                needs its source and its date; no invented quotes.
+                            </div>
+                        </page>
+                        <page string="People, Bodies, Places, Themes" name="labels">
+                            <group>
+                                <field name="person_ids" widget="many2many_tags" context="{'default_kind': 'person'}"/>
+                                <field name="body_ids" widget="many2many_tags" context="{'default_kind': 'body'}"/>
+                                <field name="place_ids" widget="many2many_tags" context="{'default_kind': 'place'}"/>
+                                <field name="theme_ids" widget="many2many_tags" options="{'color_field': 'color'}"
+                                       context="{'default_kind': 'theme'}"/>
+                            </group>
+                        </page>
+                        <page string="Video" name="video" invisible="kind != 'video'">
+                            <field name="segment_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="start"/>
+                                    <field name="end"/>
+                                    <field name="speaker"/>
+                                    <field name="summary"/>
+                                    <field name="quote"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Related" name="related">
+                            <field name="related_ids">
+                                <list>
+                                    <field name="event_date"/>
+                                    <field name="channel_id"/>
+                                    <field name="title"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_calendar" model="ir.ui.view">
+        <field name="name">memory.source.item.calendar</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <calendar date_start="event_date" mode="month" quick_create="0" event_open_popup="1" color="channel_id">
+                <field name="channel_id" filters="1"/>
+                <field name="theme_ids" widget="many2many_tags"/>
+                <field name="person_ids" widget="many2many_tags"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_pivot" model="ir.ui.view">
+        <field name="name">memory.source.item.pivot</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="theme_ids" type="row"/>
+                <field name="event_date" interval="week" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_graph" model="ir.ui.view">
+        <field name="name">memory.source.item.graph</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <graph type="bar" stacked="1">
+                <field name="event_date" interval="week"/>
+                <field name="stance"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_memory_source_item_search" model="ir.ui.view">
+        <field name="name">memory.source.item.search</field>
+        <field name="model">memory.source.item</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="title"/>
+                <field name="abstract"/>
+                <field name="keywords"/>
+                <field name="person_ids"/>
+                <field name="body_ids"/>
+                <field name="place_ids"/>
+                <field name="theme_ids"/>
+                <field name="channel_id"/>
+                <field name="acts"/>
+                <filter name="candidate" string="Candidates" domain="[('state', '=', 'candidate')]"/>
+                <filter name="todo" string="To Write" domain="[('state', '=', 'todo')]"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'to_approve')]"/>
+                <filter name="active" string="Active" domain="[('state', '=', 'active')]"/>
+                <separator/>
+                <filter name="watched" string="Watched Words" domain="[('watch_match', '=', True)]"/>
+                <filter name="proposed" string="Proposed by the Agent" domain="[('proposal_on', '!=', False)]"/>
+                <filter name="doubts" string="With Doubts" domain="[('proposal_flag_ids', '!=', False)]"/>
+                <filter name="names_persons" string="Names Persons" domain="[('needs_approval', '=', True)]"/>
+                <filter name="to_review" string="To Review" domain="[('state', '=', 'active'), ('review_date', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="event_date" string="Event Date" date="event_date"/>
+                <filter name="published_on" string="Published On" date="published_on"/>
+                <separator/>
+                <filter name="negative" string="Negative" domain="[('stance', '=', 'negative')]"/>
+                <filter name="positive" string="Positive" domain="[('stance', '=', 'positive')]"/>
+                <separator/>
+                <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                <filter name="group_channel" string="Channel" context="{'group_by': 'channel_id'}"/>
+                <filter name="group_theme" string="Theme" context="{'group_by': 'theme_ids'}"/>
+                <filter name="group_event" string="Event Week" context="{'group_by': 'event_date:week'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_memory_source_triage" model="ir.actions.act_window">
+        <field name="name">Triage</field>
+        <field name="res_model">memory.source.item</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_memory_source_item_triage"/>
+        <field name="domain">[('state', '=', 'candidate')]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No candidates to sort</p>
+            <p>Read the channels (Channels, <b>Read Now</b>) or ask the agent to do the press review: the new links
+               arrive here. Keep what matters, with a theme and a line; discard the rest.</p>
+        </field>
+    </record>
+
+    <record id="action_memory_source_item" model="ir.actions.act_window">
+        <field name="name">Cards</field>
+        <field name="res_model">memory.source.item</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph</field>
+        <field name="view_id" ref="view_memory_source_item_list"/>
+        <field name="domain">[('state', 'not in', ('candidate', 'discarded'))]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <record id="action_memory_source_to_approve" model="ir.actions.act_window">
+        <field name="name">To Approve</field>
+        <field name="res_model">memory.source.item</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_memory_source_item_list"/>
+        <field name="domain">[('state', '=', 'to_approve')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing waits for approval</p>
+            <p>The cards that name public persons wait here for a lead.</p>
+        </field>
+    </record>
+</odoo>

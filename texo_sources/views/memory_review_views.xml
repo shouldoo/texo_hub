@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_review_form_sources" model="ir.ui.view">
+        <field name="name">memory.review.form.sources</field>
+        <field name="model">memory.review</field>
+        <field name="inherit_id" ref="texo_memory.view_memory_review_form"/>
+        <field name="arch" type="xml">
+            <group name="projects" position="before">
+                <group string="External Sources" name="sources">
+                    <div class="d-flex flex-wrap gap-3" name="source_queues" colspan="2">
+                        <button name="action_open_queue" type="object" context="{'queue': 'source_candidates'}"
+                                class="oe_stat_button border" icon="article"
+                                help="New links from the channels: keep them as cards or discard them">
+                            <div class="o_stat_info">
+                                <field name="source_candidates" class="o_stat_value"/>
+                                <span class="o_stat_text">Candidates to Sort</span>
+                            </div>
+                        </button>
+                        <button name="action_open_queue" type="object" context="{'queue': 'source_to_approve'}"
+                                class="oe_stat_button border" icon="check_circle"
+                                groups="texo.group_texo_lead"
+                                help="Cards that name public persons, waiting for a lead">
+                            <div class="o_stat_info">
+                                <field name="source_to_approve" class="o_stat_value"/>
+                                <span class="o_stat_text">Cards to Approve</span>
+                            </div>
+                        </button>
+                        <button name="action_open_queue" type="object" context="{'queue': 'source_due'}"
+                                class="oe_stat_button border" icon="calendar_today"
+                                help="Cards whose review date has come: confirm or archive them">
+                            <div class="o_stat_info">
+                                <field name="source_due" class="o_stat_value"/>
+                                <span class="o_stat_text">Cards to Review</span>
+                            </div>
+                        </button>
+                        <button name="action_open_queue" type="object" context="{'queue': 'source_channels_overdue'}"
+                                class="oe_stat_button border" icon="rss_feed"
+                                help="Channels not read for longer than their frequency: read them now">
+                            <div class="o_stat_info">
+                                <field name="source_channels_overdue" class="o_stat_value"/>
+                                <span class="o_stat_text">Channels Overdue</span>
+                            </div>
+                        </button>
+                    </div>
+                </group>
+            </group>
+        </field>
+    </record>
+
+    <record id="edit_project_texo_sources" model="ir.ui.view">
+        <field name="name">project.project.form.texo.sources</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_texo_source_cards" type="object" class="oe_stat_button" icon="newspaper"
+                        groups="texo.group_texo_member" invisible="not texo_source_count">
+                    <field name="texo_source_count" widget="statinfo" string="Source Cards"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <record id="view_memory_review_area_kanban_sources" model="ir.ui.view">
+        <field name="name">memory.review.area.kanban.sources</field>
+        <field name="model">memory.review.area</field>
+        <field name="inherit_id" ref="texo_memory.view_memory_review_area_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='queues']" position="inside">
+                <t t-if="record.code.raw_value == 'sources'">
+                    <div class="d-flex justify-content-between">
+                        <a name="action_open_queue" type="object" context="{'queue': 'source_candidates'}">Candidates to Sort</a>
+                        <field name="source_candidates"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a name="action_open_queue" type="object" context="{'queue': 'source_to_write'}">Cards to Write</a>
+                        <field name="source_to_write"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a name="action_open_queue" type="object" context="{'queue': 'source_due'}">Cards to Review</a>
+                        <field name="source_due"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a name="action_open_queue" type="object" context="{'queue': 'source_channels_overdue'}">Channels Overdue</a>
+                        <field name="source_channels_overdue"/>
+                    </div>
+                </t>
+            </xpath>
+        </field>
+    </record>
+</odoo>

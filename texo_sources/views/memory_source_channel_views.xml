@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_source_channel_list" model="ir.ui.view">
+        <field name="name">memory.source.channel.list</field>
+        <field name="model">memory.source.channel</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="overdue" decoration-muted="not active">
+                <field name="name"/>
+                <field name="kind"/>
+                <field name="watch_terms"/>
+                <field name="frequency_days"/>
+                <field name="last_read"/>
+                <field name="overdue" column_invisible="1"/>
+                <field name="active" column_invisible="1"/>
+                <field name="item_count" string="Cards"/>
+                <field name="project_id" optional="show"/>
+                <field name="territory" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <button name="action_read_now" type="object" string="Read Now" icon="refresh"
+                        groups="texo.group_texo_member"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_source_channel_form" model="ir.ui.view">
+        <field name="name">memory.source.channel.form</field>
+        <field name="model">memory.source.channel</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_read_now" type="object" string="Read Now" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_memory_source_item)d" type="action" class="oe_stat_button" icon="newspaper"
+                                context="{'search_default_channel_id': id, 'search_default_group_state': 1}">
+                            <field name="item_count" widget="statinfo" string="Cards"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Overdue" bg_color="text-bg-warning" invisible="not overdue or not active"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="overdue" invisible="1"/>
+                    <field name="active" invisible="1"/>
+                    <h1><field name="name" placeholder="e.g. The local newspaper"/></h1>
+                    <group>
+                        <group>
+                            <field name="kind"/>
+                            <field name="website" widget="url"/>
+                            <field name="territory"/>
+                            <field name="project_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="watch_terms" placeholder="e.g. city council, hospital, waste"/>
+                            <field name="frequency_days"/>
+                            <field name="last_read"/>
+                            <field name="terms_of_use"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="How It Is Read" name="feeds">
+                            <field name="feed_ids">
+                                <list editable="bottom" decoration-danger="last_outcome in ('error', 'refused')">
+                                    <field name="kind"/>
+                                    <field name="url" widget="url"/>
+                                    <field name="watch_terms"/>
+                                    <field name="last_read"/>
+                                    <field name="last_outcome"/>
+                                    <field name="last_message" optional="show"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="What the organisation knows of this channel: orientation, reliability"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_memory_source_channel_search" model="ir.ui.view">
+        <field name="name">memory.source.channel.search</field>
+        <field name="model">memory.source.channel</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="domain"/>
+                <field name="watch_terms"/>
+                <field name="project_id"/>
+                <filter name="overdue" string="Overdue" domain="[('overdue', 'in', [True])]"/>
+                <filter name="organisation" string="Organisation" domain="[('project_id', '=', False)]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_kind" string="Kind" context="{'group_by': 'kind'}"/>
+                <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_memory_source_channel" model="ir.actions.act_window">
+        <field name="name">Channels</field>
+        <field name="res_model">memory.source.channel</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add the first channel the organisation follows</p>
+            <p>A newspaper, a broadcaster, a video channel, a public body, a portal of calls: say what to look for in it
+               and how often it should be read. Nothing is read on a schedule: use <b>Read Now</b>, or ask the agent.</p>
+        </field>
+    </record>
+</odoo>

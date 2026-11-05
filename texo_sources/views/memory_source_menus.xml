@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <menuitem id="menu_memory_sources" name="External Sources" parent="texo_memory.menu_memory_root" sequence="30"/>
+    <menuitem id="menu_memory_source_triage" name="Triage" parent="menu_memory_sources" action="action_memory_source_triage"
+              sequence="10"/>
+    <menuitem id="menu_memory_source_item" name="Cards" parent="menu_memory_sources" action="action_memory_source_item"
+              sequence="20"/>
+    <menuitem id="menu_memory_source_to_approve" name="To Approve" parent="menu_memory_sources"
+              action="action_memory_source_to_approve" sequence="30"/>
+    <menuitem id="menu_memory_source_channel" name="Channels" parent="menu_memory_sources"
+              action="action_memory_source_channel" sequence="40"/>
+    <menuitem id="menu_memory_source_tag" name="Source Labels" parent="texo_memory.menu_memory_config"
+              action="action_memory_source_tag" sequence="30"/>
+</odoo>

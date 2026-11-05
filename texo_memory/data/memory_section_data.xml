@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo noupdate="1">
+    <record id="section_profile" model="memory.section">
+        <field name="name">Profile</field>
+        <field name="code">profile</field>
+        <field name="sequence">10</field>
+        <field name="description">Who the organisation is: its people and roles, who decides, its history and size.</field>
+    </record>
+    <record id="section_operations" model="memory.section">
+        <field name="name">Operations</field>
+        <field name="code">operations</field>
+        <field name="sequence">20</field>
+        <field name="description">How it works: processes, tools, channels, hours, how a piece of work goes from request to delivery.</field>
+    </record>
+    <record id="section_compliance" model="memory.section">
+        <field name="name">Compliance</field>
+        <field name="code">compliance</field>
+        <field name="sequence">30</field>
+        <field name="description">What it complies with: laws, certifications, contracts, data protection, security.</field>
+    </record>
+    <record id="section_sector" model="memory.section">
+        <field name="name">Sector</field>
+        <field name="code">sector</field>
+        <field name="sequence">40</field>
+        <field name="description">The sector it works in: its entities, its words and how they map onto Odoo.</field>
+    </record>
+    <record id="section_offer" model="memory.section">
+        <field name="name">Offer</field>
+        <field name="code">offer</field>
+        <field name="sequence">50</field>
+        <field name="description">What it offers: services, products, terms, prices and the way it sells them.</field>
+    </record>
+</odoo>

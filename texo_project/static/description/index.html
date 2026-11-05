@@ -1,0 +1,14 @@
+<section style="max-width: 860px; margin: 0 auto; padding: 16px;">
+    <h2>Texo - Project</h2>
+    <p>Project routes for agents, behind the Texo token: the questions an agent asks most when it
+        works on a client task, answered in a compact format meant for an LLM.</p>
+    <ul>
+        <li><code>project/my_work</code>: open project tasks assigned to the user.</li>
+        <li><code>project/task</code>: task summary, plain-text description, subtasks, milestone and latest chatter messages.</li>
+        <li><code>project/task_note</code>: internal note posted as the user, escaped plain text.</li>
+        <li><code>project/project</code>: the project as the agent reads it: its description, its milestones as
+            the roadmap and its last update as its present, with a warning when the present is missing or old.</li>
+        <li><code>project/update</code>: a project update written as the user, the new present of the project.</li>
+    </ul>
+    <p>Everything runs as the user: a task or project the user cannot read answers like one that does not exist.</p>
+</section>

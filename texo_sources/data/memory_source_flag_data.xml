@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo noupdate="1">
+    <record id="flag_event_date" model="memory.source.flag">
+        <field name="code">event_date</field>
+        <field name="name">Event date uncertain</field>
+        <field name="description">The article does not say when it happened, or it is not the date of publication.</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="flag_private_person" model="memory.source.flag">
+        <field name="code">private_person</field>
+        <field name="name">Private person named</field>
+        <field name="description">Someone who is not a public figure: not filed as a label.</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="flag_homonym" model="memory.source.flag">
+        <field name="code">homonym</field>
+        <field name="name">Who is it?</field>
+        <field name="description">A name or a role that could be more than one person or body.</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="flag_unconfirmed" model="memory.source.flag">
+        <field name="code">unconfirmed</field>
+        <field name="name">Opinion or unconfirmed</field>
+        <field name="description">An opinion told as a fact, a rumour, a claim with no source.</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="flag_quote" model="memory.source.flag">
+        <field name="code">quote</field>
+        <field name="name">Quote not verifiable</field>
+        <field name="description">The quote is not in the text, or the text cannot be read.</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="flag_unreadable" model="memory.source.flag">
+        <field name="code">unreadable</field>
+        <field name="name">Article not readable</field>
+        <field name="description">Paywall, refused, removed: only the headline is known.</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="flag_duplicate" model="memory.source.flag">
+        <field name="code">duplicate</field>
+        <field name="name">Duplicate</field>
+        <field name="description">The same fact is already in a card: relate them instead.</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="flag_partisan" model="memory.source.flag">
+        <field name="code">partisan</field>
+        <field name="name">Partisan source</field>
+        <field name="description">A party note, a press release of one side: say so in the card.</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="flag_unknown_channel" model="memory.source.flag">
+        <field name="code">unknown_channel</field>
+        <field name="name">Unknown channel</field>
+        <field name="description">A site the organisation does not follow: add the channel or discard.</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="flag_watch_video" model="memory.source.flag">
+        <field name="code">watch_video</field>
+        <field name="name">Video to watch</field>
+        <field name="description">Someone must watch it to write the segments and the abstract.</field>
+        <field name="sequence">100</field>
+    </record>
+</odoo>

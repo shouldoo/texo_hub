@@ -1,0 +1,315 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20260926\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-10 16:40+0000\n"
+"PO-Revision-Date: 2026-10-10 16:40+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_res_users_apikeys_description__scope
+msgid ""
+"\n"
+"        A token with scope 'A' can only be used for endpoints requiring a bearer token of scope 'A' and\n"
+"        can't be used for endpoints requiring any other scope than 'A'.\n"
+"        "
+msgstr ""
+"        Un token con ambito 'A' può essere usato solo sugli endpoint che "
+"richiedono un bearer token di ambito 'A'         non può essere usato su "
+"endpoint che richiedono un ambito diverso da 'A'        "
+
+#. module: texo
+#: model:ir.module.module,description:base.module_texo
+msgid ""
+"# Texo\n"
+"\n"
+"Odoo 20.0 · LGPL-3\n"
+"\n"
+"Makes Odoo the identity provider of Texo: people, hub roles and personal hub tokens\n"
+"live in Odoo, and every agent route of the hub modules runs as the person behind the token.\n"
+"\n"
+"## How it works\n"
+"\n"
+"| Piece | What it does |\n"
+"|---|---|\n"
+"| API key scope `texo` | Added to the standard *New API Key* wizard. A key with this scope opens only routes declared with `bearer_scope='texo'`: `/json/2` and XML-RPC refuse it. |\n"
+"| Token rules | A hub token always has an expiration date, at most `texo.token_max_days` days (system parameter, default 90), administrators included. Only users with a hub role can create one. |\n"
+"| Privilege *Texo* | Groups Member, Lead and Administrator (each implies the previous one). The highest one is the hub role. |\n"
+"| `POST /texo/v1/whoami` | Called by the agent's client with the user's token as bearer. Odoo checks scope, expiry and active user, then returns `uid`, `login`, `name` and `role`. Returns 401 for an invalid token and 403 for a user without a hub role. |\n"
+"| Last seen | `res.users.texo_last_seen` is updated by `whoami`, with a resolution of one minute. |\n"
+"| Users > Texo Tokens | Menu for hub administrators: every hub token with owner, creation date, expiry and last use. |\n"
+"\n"
+"A user creates a token from *My Preferences > Security > New API Key*, scope *Texo*.\n"
+"Disabling the user or deleting the key revokes it at once: every route checks the token on each\n"
+"call.\n"
+"\n"
+"## Generic read-only access for agents\n"
+"\n"
+"Free questions on the ERP without a generic MCP server and without an `rpc` key: the agent\n"
+"writes the query, Odoo runs it as the user behind the hub token.\n"
+"\n"
+"| Route (`POST`, bearer = hub token) | Parameters | Returns |\n"
+"|---|---|---|\n"
+"| `/texo/v1/search_read` | `model`, `domain`, `fields`, `limit` (default 20, max 100), `offset`, `order` | `records`, `count`, `has_more` |\n"
+"| `/texo/v1/read_group` | `model`, `domain`, `groupby`, `aggregates` (default `__count`), `limit`, `order` | `groups`, `has_more` |\n"
+"| `/texo/v1/fields` | `model`, `query` | readable fields: name, type, label, relation |\n"
+"| `/texo/v1/models` | `query` (3+ characters) | readable models matching the query |\n"
+"\n"
+"Guarantees:\n"
+"- the routes are declared `readonly`: Odoo serves them on a read-only cursor, nothing can be written;\n"
+"- they run as the user: ACLs, record rules and multi-company rules apply;\n"
+"- technical and security models are refused (`ir.*`, `res.users.apikeys`, `res.config*`, ...);\n"
+"- binary fields and credential-like fields (`password`, `*_token`, `*_key`, `secret`, ...) are never\n"
+"  returned and cannot be used in a domain;\n"
+"- HTML is returned as plain text, long texts are truncated, x2many lists are capped at 20 ids;\n"
+"- without `fields`, only `id` and `display_name` are returned: ask for the fields you need.\n"
+"\n"
+"Task, ticket and chatter routes live in companion modules (`texo_project`).\n"
+"\n"
+"## Client configuration\n"
+"\n"
+"A client needs three values, kept in a file of the person outside any repository (mode 600):\n"
+"\n"
+"| Variable | Value |\n"
+"|---|---|\n"
+"| `ODOO_URL` | URL of this Odoo |\n"
+"| `ODOO_DB` | the database, when the server serves more than one |\n"
+"| `TEXO_TOKEN` | the personal hub token |\n"
+"\n"
+"## Endpoint example\n"
+"\n"
+"```bash\n"
+"curl -X POST https://<odoo>/texo/v1/whoami \\\n"
+"  -H \"Authorization: Bearer <hub token>\" -H \"Content-Type: application/json\" -d '{}'\n"
+"# {\"uid\": 7, \"login\": \"jdoe\", \"name\": \"John Doe\", \"role\": \"member\"}\n"
+"```\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -c <conf> -d test_cohub20 -i texo --test-tags /texo --stop-after-init --http-port 18069\n"
+"```\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+"\n"
+"## Author\n"
+"\n"
+"Daniele Lucarelli\n"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users_apikeys.py:0
+msgid "A Texo token cannot last more than %(days)s days."
+msgstr "Un token Texo non può durare più di %(days)s giorni."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users_apikeys.py:0
+msgid "A Texo token must have an expiration date."
+msgstr "Un token Texo deve avere una data di scadenza."
+
+#. module: texo
+#: model:ir.model,name:texo.model_res_users_apikeys_description
+msgid "API Key Description"
+msgstr "Descrizione chiave API"
+
+#. module: texo
+#: model:res.groups,name:texo.group_texo_admin
+msgid "Administrator"
+msgstr "Amministratore"
+
+#. module: texo
+#: model:res.groups,comment:texo.group_texo_admin
+msgid "Administrator: reviews every Texo token."
+msgstr "Amministratore: controlla tutti i token Texo."
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users__display_name
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys__display_name
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__display_name
+#: model:ir.model.fields,field_description:texo.field_texo_api__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid ""
+"Fields not available on %(model)s: %(fields)s. Use the fields route to list "
+"them."
+msgstr ""
+"Campi non disponibili su %(model)s: %(fields)s. Usa la route fields per "
+"elencarli."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "Give at least 3 characters to search models."
+msgstr "Indica almeno 3 caratteri per cercare i modelli."
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users__id
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys__id
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__id
+#: model:ir.model.fields,field_description:texo.field_texo_api__id
+msgid "ID"
+msgstr "ID"
+
+#. module: texo
+#: model:ir.module.module,summary:base.module_texo
+msgid "Identity and access tokens for the Texo, managed in Odoo"
+msgstr "Identità e token di accesso al Texo, gestiti in Odoo"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "Invalid domain element: %(leaf)s"
+msgstr "Elemento di dominio non valido: %(leaf)s"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys__user_texo_last_seen
+msgid "Last Seen by the Hub"
+msgstr "Ultimo accesso al Hub"
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_res_users__texo_last_seen
+#: model:ir.model.fields,help:texo.field_res_users_apikeys__user_texo_last_seen
+msgid "Last time the Texo gateway verified a token of this user."
+msgstr ""
+"Ultima volta in cui il gateway del Texo ha verificato un token di questo "
+"utente."
+
+#. module: texo
+#: model:res.groups,name:texo.group_texo_lead
+msgid "Lead"
+msgstr "Lead"
+
+#. module: texo
+#: model:res.groups,comment:texo.group_texo_lead
+msgid "Lead: also archives facts or marks them as superseded."
+msgstr "Lead: può anche archiviare i fatti o dichiararli superati."
+
+#. module: texo
+#: model:res.groups,name:texo.group_texo_member
+msgid "Member"
+msgstr "Membro"
+
+#. module: texo
+#: model:res.groups,comment:texo.group_texo_member
+msgid "Member: reads and records facts on the clients they work on."
+msgstr "Membro: legge e registra fatti sui clienti su cui lavora."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "Model %(model)s is not available to agents."
+msgstr "Il modello %(model)s non è disponibile per gli agenti."
+
+#. module: texo
+#: model:res.groups.privilege,placeholder:texo.res_groups_privilege_texo
+msgid "No"
+msgstr "No"
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_res_users_apikeys_texo
+msgid "No Texo token yet"
+msgstr "Ancora nessun token Texo"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users_apikeys.py:0
+msgid "Only Texo users can create a Texo token."
+msgstr "Solo gli utenti del Texo possono creare un token Texo."
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__scope
+msgid "Scope"
+msgstr "Ambito"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__res_users_apikeys_description__scope__texo
+#: model:ir.module.module,shortdesc:base.module_texo
+#: model:res.groups.privilege,name:texo.res_groups_privilege_texo
+msgid "Texo"
+msgstr "Texo"
+
+#. module: texo
+#: model:ir.model,name:texo.model_texo_api
+msgid "Texo Agent API"
+msgstr "API agenti del Texo"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users__texo_last_seen
+msgid "Texo Last Seen"
+msgstr "Ultimo accesso Texo"
+
+#. module: texo
+#: model:ir.actions.act_window,name:texo.action_res_users_apikeys_texo
+#: model:ir.ui.menu,name:texo.menu_texo_tokens
+msgid "Texo Tokens"
+msgstr "Token Texo"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "The domain must be a list."
+msgstr "Il dominio deve essere una lista."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "The domain uses a field that is not available to agents."
+msgstr "Il dominio usa un campo non disponibile per gli agenti."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/controllers/main.py:0
+msgid "The format is json or okf."
+msgstr "Il formato è json oppure okf."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_api.py:0
+msgid "Unknown model: %(model)s"
+msgstr "Modello sconosciuto: %(model)s"
+
+#. module: texo
+#: model:ir.model,name:texo.model_res_users
+#: model_terms:ir.ui.view,arch_db:texo.view_res_users_apikeys_texo_search
+msgid "User"
+msgstr "Utente"
+
+#. module: texo
+#: model:ir.model,name:texo.model_res_users_apikeys
+msgid "User API Key"
+msgstr "Chiave API utente"
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_res_users_apikeys_texo
+msgid ""
+"Users create their token from My Preferences, Security, New API Key, scope "
+"Texo."
+msgstr ""
+"Gli utenti creano il proprio token da Preferenze, Sicurezza, Nuova chiave "
+"API, ambito Texo."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users.py:0
+msgid "You have no Texo role."
+msgstr "Non hai un ruolo nel Texo."

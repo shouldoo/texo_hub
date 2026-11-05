@@ -1,0 +1,2988 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo_memory
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20260926\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-03 21:12+0000\n"
+"PO-Revision-Date: 2026-11-03 21:12+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: texo_memory
+#: model:ir.module.module,description:base.module_texo_memory
+msgid ""
+"# Texo - Memory\n"
+"\n"
+"Odoo 20.0 · LGPL-3\n"
+"\n"
+"The working memory of an organisation, kept in its own Odoo Community. The project lives in\n"
+"Odoo itself: its description, its milestones, its updates, its tasks with their chatter. This module\n"
+"adds what Odoo does not hold: what the memory knows of the organisation, a customer, a project or a task\n"
+"(rules, facts, procedures), the lessons learned without the customer, and\n"
+"which attachments of its records are documents of the memory, with their converted text. Agents read it through the Texo token (see `texo`) and\n"
+"write it after the person's confirmation; the roles of the hub decide who reviews what.\n"
+"\n"
+"## Two kinds of memory\n"
+"\n"
+"| Model | What it holds | Who reads it | What happens at a customer's opt-out |\n"
+"|---|---|---|---|\n"
+"| `memory.note` | what the memory knows of the organisation (the company), a customer, a project or a task, one note at a time, of three kinds (`kind`, the `type` of its OKF concept): a **rule** (what an agent must always or never do; never on a task), a **fact** (what the record is), a **procedure** (how an operation is done, step by step) | who works in the company, or can read the project, customer or task it belongs to (domain operator `access` on the anchor) | deleted |\n"
+"| `memory.lesson` | knowledge that belongs to no customer: `finding` (written by the agent from the work on a project), `lesson` (curated by a lead), `procedure`; of one of our companies (`company_id`, the current one by default) or, empty, shared by all | every hub member of that company, whatever projects they can see | kept |\n"
+"\n"
+"A lesson has no field pointing to a customer, project, task or rule: nothing in it can lead back to\n"
+"the work it was learned on.\n"
+"\n"
+"**The organisation itself** is the company (`company_id`, the fourth anchor of `memory.anchor.mixin`), not\n"
+"a customer: a note, a document or a context pack asked with no task, project or customer goes to the\n"
+"current company, or to `company_id` when the user works in several. It is the root of the OKF bundle,\n"
+"above the customers and their projects. A record on the company, or on a project whose customer is one\n"
+"of our companies, has no `customer_id`, and the opt-out refuses our own companies. The home project of a\n"
+"company (`texo_project`) stays, for the internal work: its tasks and updates.\n"
+"\n"
+"Every note and lesson carries its state, `draft`, `active`, `superseded` or `archived`, with\n"
+"`supersedes` / `superseded_by` and `expires`; a note also `verified` and `verified_by_id` (for a rule, the\n"
+"confirmation of a lead), a lesson `verified` as free text and `applies_to`. Only an active rule binds the\n"
+"agent. Nothing is deleted: a newer one supersedes the older.\n"
+"\n"
+"A rule is typed for the agent that reads it (a fact and a procedure may carry activities too):\n"
+"\n"
+"- `severity`: how it binds, `never` (a prohibition), `must` (an obligation, the default) or `prefer`\n"
+"  (what the agent does unless the person decides otherwise);\n"
+"- `rule_activity_ids` («Applies to»): the work it concerns, among the activities of\n"
+"  `memory.note.activity` (`code`, `deploy`, `data`, `communication`, `analysis`, `migration` in the\n"
+"  data of the module; a lead adds the organisation's own in *Memory > Rule Activities*). None means\n"
+"  every activity. A session that passes its activity gets the rules of that activity and those of\n"
+"  every activity; the field is not `activity_ids`, which is the to-do list of the chatter.\n"
+"\n"
+"## Notes: rules, facts and procedures\n"
+"\n"
+"One model, three kinds, one schema: title, text (plain text), `section_id`, `keywords`, `applies_to`, state,\n"
+"`verified` and `verified_by_id`, `expires`, `origin` and `generated_by`, the document it was taken from\n"
+"(`document_id`, `source_ref`, `source_checked`), `supersedes` / `superseded_by`. The kind decides the\n"
+"behaviour:\n"
+"\n"
+"| Kind | OKF `type` | What it is | How it is written |\n"
+"|---|---|---|---|\n"
+"| `rule` | `Rule` | what an agent must always or never do; it binds | a member's draft until a lead activates it; `severity`, activities; never on a task |\n"
+"| `fact` | `Fact` | what the record is: who decides at the customer, how its warehouse is organised, what was agreed on a task | as it is, active and verified today, by whoever may write on its anchor |\n"
+"| `procedure` | `Playbook` | how an operation is done, step by step; it describes, it does not bind: what in it binds is a rule | as a fact |\n"
+"\n"
+"Two sessions never overwrite each other: `memory/note_append` adds a dated, signed paragraph to a fact or\n"
+"a procedure with the row locked; `memory/note_update` replaces the text only with the `version` returned\n"
+"by `memory/read` (a fingerprint of the text: any change since the reading refuses the replacement). The\n"
+"context pack gives the live facts and procedures of every level of the chain, the task included, by\n"
+"their title, section, the day they were verified and `stale` (`unverified` after 180 days, `expired`,\n"
+"`source_changed`); the text comes with `memory/read`. An expired one leaves the pack and the search.\n"
+"The notes of a customer go with its opt-out; those of the organisation stay.\n"
+"\n"
+"**Sections** (`memory.section`, extensible like the activities: `profile`, `operations`, `compliance`,\n"
+"`sector`, `offer` in the data of the module; a lead adds the organisation's own in *Memory > Sections*)\n"
+"say which part of what the memory knows a note belongs to; the pack of the organisation is an index by\n"
+"section, and the rules of the session list them.\n"
+"\n"
+"## Roles\n"
+"\n"
+"| Role (hub group) | Rules (facts and procedures: whoever may write on the anchor) | Lessons |\n"
+"|---|---|---|\n"
+"| Member | writes drafts; edits only their own drafts; a draft creates a review activity for the project manager (else for every hub lead) | reads; writes draft findings |\n"
+"| Lead | everything a member does, and activates, supersedes, archives; a rule confirmed by a lead can be written `active` at once | creates, curates, changes the state |\n"
+"| Administrator | as a lead | as a lead, plus the opt-out names |\n"
+"\n"
+"The server enforces this whatever the client says: a member asking for an active rule or lesson\n"
+"gets an `AccessError`.\n"
+"\n"
+"## Findings: a technical fact without the customer\n"
+"\n"
+"`memory/lesson` (`_agent_lesson`) writes a `memory.lesson` of kind `finding` (`finding`, `solution`,\n"
+"optional `tags`, `title`, `applies_to`, `verified`, `activities`) after the leak filter: a member's is a draft for\n"
+"the leads, a lead's may be active at once. When the filter rejects the text, nothing is stored and the\n"
+"error says why, so the agent rewrites it. `source_ref` (the task it comes from) only feeds the filter.\n"
+"The lesson's creation date is truncated to the day, so it cannot be matched with the chatter of the\n"
+"task.\n"
+"\n"
+"The leak filter (`models/leak_filter.py`, one function for the write path, the housekeeping and the\n"
+"tests) rejects: the name or reference of any customer (archived customers and the opt-out names\n"
+"included; on 20.0 a customer is a top-level partner that is neither one of our companies nor a\n"
+"user), pseudonym markers, e-mail addresses, URLs other than `github.com/OCA`, `github.com/odoo` and\n"
+"the Odoo documentation, amounts of money, record references (`model/id`), task or ticket numbers\n"
+"(`#NN`), the source reference given with it, and texts shorter than 20 or longer than 2000 characters.\n"
+"\n"
+"`memory.optout.name` keeps the names of the customers that opted out, in clear because the filter\n"
+"matches substrings; administrators only, never returned by a route.\n"
+"\n"
+"## Documents: attachments of the records they belong to\n"
+"\n"
+"A document of the memory is an attachment (`ir.attachment`, extended) of the task, the project or the\n"
+"customer it belongs to; the organisation's own are on the company. It is a file, or a link (type\n"
+"url) to an original that lives elsewhere (a shared drive, a web page). Its title is the name of the\n"
+"attachment, its summary the description, both confirmed by the person; the people see it on the record,\n"
+"with the permissions of that record, and in the menu *Memory > Documents*. The memory adds:\n"
+"\n"
+"- `texo_document`: the attachment is in the memory (in the context pack of its level, in\n"
+"  `memory/search` with `scope` `documents` or `all`, in `document/list`). The other attachments of a\n"
+"  record stay out of it.\n"
+"- `texo_read_on` and `texo_fingerprint`: when the original was read and its sha256\n"
+"  then. A reading (`document/write` with `document_id`) that brings a different fingerprint, or a new\n"
+"  content of the file on the record, sets `texo_changed_on`.\n"
+"- the converted text (Docling, locally, on the person's machine) as a second attachment on the same record,\n"
+"  `<name>.md` (`texo_text_of_id` points to the original), so later sessions read it without\n"
+"  converting again. A file that is text already (Markdown, plain text) is its own text and needs none.\n"
+"  With `texo_keep_text` off (a sensitive document) the memory keeps no text of it.\n"
+"- `texo_created`: the memory brought the attachment in (a link, a file it received, a\n"
+"  converted text). The opt-out of the customer deletes these; an attachment the people put on the\n"
+"  record stays there, taken out of the memory.\n"
+"\n"
+"The search ranks the documents by PostgreSQL full-text search over the title, the summary and the\n"
+"text (a word present only in the text finds the document; a document without text is found by title\n"
+"and summary only), computed at query time over the documents of the memory only. The text is indexed\n"
+"whole in `index_content`: the native index of Odoo keeps only the ASCII words of a text, and an\n"
+"accented word would be lost.\n"
+"\n"
+"A long document is also searched by its **passages** (`memory.document.passage`, since 20.0.10.3.0). The\n"
+"converted text is cut where the document itself is cut (`models/structure.py`): titles, parts, chapters,\n"
+"sections, annexes and articles of a legal text, Markdown headings of any other; an article too long is cut at\n"
+"its commas («commi 1-3»), what is still too long at paragraphs and sentences with a small overlap. Each passage\n"
+"keeps its **path** («TITOLO I (DISPOSIZIONI GENERALI) > Art. 2 (Definizioni) > comma 1») and its offset in the\n"
+"text, up to 400 passages per document, and has its own full-text vector (path, text, and the title of the\n"
+"document with the least weight). A document ranks with the better of its whole vector and its best passage, and\n"
+"holds every word of the question when one passage does: a rare word, an article number or an amount deep in an\n"
+"act of hundreds of pages finds it. Every hit of a document names the passage that answered (`passage`: `path`,\n"
+"`start`, `snippet`); the agent cites the path and reads the text from `start` with `document` (`offset`).\n"
+"The passages are cut again when the text, the title or the state of the document change; a sensitive document\n"
+"has none. Nobody reads them directly: the search reads them as the system, and gives one only with a document\n"
+"the person may read.\n"
+"\n"
+"A note that cites a document (`document_id` of `memory/note`) remembers when it was written or last\n"
+"verified against it (`source_checked`): an original changed after that marks the note\n"
+"`source_changed` (its `stale` value, after `expired` and before `unverified`) in the context pack, in\n"
+"the review queue and for the housekeeping, until it is verified again (a rule by a lead) or activated.\n"
+"A document stays a source: what it gives is written as notes that cite it.\n"
+"\n"
+"A document has no state: it is in the memory or not. A lead takes one out (`document/remove`): what the\n"
+"memory brought in goes, an attachment the people put on the record stays theirs.\n"
+"\n"
+"The route `document/attachment` gives the file of an attachment the person may read (the access is\n"
+"that of the record it is attached to; an attachment without a record is readable by its creator and\n"
+"the administrators only), within 20 MB, for the local conversion.\n"
+"\n"
+"## Rules of the session and context pack\n"
+"\n"
+"`memory/rules` sends the rules every session starts with: the common rules of the hub (English, for\n"
+"language models), then the active rules of the organisation, in creation order, each as\n"
+"`- [severity] title: body` with its activities when it has some (`company_rules` lists them with\n"
+"their ids), the activities the organisation knows (`activities`: code, name, description) and its\n"
+"sections (`sections`). A\n"
+"client reads them once, at the start; the `texo` MCP client puts them in the instructions\n"
+"of the server. With `activity` only the rules of that activity and of every activity.\n"
+"\n"
+"`memory.note._agent_context(task_id | project_id | nothing: the company, activity)` composes,\n"
+"deterministically and within a budget, what an agent needs before touching a task: the task with its\n"
+"description, its milestone and the latest messages of its chatter, the project with its description,\n"
+"its milestones and its last update as `now` (from `texo_project`; its warnings `now_missing`\n"
+"and `now_stale` join the warnings of the pack with the `project_id`), then for each level\n"
+"of the chain task → parent tasks → project → customer (the organisation is a level of its own, the\n"
+"company, in its pack, with the `sections`) the active rules, the facts and procedures by title and the\n"
+"documents, the pending drafts (with their author; a lead sees their review queue first), warnings on\n"
+"expired, unverified (180 days) or `source_changed` rules, and the lessons of the tags of the task and its project (see «Lessons in the pack»). A level the user cannot read is reported as\n"
+"`not readable`. With `activity` (one code or several, comma-separated; an unknown one is refused with\n"
+"the known ones) the rules of every level are those of that activity and of every activity, and the\n"
+"pack says which (`activities`).\n"
+"\n"
+"## Search\n"
+"\n"
+"- Notes (rules, their drafts included, facts and procedures), lessons and documents: PostgreSQL full-text\n"
+"  search (`models/fulltext.py`, one helper for all), ranked together, on a stored `tsvector` with a GIN\n"
+"  index: for a note or a lesson a generated column (title, then `keywords`, then the text, or finding and\n"
+"  solution), for a document a column of `ir.attachment` written by the hub whenever the\n"
+"  title, the summary, the keywords or the text change, indexed only where it is set (title, then summary\n"
+"  and keywords, then the text). Plain words, Italian and English stems side by side. A word of four\n"
+"  letters or more also matches as a prefix («migraz» finds «migrazione»). The results that hold every\n"
+"  word come first; only to fill the limit, those that hold some, above a minimum rank (0.01). The words\n"
+"  are reduced to letters, digits and underscores before they reach `to_tsquery`; a hit says which it is\n"
+"  (`words`: `all` or `some`). The ORM has no\n"
+"  full-text operator, so the ids come from SQL and the records then go through the ORM, so the access\n"
+"  rules apply; when the best candidates are records the person may not read (the facts of other\n"
+"  customers), the window grows until the limit is filled with readable ones. `applies_to` filters the lessons, expired ones stay out.\n"
+"- **Keywords**: the writer of a lesson or a document gives synonyms, translations and other names\n"
+"  (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.\n"
+"  They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given\n"
+"  with the session note): in the vector of the episode they weigh B, above the description and the chatter.\n"
+"- **`mode`** (`lexical`, `semantic`, `hybrid`): here the search is lexical whatever it says; the optional\n"
+"  module [`texo_vector`](../texo_vector/README.md) gives it its meaning (vectors for the\n"
+"  episodes, the facts, the procedures, the lessons and the documents, fused with the words; never the rules) and marks every hit with\n"
+"  which search found it (`match`).\n"
+"\n"
+"## What the pack carries\n"
+"\n"
+"The pack is an outline where the text is not needed to bind: a rule `never` or `must` comes with its text\n"
+"(at most 1,500 characters, `truncated` beyond), a rule `prefer` with its title and `body_omitted`, a lesson\n"
+"with its id, title, tags and `applies_to`. The agent reads the rest with `memory/read` when the work\n"
+"touches it.\n"
+"\n"
+"## Lessons in the pack\n"
+"\n"
+"A lesson is indexed by the **native tags of the projects** (`project.tags`, `tag_ids`: a module, a\n"
+"version, an area) and by the activities it helps (`lesson_activity_ids`, the activities of the rules;\n"
+"none means every activity). The context pack gives the active lessons that share a tag with the task\n"
+"or its project, those that share more first, the newer first among equals, at most five; with the\n"
+"activity of the session, those of that activity and of every activity. A task whose task and project\n"
+"have no tags gets no lessons: the pack no longer guesses from the words of a title, which brought\n"
+"lessons about something else and cost a full-text search at every pack. To get the lessons of a\n"
+"project, tag it as its lessons are tagged; to find any other, search (`memory/search`).\n"
+"\n"
+"### The episodes\n"
+"\n"
+"The description and the chatter of a task are the episodic memory of a project: what was asked, what was\n"
+"found, what was done. `memory/search` with `scope` `tasks` finds them («has something like this happened\n"
+"before?»): a full-text vector of every task (title with the highest weight, description, the human messages\n"
+"of the chatter; what Odoo tracks stays out), kept by the module when the task or its chatter changes and\n"
+"computed once for the tasks of before at install or update, ranked by `fulltext.py` like the rest, as the\n"
+"user: the record rules of `project.task` decide which episodes exist, archived tasks stay out. The episodes\n"
+"are not part of `all`: the memory is one thing, the work another. A hit carries the summary of the task,\n"
+"its concept id (`tasks/7`) and the first words of the description.\n"
+"\n"
+"`memory/lesson` takes the tags by name: an existing tag is matched whatever its case, a missing one is\n"
+"created (the tags are the vocabulary of the organisation; the consolidation merges two that say the\n"
+"same). A tag goes through the leak filter with the lesson.\n"
+"\n"
+"A lead's pack also carries `pending_lessons`: the draft findings waiting for a decision.\n"
+"\n"
+"## Housekeeping and consolidation\n"
+"\n"
+"The cron **Memory: weekly housekeeping** (`memory.lesson._cron_housekeeping()`) does three things and\n"
+"decides nothing on its own:\n"
+"\n"
+"- re-runs the leak filter on every draft or active lesson: a customer created after a lesson was\n"
+"  written may be named in it; such a lesson is archived with a note in its chatter;\n"
+"- looks for near-duplicates among the lessons with a tag in common, or both without tags (`difflib` ratio, 0.6 by default) and\n"
+"  gives every hub lead one activity per pair, naming the other lesson, never twice for the same pair:\n"
+"  the person merges or supersedes, nothing is merged automatically;\n"
+"- gives the reviewers of every active rule that is expired or not confirmed for 180 days one activity\n"
+"  (`memory.note._cron_housekeeping()`), never twice for the same reason.\n"
+"\n"
+"The consolidation itself is done with the person, from the review queue of `memory/review`: draft\n"
+"rules to decide, stale rules to re-check (`memory/confirm` resets the confirmation date and may set an\n"
+"expiry), the projects with open tasks whose present is missing or older than 30 days\n"
+"(`projects_without_now`: every readable project for a lead, the managed ones for a member), draft\n"
+"lessons and near-duplicate lessons for the leads. The rules sent by `memory/rules` tell the agent how to run it.\n"
+"\n"
+"## Using it in Odoo\n"
+"\n"
+"The models are written for the agents, but the people consult, correct and update them from the backend.\n"
+"Menu *Memory*:\n"
+"\n"
+"- **Search the Memory**: a question, a scope (all the memory, rules, facts, procedures, documents, lessons, or\n"
+"  the episodes of the tasks) and, with `texo_vector`, a mode (words, meaning, both). The same\n"
+"  ranking as `memory/search`, with the kind of each result, what found it (every word, some words, meaning,\n"
+"  both), an excerpt and a button to open the record.\n"
+"- **To Review**: the queues of the weekly review with their counts, each opening its records: draft rules,\n"
+"  notes to check (`stale`: active and expired, not verified for 180 days, or with a changed source document),\n"
+"  changed documents, draft lessons and near-duplicates (leads), projects without a recent update. Other\n"
+"  modules add their queues (`texo_sources`: candidates, cards to approve and to review, channels\n"
+"  overdue).\n"
+"- **Knowledge**: rules, facts, procedures, documents, lessons, with the same filters where they make sense\n"
+"  (draft, active, superseded; to check, expired, expiring in 30 days; written by an agent or a person; mine;\n"
+"  of the organisation, a customer, a project, a task; modified in a period) and grouping by kind, state,\n"
+"  section, customer, project, author. The lists act on a selection: verified today, activate, archive. A\n"
+"  document shows its converted text in the form; a sensitive one says the memory keeps none.\n"
+"- **Configuration** (leads): sections, rule activities; opt-out names and customer opt-out (administrators).\n"
+"\n"
+"On the work records: buttons with the counts of the memory on a **project** (rules, facts and procedures;\n"
+"documents; the lessons that share a tag with it), a **customer** and the **organisation** (the company form);\n"
+"on a **task** the page *Memory* with its search keywords and its facts and procedures.\n"
+"\n"
+"## Opt-out of a customer\n"
+"\n"
+"Menu *Memory > Configuration > Customer Opt-out* (hub administrators). The wizard shows what will be deleted (the\n"
+"rules of the customer and their projects with their files, the documents of the memory on the\n"
+"customer, its projects and their tasks), asks the customer's name as confirmation, then deletes the\n"
+"rules and what the memory brought in (links, files it received, converted texts; an attachment the\n"
+"people put on a record stays, taken out of the memory), adds the customer's name and reference\n"
+"to the opt-out list, archives the partner and returns a certificate (counts, who, when, a sha256 of\n"
+"the certificate) that it also posts as an internal note on the task that tracks the request. Lessons\n"
+"and findings stay: they hold nothing of the customer. Tasks, timesheets and accounting records are\n"
+"company records and stay out of the wizard's scope.\n"
+"\n"
+"## Open Knowledge Format\n"
+"\n"
+"The records keep their Odoo names; an agent reads them back named as\n"
+"[Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) (OKF v0.2:\n"
+"markdown with YAML frontmatter, an `index.md` for progressive disclosure, a `log.md` for the history),\n"
+"through `format: okf` on the reading routes and `texo/okf.py`, the one place of the mapping:\n"
+"\n"
+"| OKF | In the hub |\n"
+"|---|---|\n"
+"| concept id (`<kind>/<id>`) | `rules/<id>`, `facts/<id>`, `procedures/<id>` (`memory.note`, by its kind), `lessons/<id>`, `documents/<id>` (`ir.attachment`), `projects/<id>`, `tasks/<id>`; every summary carries it as `concept`, `read` takes it |\n"
+"| `type` | `Rule`, `Fact`, `Playbook` (the `kind` of a note), `Finding` / `Lesson` / `Playbook` (the `kind` of a lesson), `Document`, `Project`, `Task` |\n"
+"| `status` | `state`: `draft` → `draft`, `active` → `stable`, `superseded` and `archived` → `deprecated` |\n"
+"| `generated` (`by`, `at`) | `origin` and `generated_by`: a person as `human:<login>`, an agent as the `<producer>/<version>` it gave, else the hub tool it called (`texo_memory/<version>`); Odoo itself (the superuser: data files, migrations) as `process:odoo`, never as a person; `at` the last write. A lesson names no one: its person is `human:anonymous`, its time the day only |\n"
+"| `verified` (`by`, `at`) | a note: `verified` and `verified_by_id` (for a rule, the confirmation of a lead); by the superuser it is `process:odoo`: machine-confirmed, not human-reviewed |\n"
+"| `stale_after` | the earliest of the day after `expires`, 180 days after the check and the change of the cited document; `stale` gives the reason (`expired`, `unconfirmed`, `unverified`, `source_changed`) |\n"
+"| `sources` | the cited document (`document_id`, with its `last_modified`) and `source_ref`, for every note |\n"
+"| `tags` | the activities of a rule, the project tags of a lesson |\n"
+"| `index.md` | the context pack: every level of the chain with its rules, facts, procedures and documents by title and one line (the organisation by section), the lessons, the pending items, the warnings, the activities of a rule, the expiry of a fact, a document whose original changed; the rules that bind (`never`, `must`) come in full, in a file of their own unless their line already carries their whole text |\n"
+"| `log.md` | the updates of a project and the milestones reached (`project/log`; in the pack the latest three), the chatter of a task |\n"
+"\n"
+"Keys of the hub's own (`severity`, `section`, `anchor`, `keywords`, `applies_to`, `version`, `checked`) follow the\n"
+"OKF keys, as the specification allows. A lesson carries no anchor and no author.\n"
+"\n"
+"## Routes\n"
+"\n"
+"All take the user's hub token as bearer and run as the user. A client error answers 422 with the\n"
+"reason, a refusal 403, a record the user cannot read 404.\n"
+"\n"
+"| Route (`POST /texo/v1/memory/...`) | Parameters | Returns |\n"
+"|---|---|---|\n"
+"| `rules` | `company_id` (optional), `activity` (optional) | the role of the user and the rules of the session: the common rules, then the active rules of the organisation (`company_rules`), and the activities of the organisation (`activities`) |\n"
+"| `context` | `task_id` or `project_id` (neither: the company, or `company_id`), `messages` (default 5), `activity` (optional), `format` (`json`, `okf`) | the context pack; in OKF, the files of the bundle (`index.md`, the task and the project, the binding rules, `log.md`) |\n"
+"| `search` | `query`, `related_terms`, `scope` (`all`, `rules` or `notes`, `facts`, `procedures`, `documents`, `lessons`; `tasks` for the episodes), `applies_to` (lessons), `limit` (max 20) | rules the user may read (first), then documents and lessons by score, with a snippet; with `tasks`, the tasks the user may read ranked by title, description and chatter |\n"
+"| `read` | `note_id` (`fact_id` as a synonym) or `lesson_id`, or `concept` (`rules/12`, `facts/3`, `procedures/8`, `lessons/5`, `documents/9`, `projects/2`, `tasks/7`; a concept whose kind is not the record's is refused), `max_chars` (200 to 20000), `format` (`json`, `okf`) | one note (with its `version`, unless cut) or lesson; a concept of another kind as its own route gives it |\n"
+"| `note` | `name`, `body`, `kind` (`rule`, the default, `fact`, `procedure`), one anchor among `task_id` (not a rule), `project_id`, `partner_id` (none: the organisation, the company or `company_id`), `section` (a code), `keywords`, `applies_to`, `expires`, `document_id` (the document of the memory it comes from), `source_ref`, `generated_by` (the agent, `<producer>/<version>`); for a rule `state` (`draft` or, for a lead, `active`), `severity` (`never`, `must`, `prefer`; default `must`), `activities` (codes, a list or comma-separated; none: every activity) | a rule: its summary; a fact or a procedure: the note, active, verified by the person |\n"
+"| `note_append` | `note_id`, `text`, `keywords` | a fact or a procedure, with a dated and signed paragraph more |\n"
+"| `note_update` | `note_id`, `body` with `expected_version`, `name`, `section`, `keywords`, `applies_to`, `expires`, `verified` (a rule only by a lead) | the note |\n"
+"| `fact`, `fact_append`, `fact_update` | as `note` with `kind` `fact`, `note_append`, `note_update` (`fact_id` for `note_id`) | kept for the clients that call them |\n"
+"| `lesson` | `finding`, `solution`, `tags` (names, a list or comma-separated), `activities` (codes), `keywords`, `title`, `applies_to`, `verified`, `state` (`draft` or, for a lead, `active`), `source_ref` (for the leak filter only), `generated_by` | the finding written |\n"
+"| `state` | `note_id` (`fact_id`) or `lesson_id`, `state` (`active`, `superseded`, `archived`), `superseded_by_id` | a rule or a lesson: lead only; a fact or a procedure: its author or a lead |\n"
+"| `review` | — | the review queue of the person: draft rules, stale rules, projects without a recent update; for a lead also draft lessons and near-duplicate lessons |\n"
+"| `document/list` (`/texo/v1/document/...`) | one of `task_id` / `project_id` / `partner_id` (none: the company, or `company_id`) | the documents of that record |\n"
+"| `document/read` | `document_id`, `text` (default false), `max_chars`, `offset`, `format` (`json`, `okf`) | the document, with a slice of its text when asked (`text_next_offset` while more remains) |\n"
+"| `document/write` | `document_id` (an attachment of a record the person reads: it becomes a document, or a document gets its new reading; a different `fingerprint` sets `changed_on`), or `name` with `url` (a link) or `data` (a file in base64, max 20 MB) and one anchor (none: the company, or `company_id`); `summary`, `keywords`, `read_on`, `fingerprint`, `keep_text`, `text` (the converted text, max 5 MB) | the document written |\n"
+"| `document/remove` | `document_id` | lead only: the document out of the memory |\n"
+"| `document/attachment` | `attachment_id` | the file of an attachment the person may read: name, type, size, sha256, record, content in base64 (max 20 MB) |\n"
+"| `confirm` | `note_id`, `expires` (optional, `YYYY-MM-DD`) | a note re-checked today: an active rule by a lead, a fact or a procedure by whoever may write it |\n"
+"\n"
+"The same logic is available as methods on the models (`_agent_context`, `_agent_search`,\n"
+"`_agent_read`, `_agent_note`, `_agent_rules_text`, `memory.lesson._agent_lesson`, `_agent_set_state`,\n"
+"`ir.attachment._texo_write` and the other `_texo_*` methods of the documents), for an adapter that exposes it another way.\n"
+"\n"
+"## Demo data\n"
+"\n"
+"A database created with the demo data gets one record per kind of memory, in Italian, on the main\n"
+"company: the rule «Nessun invio al cliente senza la persona» (`never`, activity `communication`,\n"
+"active) taken from the document «Manuale delle comunicazioni ai clienti» (a link, with its converted\n"
+"text next to it), the fact «Orari e reperibilità», the procedure «Aprire un progetto» taken from the\n"
+"document «come-si-apre-un-progetto.md» (a Markdown file, its own text), both in the section\n"
+"`operations`, and the lesson «Un campo calcolato non salvato non si cerca» (`orm`, active). A\n"
+"database without the demo data, like an instance in use, gets none of them.\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -c <conf> -d test_cohub20 -i texo_memory --test-tags /texo_memory --http-interface=127.0.0.1 --stop-after-init\n"
+"```\n"
+"\n"
+"61 tests (one only with the demo data): each class of leak, a finding written directly and the refusal on a leak, no link from a\n"
+"lesson to the work, a member without project access reads the lesson but not the rule, roles on rules\n"
+"and lessons, a note is a rule and never on a task, the severity and the activities of a rule, the\n"
+"rules of the organisation in the rules of the session, the pack and the rules filtered by the\n"
+"activity of the session, the context pack along the chain with the rules of each level, the project and its present,\n"
+"and stale warnings, search in\n"
+"both languages, documents as attachments (links, files, texts, the converted text, an accented word, the removal) and their sources, the home of the company, the housekeeping (a customer\n"
+"created later, near-duplicates, stale rules, no activity twice), the review queue with the projects\n"
+"without a recent update, the confirmation,\n"
+"the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+"\n"
+"## Author\n"
+"\n"
+"Daniele Lucarelli\n"
+msgstr ""
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "%(concept)s does not exist: the record is %(real)s."
+msgstr "%(concept)s non esiste: il record è %(real)s."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "%s does not exist."
+msgstr "%s non esiste."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_optout_wizard.py:0
+msgid "%s is one of our companies, not a customer: nothing to opt out."
+msgstr ""
+"%s è una delle nostre aziende, non un cliente: non c'è nulla da escludere."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">Changed Documents</span>"
+msgstr "<span class=\"o_stat_text\">Documenti cambiati</span>"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">Draft Lessons</span>"
+msgstr "<span class=\"o_stat_text\">Lezioni in bozza</span>"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">Draft Rules</span>"
+msgstr "<span class=\"o_stat_text\">Regole in bozza</span>"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">Near-duplicate Lessons</span>"
+msgstr "<span class=\"o_stat_text\">Lezioni quasi doppie</span>"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">To Check</span>"
+msgstr "<span class=\"o_stat_text\">Da verificare</span>"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "<span class=\"o_stat_text\">Without a Recent Update</span>"
+msgstr "<span class=\"o_stat_text\">Senza un aggiornamento recente</span>"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "A %s is not read as a concept: read its pack."
+msgstr "Un %s non si legge come concetto: leggi il suo pacchetto."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_document
+msgid ""
+"A document of the memory: the agents find it in the context pack and in the "
+"search."
+msgstr ""
+"Un documento della memoria: gli agenti lo trovano nel pacchetto di contesto "
+"e nella ricerca."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__kind
+msgid ""
+"A finding is written by an agent from the work on a project; a lesson is "
+"curated by a lead."
+msgstr ""
+"Un rilievo lo scrive un agente dal lavoro su un progetto; una lezione la "
+"cura un lead."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "A finding needs finding and solution."
+msgstr "Un rilievo richiede problema e soluzione."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid "A member edits only their own drafts."
+msgstr "Un member modifica solo le proprie bozze."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+#: code:addons/texo_memory/models/memory_lesson.py:0
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A member writes drafts; a lead reviews them."
+msgstr "Un member scrive bozze; un lead le revisiona."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid ""
+"A new document has a title and either a link (url) or a file (data); an "
+"attachment already in Odoo is brought in with document_id."
+msgstr ""
+"Un documento nuovo ha un titolo e un link (url) oppure un file (data); un "
+"allegato già in Odoo si porta in memoria con document_id."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "A new lesson is a draft or active."
+msgstr "Una lezione nuova è una bozza o attiva."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A new rule is a draft or active."
+msgstr "Una regola nuova è una bozza o attiva."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A note becomes active, superseded or archived."
+msgstr "Una nota diventa attiva, superata o archiviata."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid ""
+"A note is a rule, a fact or a procedure. What happened on a task goes in a "
+"note on the task; a technical fact without the customer goes in a lesson; "
+"the state of a project goes in a project update."
+msgstr ""
+"Una nota è una regola, un fatto o una procedura. Ciò che è successo su un "
+"task va in una nota sul task; un fatto tecnico senza il cliente va in una "
+"lezione; lo stato di un progetto va in un aggiornamento del progetto."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A note needs a title."
+msgstr "Una nota ha bisogno di un titolo."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid "A record becomes active, superseded or archived."
+msgstr "Un record diventa attivo, superato o archiviato."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid ""
+"A record belongs to exactly one organisation, customer, project or task."
+msgstr ""
+"Un record appartiene esattamente a un'organizzazione, un cliente, un "
+"progetto o un task."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_optout_wizard__reason
+msgid "A reference to the request, no customer data."
+msgstr "Un riferimento alla richiesta, nessun dato del cliente."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid ""
+"A rule binds the organisation, a customer or a project, not a task: what "
+"concerns one task goes in a note on the task."
+msgstr ""
+"Una regola vincola l'organizzazione, un cliente o un progetto, non un task: "
+"ciò che riguarda un solo task va in una nota sul task."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A rule is not appended to: a lead supersedes it with a new one."
+msgstr "A una regola non si aggiunge testo: un lead la supera con una nuova."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+msgid ""
+"A sensitive document: the memory keeps no text of it. Open the original."
+msgstr ""
+"Documento sensibile: la memoria non ne conserva il testo. Apri l'originale."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "A superseded lesson needs the lesson that replaces it."
+msgstr "Una lezione superata richiede la lezione che la sostituisce."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "A superseded note needs the note that replaces it."
+msgstr "Una nota superata ha bisogno della nota che la sostituisce."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid "A superseded record needs the record that replaces it."
+msgstr "Un record superato richiede il record che lo sostituisce."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_needaction
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_needaction
+msgid "Action Needed"
+msgstr "Azione richiesta"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_list
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_list
+msgid "Activate"
+msgstr "Attiva"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__active
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__active
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__state__active
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__state__active
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__state__active
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Active"
+msgstr "Attiva"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid ""
+"Active rules, facts and procedures expired, not verified for six months, or "
+"whose source document changed"
+msgstr ""
+"Regole, fatti e procedure attivi scaduti, non verificati da sei mesi, o con "
+"il documento di origine cambiato"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__stale
+msgid ""
+"Active, and expired, not verified for 180 days, or its source document "
+"changed."
+msgstr ""
+"Attivo, e scaduto, non verificato da 180 giorni, o con il documento di "
+"origine cambiato."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_ids
+msgid "Activities"
+msgstr "Attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_exception_decoration
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Decorazione eccezione attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_plans_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_plans_ids
+msgid "Activity Plans"
+msgstr "Piani di attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_state
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_state
+msgid "Activity State"
+msgstr "Stato attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_type_icon
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Icona tipo di attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__expires
+msgid "After this day the lesson no longer holds on its own."
+msgstr "Dopo questo giorno la lezione non vale più da sola."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__expires
+msgid "After this day the record no longer holds on its own."
+msgstr "Dopo questo giorno la regola non vale più da sola."
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__origin__agent
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__origin__agent
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__origin__agent
+msgid "Agent"
+msgstr "Agente"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__all
+msgid "All the Memory"
+msgstr "Tutta la memoria"
+
+#. module: texo_memory
+#: model:ir.model.constraint,message:texo_memory.constraint_memory_review_area_unique_code
+msgid "An area with this code already exists."
+msgstr "Esiste già un'area con questo codice."
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_analysis
+msgid "Analysis"
+msgstr "Analisi"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__applies_to
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__applies_to
+msgid "Applies To"
+msgstr "Si applica a"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__lesson_activity_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__rule_activity_ids
+msgid "Applies to"
+msgstr "Si applica a"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_list
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_list
+msgid "Archive"
+msgstr "Archivia"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__state__archived
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__state__archived
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__state__archived
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_activity_search
+msgid "Archived"
+msgstr "Archiviata"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "Archived by the housekeeping: the text names a customer."
+msgstr "Archiviata dalla manutenzione: il testo nomina un cliente."
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_ir_attachment
+msgid "Attachment"
+msgstr "Allegato"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Attachment %s does not exist or is not visible to you."
+msgstr "L'allegato %s non esiste o non è visibile per te."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Attachment %s has no file: it is a link."
+msgstr "L'allegato %s non ha un file: è un collegamento."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Attachment %s is a file, not a link."
+msgstr "L'allegato %s è un file, non un link."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Attachment %s is larger than %s MB."
+msgstr "L'allegato %s supera i %s MB."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Attachment %s is not a document of a record."
+msgstr "L'allegato %s non è un documento di un record."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_attachment_count
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_attachment_count
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__attachment_count
+msgid "Attachment Count"
+msgstr "Numero di allegati"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_list
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid "Belongs To"
+msgstr "Appartiene a"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__body
+msgid "Body"
+msgstr "Testo"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_optout_wizard_form
+msgid "Cancel"
+msgstr "Annulla"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid "Changed"
+msgstr "Cambiati"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__changed_documents
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__changed_documents
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_area_kanban
+msgid "Changed Documents"
+msgstr "Documenti cambiati"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_changed_on
+msgid "Changed On"
+msgstr "Cambiato il"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__code
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__code
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__code
+#: model:memory.note.activity,name:texo_memory.activity_code
+msgid "Code"
+msgstr "Codice"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_res_company
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__company_id
+msgid "Company"
+msgstr "Azienda"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid "Company %s does not exist or is not yours."
+msgstr "L'azienda %s non esiste o non è tua."
+
+#. module: texo_memory
+#: model:memory.section,name:texo_memory.section_compliance
+msgid "Compliance"
+msgstr "Conformità"
+
+#. module: texo_memory
+#: model:ir.ui.menu,name:texo_memory.menu_memory_config
+msgid "Configuration"
+msgstr "Configurazione"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__confirm_name
+msgid "Confirm Name"
+msgstr "Conferma il nome"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_res_partner
+msgid "Contact"
+msgstr "Contatto"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_text_ids
+msgid "Converted Text"
+msgstr "Testo convertito"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_text_of_id
+msgid "Converted Text Of"
+msgstr "Testo convertito di"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__create_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__create_uid
+msgid "Created by"
+msgstr "Creato da"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_created
+msgid "Created by the Memory"
+msgstr "Creato dalla memoria"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__create_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__create_date
+msgid "Created on"
+msgstr "Creato il"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__partner_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__partner_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__partner_id
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Customer"
+msgstr "Cliente"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__customer_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__customer_id
+msgid "Customer Company"
+msgstr "Azienda cliente"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_optout_wizard
+#: model:ir.ui.menu,name:texo_memory.menu_memory_optout_wizard
+msgid "Customer Opt-out"
+msgstr "Opt-out del cliente"
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_communication
+msgid "Customer communication"
+msgstr "Comunicazione al cliente"
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_data
+msgid "Customer data"
+msgstr "Dati del cliente"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_optout_wizard_form
+msgid "Delete the memory of this customer"
+msgstr "Cancella la memoria di questo cliente"
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_deploy
+msgid "Deploy and environments"
+msgstr "Deploy e ambienti"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__description
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__description
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__description
+msgid "Description"
+msgstr "Descrizione"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_mail_message__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_project_task__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_res_company__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_res_partner__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_texo_memory_links__display_name
+msgid "Display Name"
+msgstr "Nome visualizzato"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_search.py:0
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__attachment_id
+msgid "Document"
+msgstr "Documento"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Document %s does not exist or is not visible to you."
+msgstr "Il documento %s non esiste o non è visibile per te."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__document_count
+msgid "Document Count"
+msgstr "Numero di documenti"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_document
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__documents
+#: model:ir.ui.menu,name:texo_memory.menu_memory_document
+msgid "Documents"
+msgstr "Documenti"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_links.py:0
+msgid "Documents of %s"
+msgstr "Documenti di %s"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Documents whose original changed after it was read"
+msgstr "Documenti il cui originale è cambiato dopo la lettura"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__state__draft
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__state__draft
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__state__draft
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Draft"
+msgstr "Bozza"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__draft_lessons
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__draft_lessons
+msgid "Draft Lessons"
+msgstr "Lezioni in bozza"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__draft_rules
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__draft_rules
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_area_kanban
+msgid "Draft Rules"
+msgstr "Regole in bozza"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__duplicate_lessons
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__duplicate_lessons
+msgid "Duplicate Lessons"
+msgstr "Lezioni doppie"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_search.py:0
+msgid "Episode"
+msgstr "Episodio"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__tasks
+msgid "Episodes (Tasks)"
+msgstr "Episodi (task)"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_search__scope
+msgid ""
+"Episodes are the tasks with their chatter: what happened, not what holds."
+msgstr ""
+"Gli episodi sono i task con il loro chatter: ciò che è successo, non ciò che"
+" vale."
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search_line__match__all
+msgid "Every Word"
+msgstr "Tutte le parole"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+msgid "Every activity"
+msgstr "Ogni attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_review_area__pending
+msgid "Everything waiting in the queues of the area."
+msgstr "Tutto ciò che attende nelle code dell'area."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__snippet
+msgid "Excerpt"
+msgstr "Estratto"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Expired"
+msgstr "Scaduti"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Expired or not verified for %s days: confirm, supersede or archive it."
+msgstr ""
+"Scaduta o non verificata da %s giorni: confermala, superala o archiviala."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Expired, not verified for six months, or its source document changed"
+msgstr ""
+"Scaduti, non verificati da sei mesi, o con il documento di origine cambiato"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__expires
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__expires
+msgid "Expires"
+msgstr "Scade il"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Expiring in 30 Days"
+msgstr "In scadenza entro 30 giorni"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__kind__fact
+msgid "Fact"
+msgstr "Fatto"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__fact_count
+msgid "Fact Count"
+msgstr "Numero di fatti"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_fact
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__facts
+#: model:ir.ui.menu,name:texo_memory.menu_memory_fact
+msgid "Facts"
+msgstr "Fatti"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_project_task__texo_note_ids
+msgid "Facts and Procedures of the Task"
+msgstr "Fatti e procedure del task"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__finding
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__kind__finding
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_form
+msgid "Finding"
+msgstr "Problema"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_fingerprint
+msgid "Fingerprint"
+msgstr "Impronta"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_follower_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_follower_ids
+msgid "Followers"
+msgstr "Follower"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_partner_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Follower (partner)"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__match
+msgid "Found By"
+msgstr "Trovato per"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "Give a rule, a fact, a procedure or a lesson, or a concept id."
+msgstr ""
+"Indica una regola, un fatto, una procedura o una lezione, o l'id di un "
+"concetto."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__group_id
+msgid "Group"
+msgstr "Gruppo"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__has_message
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__has_message
+msgid "Has Message"
+msgstr "Ha messaggi"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__verified
+msgid "How and when it was checked."
+msgstr "Come e quando è stata verificata."
+
+#. module: texo_memory
+#: model:memory.section,description:texo_memory.section_operations
+msgid ""
+"How it works: processes, tools, channels, hours, how a piece of work goes "
+"from request to delivery."
+msgstr ""
+"Come lavora: processi, strumenti, canali, orari, come un lavoro va dalla "
+"richiesta alla consegna."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__merged_count
+msgid "How many findings this one gathers."
+msgstr "Quanti finding raccoglie questa lezione."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__id
+#: model:ir.model.fields,field_description:texo_memory.field_mail_message__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__id
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__id
+#: model:ir.model.fields,field_description:texo_memory.field_project_task__id
+#: model:ir.model.fields,field_description:texo_memory.field_res_company__id
+#: model:ir.model.fields,field_description:texo_memory.field_res_partner__id
+#: model:ir.model.fields,field_description:texo_memory.field_texo_memory_links__id
+msgid "ID"
+msgstr "ID"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_exception_icon
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_exception_icon
+msgid "Icon"
+msgstr "Icona"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__activity_exception_icon
+#: model:ir.model.fields,help:texo_memory.field_memory_note__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icona per segnalare un'attività in eccezione."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__message_needaction
+#: model:ir.model.fields,help:texo_memory.field_memory_note__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Se selezionato, nuovi messaggi richiedono attenzione."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__message_has_error
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__message_has_sms_error
+#: model:ir.model.fields,help:texo_memory.field_memory_note__message_has_error
+#: model:ir.model.fields,help:texo_memory.field_memory_note__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Se selezionato, alcuni messaggi hanno un errore di consegna."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_document
+msgid "In the Memory"
+msgstr "In memoria"
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_deploy
+msgid ""
+"Instances, databases, servers and releases: local, stage and production."
+msgstr "Istanze, database, server e rilasci: locale, stage e produzione."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_is_follower
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_is_follower
+msgid "Is Follower"
+msgstr "È follower"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_keep_text
+msgid "Keep the Converted Text"
+msgstr "Conserva il testo convertito"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_keywords
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__keywords
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__keywords
+msgid "Keywords"
+msgstr "Parole chiave"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__kind
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__kind
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__kind
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Kind"
+msgstr "Tipo"
+
+#. module: texo_memory
+#: model:ir.ui.menu,name:texo_memory.menu_memory_knowledge
+#: model:memory.review.area,name:texo_memory.review_area_knowledge
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Knowledge"
+msgstr "Conoscenza"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__write_uid
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__write_uid
+msgid "Last Updated by"
+msgstr "Ultimo aggiornamento di"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__write_date
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__write_date
+msgid "Last Updated on"
+msgstr "Ultimo aggiornamento il"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__verified
+msgid ""
+"Last day the content was checked (for a rule, confirmed by a lead); after "
+"180 days it is to re-check."
+msgstr ""
+"Ultimo giorno in cui il contenuto è stato verificato (per una regola, "
+"confermato da un lead); dopo 180 giorni va verificato di nuovo."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_search.py:0
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__kind__lesson
+msgid "Lesson"
+msgstr "Lezione"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid ""
+"Lesson %(first)s says almost the same (%(ratio)s%%): merge or supersede one."
+msgstr ""
+"La lezione %(first)s dice quasi la stessa cosa (%(ratio)s%%): unisci o "
+"supera una delle due."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "Lesson %(id)s does not exist or is not visible to you."
+msgstr "La lezione %(id)s non esiste o non è visibile per te."
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_lesson
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__texo_lesson_count
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__lessons
+#: model:ir.ui.menu,name:texo_memory.menu_memory_lesson
+#: model:memory.review.area,name:texo_memory.review_area_lessons
+#: model_terms:ir.ui.view,arch_db:texo_memory.edit_project_texo_memory
+msgid "Lessons"
+msgstr "Lezioni"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_links.py:0
+msgid "Lessons for %s"
+msgstr "Lezioni per %s"
+
+#. module: texo_memory
+#: model:memory.review.area,description:texo_memory.review_area_lessons
+msgid ""
+"Lessons proposed by the agents and lessons that say nearly the same thing"
+msgstr ""
+"Lezioni proposte dagli agenti e lezioni che dicono quasi la stessa cosa"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Lessons proposed by the agents: activate or archive them"
+msgstr "Lezioni proposte dagli agenti: attivale o archiviale"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Lessons that say nearly the same thing: merge them into one"
+msgstr "Lezioni che dicono quasi la stessa cosa: uniscile in una"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.edit_project_texo_memory
+msgid "Lessons that share a tag with the project"
+msgstr "Lezioni che hanno un tag in comune con il progetto"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__main_count
+msgid "Main Count"
+msgstr "Conteggio principale"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__main_queue
+msgid "Main Queue"
+msgstr "Coda principale"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__main_title
+msgid "Main Title"
+msgstr "Titolo principale"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__activity_type_icon
+#: model:ir.model.fields,help:texo_memory.field_memory_note__activity_type_icon
+msgid "Material Symbols icon e.g. checklist"
+msgstr "Icona Material Symbols, es. checklist"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__mode__semantic
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search_line__match__semantic
+msgid "Meaning"
+msgstr "Significato"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__texo_note_count
+#: model:ir.model.fields,field_description:texo_memory.field_project_task__texo_note_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_company__texo_note_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_partner__texo_note_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_users__texo_note_count
+#: model:ir.model.fields,field_description:texo_memory.field_texo_memory_links__texo_note_count
+#: model:ir.ui.menu,name:texo_memory.menu_memory_root
+#: model_terms:ir.ui.view,arch_db:texo_memory.edit_project_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_company_form_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_partner_form_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_task_form_texo_memory
+msgid "Memory"
+msgstr "Memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_anchor_mixin
+msgid "Memory Anchor Mixin"
+msgstr "Mixin di aggancio della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_document_passage
+msgid "Memory Document Passage"
+msgstr "Passaggio di un documento della memoria"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__texo_document_count
+#: model:ir.model.fields,field_description:texo_memory.field_project_task__texo_document_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_company__texo_document_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_partner__texo_document_count
+#: model:ir.model.fields,field_description:texo_memory.field_res_users__texo_document_count
+#: model:ir.model.fields,field_description:texo_memory.field_texo_memory_links__texo_document_count
+#: model_terms:ir.ui.view,arch_db:texo_memory.edit_project_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_company_form_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_partner_form_texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_task_form_texo_memory
+msgid "Memory Documents"
+msgstr "Documenti della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_lesson
+msgid "Memory Lesson"
+msgstr "Lezione della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_note
+msgid "Memory Note"
+msgstr "Nota della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_optout_name
+msgid "Memory Opt-out Name"
+msgstr "Nome in opt-out della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_optout_wizard
+msgid "Memory Opt-out Wizard"
+msgstr "Procedura di opt-out della memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_section
+msgid "Memory Section"
+msgstr "Sezione della memoria"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_links.py:0
+msgid "Memory of %s"
+msgstr "Memoria di %s"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_optout_wizard.py:0
+msgid ""
+"Memory opt-out done. Deleted: %(notes)s notes, %(facts)s facts, "
+"%(documents)s documents, %(attachments)s files. Lessons kept. sha256 "
+"%(digest)s"
+msgstr ""
+"Opt-out della memoria eseguito. Cancellati: %(notes)s note, %(facts)s fatti,"
+" %(documents)s documenti, %(attachments)s file. Lezioni mantenute. sha256 "
+"%(digest)s"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_review_area
+msgid "Memory: Area of the Review"
+msgstr "Memoria: area della revisione"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_review
+msgid "Memory: To Review"
+msgstr "Memoria: da rivedere"
+
+#. module: texo_memory
+#: model:ir.actions.server,name:texo_memory.ir_cron_memory_housekeeping_ir_actions_server
+msgid "Memory: weekly housekeeping"
+msgstr "Memoria: manutenzione settimanale"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__merged_count
+msgid "Merged Count"
+msgstr "Finding uniti"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_mail_message
+msgid "Message"
+msgstr "Messaggio"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_has_error
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_has_error
+msgid "Message Delivery error"
+msgstr "Errore di consegna del messaggio"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_ids
+msgid "Messages"
+msgstr "Messaggi"
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_migration
+msgid "Migration"
+msgstr "Migrazione"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Mine"
+msgstr "Miei"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__mode
+msgid "Mode"
+msgstr "Modo"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Modified"
+msgstr "Modificati"
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_migration
+msgid "Moving an instance or a module to another version of Odoo."
+msgstr "Portare un'istanza o un modulo a un'altra versione di Odoo."
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__severity__must
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Must"
+msgstr "Obbligo"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__my_activity_date_deadline
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Scadenza della mia attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__name
+msgid "Name"
+msgstr "Nome"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_area_kanban
+msgid "Near-duplicate Lessons"
+msgstr "Lezioni quasi doppie"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__severity__never
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Never"
+msgstr "Divieto"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_date_deadline
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Scadenza prossima attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_summary
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_summary
+msgid "Next Activity Summary"
+msgstr "Riepilogo prossima attività"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_type_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_type_id
+msgid "Next Activity Type"
+msgstr "Tipo prossima attività"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+msgid ""
+"No converted text yet: the agent converts the original when it reads it."
+msgstr ""
+"Ancora nessun testo convertito: l'agente converte l'originale quando lo "
+"legge."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid ""
+"Note %(id)s changed since it was read (version %(version)s): read it again "
+"before replacing its text."
+msgstr ""
+"La nota %(id)s è cambiata dopo la lettura (versione %(version)s): rileggila "
+"prima di sostituirne il testo."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
+msgid "Note %(id)s does not exist or is not visible to you."
+msgstr "La nota %(id)s non esiste o non è visibile per te."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__note_count
+msgid "Note Count"
+msgstr "Numero di note"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Nothing found. Try other words, a synonym, or another scope."
+msgstr "Nessun risultato. Prova altre parole, un sinonimo o un altro ambito."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Nothing to change in note %s."
+msgstr "Nulla da cambiare nella nota %s."
+
+#. module: texo_memory
+#: model_terms:ir.actions.act_window,help:texo_memory.action_memory_review_area
+msgid "Nothing to review"
+msgstr "Niente da rivedere"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_needaction_counter
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Numero di azioni"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_has_error_counter
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_has_error_counter
+msgid "Number of errors"
+msgstr "Numero di errori"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__message_needaction_counter
+#: model:ir.model.fields,help:texo_memory.field_memory_note__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Numero di messaggi che richiedono un'azione"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__message_has_error_counter
+#: model:ir.model.fields,help:texo_memory.field_memory_note__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Numero di messaggi con errore di consegna"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Of a Customer"
+msgstr "Di un cliente"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Of a Project"
+msgstr "Di un progetto"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Of a Task"
+msgstr "Di un task"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__severity
+msgid ""
+"Of a rule. Never: a prohibition. Must: an obligation. Prefer: what the agent"
+" does unless the person decides otherwise."
+msgstr ""
+"Divieto: ciò che l'agente non fa mai. Obbligo: ciò che fa sempre. "
+"Preferenza: ciò che fa salvo diversa decisione della persona."
+
+#. module: texo_memory
+#: model:memory.section,name:texo_memory.section_offer
+msgid "Offer"
+msgstr "Offerta"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_document_passage__start
+msgid "Offset of the passage in the converted text: read it from there."
+msgstr "Posizione del passaggio nel testo convertito: leggilo da lì."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_document_passage__stop
+msgid "Offset past the end of the passage in the converted text."
+msgstr "Posizione dopo la fine del passaggio nel testo convertito."
+
+#. module: texo_memory
+#: model:ir.model.constraint,message:texo_memory.constraint_memory_document_passage_unique_sequence
+msgid "One passage per place in a document."
+msgstr "Un passaggio per ogni posizione in un documento."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_optout_wizard.py:0
+msgid "Only a Texo administrator runs an opt-out."
+msgstr "Solo un amministratore del Texo esegue un opt-out."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_anchor_mixin.py:0
+msgid "Only a Texo lead can activate, supersede or archive this record."
+msgstr ""
+"Solo un lead del Texo può attivare, superare o archiviare questo record."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "Only a Texo lead can change the state of a lesson."
+msgstr "Solo un lead del Texo può cambiare lo stato di una lezione."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Only a Texo lead takes a document out of the memory."
+msgstr "Solo un lead del Texo toglie un documento dalla memoria."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Only an active rule is confirmed; activate it first."
+msgstr "Si conferma solo una regola attiva: prima attivala."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Only the author of a note or a lead supersedes or archives it."
+msgstr "Solo l'autore di una nota o un lead la supera o la archivia."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_review_area__group_id
+msgid "Only this group sees the area."
+msgstr "Solo questo gruppo vede l'area."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Open"
+msgstr "Apri"
+
+#. module: texo_memory
+#: model:memory.section,name:texo_memory.section_operations
+msgid "Operations"
+msgstr "Operatività"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_optout_name
+#: model:ir.ui.menu,name:texo_memory.menu_memory_optout_name
+msgid "Opt-out Names"
+msgstr "Nomi in opt-out"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__company_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__company_id
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Organisation"
+msgstr "Organizzazione"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__origin
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__origin
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__origin
+msgid "Origin"
+msgstr "Origine"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__path
+msgid "Passage"
+msgstr "Passaggio"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__path
+msgid "Path"
+msgstr "Percorso"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__pending
+msgid "Pending"
+msgstr "In attesa"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__origin__person
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__origin__person
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__origin__person
+msgid "Person"
+msgstr "Persona"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "Possible duplicate lesson"
+msgstr "Possibile lezione duplicata"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__severity__prefer
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Prefer"
+msgstr "Preferenza"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__preview
+msgid "Preview"
+msgstr "Anteprima"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__kind__procedure
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__kind__procedure
+msgid "Procedure"
+msgstr "Procedura"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_procedure
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__procedures
+#: model:ir.ui.menu,name:texo_memory.menu_memory_procedure
+msgid "Procedures"
+msgstr "Procedure"
+
+#. module: texo_memory
+#: model:memory.section,name:texo_memory.section_profile
+msgid "Profile"
+msgstr "Profilo"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_project_project
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__project_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__project_id
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Project"
+msgstr "Progetto"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__project_count
+msgid "Project Count"
+msgstr "Numero di progetti"
+
+#. module: texo_memory
+#: model:ir.module.module,summary:base.module_texo_memory
+msgid ""
+"Project memory for agents: contexts, decisions, events and client-free "
+"lessons, behind the Texo token"
+msgstr ""
+"Memoria di progetto per gli agenti: contesti, decisioni, eventi e lezioni "
+"senza cliente, dietro il token del Texo"
+
+#. module: texo_memory
+#: model:memory.review.area,name:texo_memory.review_area_projects
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Projects"
+msgstr "Progetti"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__projects_without_now
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__projects_without_now
+msgid "Projects Without Now"
+msgstr "Progetti senza presente"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "Projects Without a Recent Update"
+msgstr "Progetti senza un aggiornamento recente"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_optout_wizard_form
+msgid "Projects of the customer (kept)"
+msgstr "Progetti del cliente (conservati)"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid ""
+"Projects with open tasks whose last update is missing or old: write an "
+"update"
+msgstr ""
+"Progetti con task aperti senza aggiornamento o con l'ultimo vecchio: scrivi "
+"un aggiornamento"
+
+#. module: texo_memory
+#: model:memory.review.area,description:texo_memory.review_area_projects
+msgid "Projects with open work and no recent update"
+msgstr "Progetti con lavoro aperto e senza un aggiornamento recente"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Proposed by %s."
+msgstr "Proposta da %s."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "Proposed rules: a lead activates or refuses them"
+msgstr "Regole proposte: un lead le attiva o le rifiuta"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__query
+msgid "Question"
+msgstr "Domanda"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__rating_ids
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__rating_ids
+msgid "Ratings"
+msgstr "Valutazioni"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Re-check the rule"
+msgstr "Ricontrolla la regola"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_read_on
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid "Read On"
+msgstr "Letto il"
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_data
+msgid ""
+"Reading, copying, importing or converting the data and documents of a "
+"customer."
+msgstr ""
+"Leggere, copiare, importare o convertire i dati e i documenti di un cliente."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__reason
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__reason
+msgid "Reason"
+msgstr "Motivo"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid "Record Type"
+msgstr "Tipo di record"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__task_id
+msgid "Request Task"
+msgstr "Task della richiesta"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__res_id
+msgid "Res"
+msgstr ""
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__res_model
+msgid "Res Model"
+msgstr ""
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__activity_user_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_user_id
+msgid "Responsible User"
+msgstr "Utente responsabile"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__line_ids
+msgid "Results"
+msgstr "Risultati"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "Review the rule"
+msgstr "Revisiona la regola"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__kind__rule
+msgid "Rule"
+msgstr "Regola"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_note_activity
+#: model:ir.ui.menu,name:texo_memory.menu_memory_note_activity
+msgid "Rule Activities"
+msgstr "Attività delle regole"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_note_activity
+msgid "Rule Activity"
+msgstr "Attività della regola"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_note
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__scope__rules
+#: model:ir.ui.menu,name:texo_memory.menu_memory_note
+msgid "Rules"
+msgstr "Regole"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_partner_form_texo_memory
+msgid "Rules, facts and procedures of the customer"
+msgstr "Regole, fatti e procedure del cliente"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_company_form_texo_memory
+msgid "Rules, facts and procedures of the organisation"
+msgstr "Regole, fatti e procedure dell'organizzazione"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.edit_project_texo_memory
+msgid "Rules, facts and procedures of the project"
+msgstr "Regole, fatti e procedure del progetto"
+
+#. module: texo_memory
+#: model:memory.review.area,description:texo_memory.review_area_knowledge
+msgid "Rules, facts and procedures to check, draft rules, changed documents"
+msgstr ""
+"Regole, fatti e procedure da verificare, regole in bozza, documenti cambiati"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_has_sms_error
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "Errore di consegna SMS"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__scope
+msgid "Scope"
+msgstr "Ambito"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__search_id
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Search"
+msgstr "Cerca"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_search.py:0
+#: model:ir.actions.act_window,name:texo_memory.action_memory_search
+#: model:ir.model,name:texo_memory.model_memory_search
+#: model:ir.ui.menu,name:texo_memory.menu_memory_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Search the Memory"
+msgstr "Cerca nella memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_search_line
+msgid "Search the Memory: Result"
+msgstr "Cerca nella memoria: risultato"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__searched
+msgid "Searched"
+msgstr "Cercato"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__section_id
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Section"
+msgstr "Sezione"
+
+#. module: texo_memory
+#: model:ir.actions.act_window,name:texo_memory.action_memory_section
+#: model:ir.ui.menu,name:texo_memory.menu_memory_section
+msgid "Sections"
+msgstr "Sezioni"
+
+#. module: texo_memory
+#: model:memory.section,name:texo_memory.section_sector
+msgid "Sector"
+msgstr "Settore"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid "Sensitive"
+msgstr "Sensibili"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__sequence
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__sequence
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__sequence
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__sequence
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__sequence
+msgid "Sequence"
+msgstr "Sequenza"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__severity
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Severity"
+msgstr "Gravità"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__solution
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_form
+msgid "Solution"
+msgstr "Soluzione"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search_line__match__some
+msgid "Some Words"
+msgstr "Alcune parole"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__source_checked
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__source_checked
+msgid "Source Checked"
+msgstr "Fonte verificata il"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__document_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__document_id
+msgid "Source Document"
+msgstr "Documento fonte"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__source_ref
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__source_ref
+msgid "Source Ref"
+msgstr "Riferimento di origine"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review__stale_notes
+#: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__stale_notes
+msgid "Stale Notes"
+msgstr "Note da verificare"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__start
+msgid "Start"
+msgstr "Inizio"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__state
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__state
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__state
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__state
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "State"
+msgstr "Stato"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__activity_state
+#: model:ir.model.fields,help:texo_memory.field_memory_note__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Stato basato sulle attività\n"
+"In ritardo: la scadenza è già passata\n"
+"Oggi: l'attività scade oggi\n"
+"Pianificate: attività future."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__stop
+msgid "Stop"
+msgstr "Fine"
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_analysis
+msgid ""
+"Studying requirements, processes or an instance before deciding what to do."
+msgstr ""
+"Studiare requisiti, processi o un'istanza prima di decidere cosa fare."
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__state__superseded
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_lesson__state__superseded
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__state__superseded
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Superseded"
+msgstr "Superata"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__superseded_by_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__superseded_by_id
+msgid "Superseded By"
+msgstr "Superata da"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__supersedes_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__supersedes_id
+msgid "Supersedes"
+msgstr "Supera"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_keep_text
+msgid ""
+"Switch it off for a sensitive document: the memory keeps no text of it."
+msgstr ""
+"Disattivalo per un documento sensibile: la memoria non ne conserva il testo."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_keywords
+msgid ""
+"Synonyms, translations and other names of what the document is about, comma "
+"separated: the search finds it by these words too."
+msgstr ""
+"Sinonimi, traduzioni e altri nomi di ciò di cui parla il documento, separati"
+" da virgola: la ricerca lo trova anche con queste parole."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__keywords
+msgid ""
+"Synonyms, translations and other names of what the lesson is about, comma "
+"separated: the search finds it by these words too."
+msgstr ""
+"Sinonimi, traduzioni e altri nomi di ciò di cui parla la lezione, separati "
+"da virgola: la ricerca la trova anche con queste parole."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__keywords
+msgid ""
+"Synonyms, translations and other names of what the record is about, comma "
+"separated: the search finds it by these words too."
+msgstr ""
+"Sinonimi, traduzioni e altri nomi di ciò di cui parla il record, separati da"
+" virgola: la ricerca lo trova anche con queste parole."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+msgid "Tag"
+msgstr "Etichetta"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__tag_ids
+msgid "Tags"
+msgstr "Etichette"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_project_task
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__task_id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__task_id
+msgid "Task"
+msgstr "Lavoro"
+
+#. module: texo_memory
+#: model:ir.module.module,shortdesc:base.module_texo_memory
+msgid "Texo - Memory"
+msgstr "Texo - Memoria"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_texo_memory_links
+msgid "Texo: Memory of a Record"
+msgstr "Texo: memoria di un record"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__texo_text
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__text
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+msgid "Text"
+msgstr "Testo"
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_communication
+msgid ""
+"Texts that reach a customer: proposals, diagnoses, messages, documentation."
+msgstr ""
+"Testi che arrivano a un cliente: proposte, diagnosi, messaggi, "
+"documentazione."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__generated_by
+#: model:ir.model.fields,help:texo_memory.field_memory_note__generated_by
+msgid ""
+"The agent that wrote the content for the person, as <producer>/<version> "
+"(e.g. claude-code/2.1); empty, the tool of the hub it called."
+msgstr ""
+"L'agente che ha scritto il contenuto per la persona, come "
+"<produttore>/<versione> (es. claude-code/2.1); vuoto, lo strumento del hub "
+"che ha chiamato."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__generated_by
+msgid ""
+"The agent that wrote the finding, as <producer>/<version>; empty, the tool "
+"of the hub it called."
+msgstr ""
+"L'agente che ha scritto il problema, come <produttore>/<versione>; vuoto, lo"
+" strumento del hub che ha chiamato."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_section.py:0
+msgid ""
+"The code of a section is one lowercase word (letters, digits, underscore): "
+"%s."
+msgstr ""
+"Il codice di una sezione è una parola minuscola (lettere, cifre, trattino "
+"basso): %s."
+
+#. module: texo_memory
+#: model:ir.model.constraint,message:texo_memory.constraint_memory_section_code_unique
+msgid "The code of a section must be unique."
+msgstr "Il codice di una sezione deve essere unico."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note_activity.py:0
+msgid ""
+"The code of an activity is one lowercase word (letters, digits, underscore):"
+" %s."
+msgstr ""
+"Il codice di un'attività è una parola minuscola (lettere, cifre, trattino "
+"basso): %s."
+
+#. module: texo_memory
+#: model:ir.model.constraint,message:texo_memory.constraint_memory_note_activity_code_unique
+msgid "The code of an activity must be unique."
+msgstr "Il codice di un'attività deve essere unico."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__company_id
+msgid ""
+"The company the lesson belongs to; empty, it is shared by every company."
+msgstr ""
+"L'azienda a cui appartiene la lezione; vuoto, è condivisa da tutte le "
+"aziende."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "The converted text is larger than %s MB."
+msgstr "Il testo convertito supera %s MB."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_text
+msgid ""
+"The converted text of the document, to read it here without downloading it; "
+"empty for a sensitive document, whose text the memory does not keep."
+msgstr ""
+"Il testo convertito del documento, per leggerlo qui senza scaricarlo; vuoto "
+"per un documento sensibile, di cui la memoria non conserva il testo."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__customer_id
+#: model:ir.model.fields,help:texo_memory.field_memory_note__customer_id
+msgid ""
+"The customer the record belongs to, whatever its anchor; used by the opt-"
+"out."
+msgstr ""
+"Il cliente a cui appartiene la nota, qualunque sia il suo aggancio; usato "
+"dall'opt-out."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__document_id
+#: model:ir.model.fields,help:texo_memory.field_memory_note__document_id
+msgid "The document of the memory the record was taken from."
+msgstr "Il documento della memoria da cui è tratta la regola."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "The file is larger than %s MB."
+msgstr "Il file supera i %s MB."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_optout_wizard__task_id
+msgid ""
+"The internal task that tracks the opt-out request; the certificate is posted"
+" there."
+msgstr ""
+"Il task interno che traccia la richiesta di opt-out; il certificato viene "
+"pubblicato lì."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "The lesson cannot be shared: %s."
+msgstr "La lezione non può essere condivisa: %s."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "The link of a document is a web address (http or https)."
+msgstr "Il link di un documento è un indirizzo web (http o https)."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_created
+msgid ""
+"The memory brought this attachment in (a link, a file it received, a "
+"converted text): an opt-out of the customer deletes it."
+msgstr ""
+"La memoria ha portato questo allegato (un link, un file ricevuto, un testo "
+"convertito): l'opt-out del cliente lo cancella."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__company_id
+#: model:ir.model.fields,help:texo_memory.field_memory_note__company_id
+msgid "The organisation itself: what belongs to it and to no customer."
+msgstr "L'organizzazione stessa: ciò che appartiene a lei e a nessun cliente."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
+msgid ""
+"The original changed after it was read: the notes taken from it are to check"
+msgstr ""
+"L'originale è cambiato dopo la lettura: le note che ne derivano sono da "
+"verificare"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_text_of_id
+msgid "The original this attachment is the converted text of."
+msgstr "L'originale di cui questo allegato è il testo convertito."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__section_id
+msgid ""
+"The part of what the memory knows of the record: profile, operations, "
+"compliance..."
+msgstr ""
+"La parte di ciò che la memoria sa del record: profilo, operatività, "
+"conformità..."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_review_area__main_queue
+msgid "The queue of memory.review opened by the big button."
+msgstr "La coda di memory.review aperta dal pulsante grande."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "The record does not exist or is not visible to you."
+msgstr "Il record non esiste o non è visibile per te."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_optout_name__reason
+msgid ""
+"The request that caused the opt-out, as a reference (no customer data)."
+msgstr ""
+"La richiesta che ha causato l'opt-out, come riferimento (nessun dato del "
+"cliente)."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__solution
+msgid "The reusable fix or pattern."
+msgstr "La correzione o il pattern riusabile."
+
+#. module: texo_memory
+#: model:memory.section,description:texo_memory.section_sector
+msgid ""
+"The sector it works in: its entities, its words and how they map onto Odoo."
+msgstr ""
+"Il settore in cui lavora: i suoi soggetti, le sue parole e come "
+"corrispondono a Odoo."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "The severity of a rule is never, must or prefer."
+msgstr "La gravità di una regola è never, must o prefer."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "The shared finding cannot be stored: %s. Rewrite it and try again."
+msgstr ""
+"Il finding condiviso non può essere salvato: %s. Riscrivilo e riprova."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "The summary is longer than %s characters."
+msgstr "La sintesi è più lunga di %s caratteri."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_lesson.py:0
+msgid "The tag %(tag)s cannot be stored: %(reason)s."
+msgstr "L'etichetta %(tag)s non si può salvare: %(reason)s."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__finding
+msgid "The technical problem: version, models, fields, symptom."
+msgstr "Il problema tecnico: versione, modelli, campi, sintomo."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note.py:0
+msgid "The text is empty or longer than %s characters."
+msgstr "Il testo è vuoto o più lungo di %s caratteri."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_document_passage__title
+msgid ""
+"The title of the document, the context of the passage in its vector and its "
+"index."
+msgstr ""
+"Il titolo del documento, il contesto del passaggio nel suo vettore e nel suo"
+" indice."
+
+#. module: texo_memory
+#: model_terms:ir.actions.act_window,help:texo_memory.action_memory_review_area
+msgid ""
+"The weekly review of the memory: each card is an area, its button opens what"
+" waits in it."
+msgstr ""
+"La revisione settimanale della memoria: ogni scheda è un'area, il suo "
+"pulsante apre ciò che vi attende."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid ""
+"The weekly review of the memory: each queue opens the records waiting in it. Confirm,\n"
+"                            correct, supersede or archive them; what binds is decided by a lead."
+msgstr ""
+"La revisione settimanale della memoria: ogni coda apre i record che vi "
+"attendono. Confermali, correggili, superali o archiviali; ciò che vincola lo"
+" decide un lead."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note_activity__code
+msgid "The word an agent passes for the activity of its session, e.g. code."
+msgstr ""
+"La parola che un agente passa per l'attività della sua sessione, per esempio"
+" code."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_section__code
+msgid "The word an agent passes for the section, e.g. compliance."
+msgstr "La parola che un agente passa per la sezione, es. compliance."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__lesson_activity_ids
+msgid "The work the lesson helps; none means every activity."
+msgstr "Il lavoro a cui la lezione serve; nessuna vuol dire ogni attività."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__rule_activity_ids
+msgid "The work the record concerns; none means every activity."
+msgstr "Il lavoro che la regola riguarda; nessuna attività vuol dire tutte."
+
+#. module: texo_memory
+#: model:ir.model.constraint,message:texo_memory.constraint_memory_optout_name_name_unique
+msgid "This name is already in the opt-out list."
+msgstr "Questo nome è già nella lista di opt-out."
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__title
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__title
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "Title"
+msgstr "Titolo"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__stale
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "To Check"
+msgstr "Da verificare"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+#: model:ir.actions.act_window,name:texo_memory.action_memory_review
+#: model:ir.actions.act_window,name:texo_memory.action_memory_review_area
+#: model:ir.ui.menu,name:texo_memory.menu_memory_review
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_review_form
+msgid "To Review"
+msgstr "Da rivedere"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+msgid ""
+"To check: expired, not verified for six months, or its source document changed. Confirm it with\n"
+"                    «Verified today», correct it, or archive it."
+msgstr ""
+"Da verificare: scaduta, non verificata da sei mesi, o con il documento di "
+"origine cambiato. Confermala con «Verificata oggi», correggila o archiviala."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__activity_exception_decoration
+#: model:ir.model.fields,help:texo_memory.field_memory_note__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr "Tipo dell'attività in eccezione sul record."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_optout_wizard.py:0
+msgid "Type the customer's name exactly to confirm."
+msgstr "Scrivi esattamente il nome del cliente per confermare."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_optout_wizard__confirm_name
+msgid "Type the customer's name to confirm the deletion."
+msgstr "Scrivi il nome del cliente per confermare la cancellazione."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_note_activity.py:0
+msgid "Unknown activity %(unknown)s. The activities are: %(known)s."
+msgstr "Attività sconosciuta %(unknown)s. Le attività sono: %(known)s."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_review_area.py:0
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "Unknown queue: %s"
+msgstr "Coda sconosciuta: %s"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_section.py:0
+msgid "Unknown section %(code)s. The sections are: %(known)s."
+msgstr "Sezione sconosciuta %(code)s. Le sezioni sono: %(known)s."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_project_task__display_name
+msgid ""
+"Use these keywords in the title to set new tasks:\n"
+"\n"
+"        30h Allocate 30 hours to the task\n"
+"        #tags Set tags on the task\n"
+"        @user Assign the task to a user\n"
+"        ! Set the task a medium priority\n"
+"        !! Set the task a high priority\n"
+"        !!! Set the task a urgent priority\n"
+"\n"
+"        Make sure to use the right format and order e.g. Improve the configuration screen 5h #feature #v16 @Mitchell !"
+msgstr ""
+"Usa queste parole chiave nel titolo per configurare nuovi lavori:\n"
+"\n"
+"        30h per assegnare 30 ore al lavoro\n"
+"        #tags per configurare tag nel lavoro\n"
+"        @user per assegnare il lavoro a un utente\n"
+"        ! per impostare la priorità su media\n"
+"        !! per impostare la priorità su alta\n"
+"        !!! per impostare la priorità su urgente\n"
+"\n"
+"        Assicurati di utilizzare il formato e l'ordine corretti, ad es. Migliorare la schermata di configurazione 5h #feature #v16 @Mitchell!"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_search__vectors
+msgid "Vectors"
+msgstr "Vettori"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__verified
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__verified
+msgid "Verified"
+msgstr "Verificata"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__verified_by_id
+msgid "Verified By"
+msgstr "Verificata da"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_list
+msgid "Verified today"
+msgstr "Verificata oggi"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_form
+msgid ""
+"What an agent must always or never do; what the record is; how an operation "
+"is done"
+msgstr ""
+"Ciò che un agente deve sempre o non deve mai fare; che cos'è il record; come"
+" si svolge un'operazione"
+
+#. module: texo_memory
+#: model:memory.section,description:texo_memory.section_compliance
+msgid ""
+"What it complies with: laws, certifications, contracts, data protection, "
+"security."
+msgstr ""
+"A cosa si conforma: leggi, certificazioni, contratti, protezione dei dati, "
+"sicurezza."
+
+#. module: texo_memory
+#: model:memory.section,description:texo_memory.section_offer
+msgid ""
+"What it offers: services, products, terms, prices and the way it sells them."
+msgstr ""
+"Cosa offre: servizi, prodotti, condizioni, prezzi e il modo in cui li vende."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
+msgid "What the document contains, in a few lines"
+msgstr "Cosa contiene il documento, in poche righe"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__tag_ids
+msgid ""
+"What the lesson is about (a module, a version, an area): the context pack of"
+" a task gives the lessons that share a tag with the task or its project."
+msgstr ""
+"Di che cosa parla la lezione (un modulo, una versione, un'area): il "
+"pacchetto di contesto di un task dà le lezioni che hanno un'etichetta in "
+"comune con il task o con il suo progetto."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_section__description
+msgid "What the section holds: the agent reads it to choose one."
+msgstr "Cosa contiene la sezione: l'agente lo legge per sceglierla."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_optout_wizard_form
+msgid "What will be deleted"
+msgstr "Cosa verrà cancellato"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note_activity__description
+msgid "What work the activity covers: the agent reads it to choose one."
+msgstr "Quale lavoro copre l'attività: l'agente la legge per sceglierne una."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_changed_on
+msgid ""
+"When a reading found the original changed: the rules taken from it are to "
+"re-check."
+msgstr ""
+"Quando una lettura ha trovato l'originale cambiato: le regole tratte da esso"
+" vanno ricontrollate."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_read_on
+msgid "When the original was last read."
+msgstr "Quando l'originale è stato letto l'ultima volta."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__source_checked
+#: model:ir.model.fields,help:texo_memory.field_memory_note__source_checked
+msgid ""
+"When the record was last written or confirmed against its source document: "
+"an original changed after it marks the record to re-check."
+msgstr ""
+"Quando il fatto è stato scritto o confermato l'ultima volta rispetto al "
+"documento fonte: un originale cambiato dopo segna la nota da ricontrollare."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_search_line__path
+msgid "Where in the document the answer stands, e.g. «Art. 43 > comma 2»."
+msgstr "Dove sta la risposta nel documento, es. «Art. 43 > comma 2»."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_lesson__applies_to
+msgid "Where it holds: Odoo version, modules, configuration."
+msgstr "Dove vale: versione Odoo, moduli, configurazione."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__applies_to
+msgid "Where it holds: a site, a version, a period."
+msgstr "Dove vale: un sito, una versione, un periodo."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_document_passage__path
+msgid "Where the passage stands in the document, e.g. «Art. 43 > comma 2»."
+msgstr "Dove sta il passaggio nel documento, es. «Art. 43 > comma 2»."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__source_ref
+#: model:ir.model.fields,help:texo_memory.field_memory_note__source_ref
+msgid "Where the record comes from: a task, a commit, a session."
+msgstr "Da dove viene la regola: un task, un commit, una sessione."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_search__vectors
+msgid "Whether the search by meaning is available here."
+msgstr "Se qui è disponibile la ricerca per significato."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__verified_by_id
+msgid "Who last checked the content: the verified of its OKF rendering."
+msgstr ""
+"Chi ha verificato per ultimo il contenuto: il verified della sua resa OKF."
+
+#. module: texo_memory
+#: model:memory.section,description:texo_memory.section_profile
+msgid ""
+"Who the organisation is: its people and roles, who decides, its history and "
+"size."
+msgstr ""
+"Chi è l'organizzazione: le sue persone e i ruoli, chi decide, la sua storia "
+"e dimensione."
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__mode__lexical
+msgid "Words"
+msgstr "Parole"
+
+#. module: texo_memory
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search__mode__hybrid
+#: model:ir.model.fields.selection,name:texo_memory.selection__memory_search_line__match__both
+msgid "Words and Meaning"
+msgstr "Parole e significato"
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_search__query
+msgid "Words or a question, as you would ask a colleague."
+msgstr "Parole o una domanda, come la faresti a un collega."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_search__mode
+msgid ""
+"Words: the full-text search. Meaning: the vectors, when the hub has them. "
+"Both, fused."
+msgstr ""
+"Parole: la ricerca testuale. Significato: i vettori, se il hub li ha. "
+"Entrambi, fusi."
+
+#. module: texo_memory
+#: model:memory.note.activity,description:texo_memory.activity_code
+msgid ""
+"Writing, reviewing or testing code: modules, scripts, configuration in a "
+"repository."
+msgstr ""
+"Scrivere, rivedere o provare codice: moduli, script, configurazione in un "
+"repository."
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Written By"
+msgstr "Scritto da"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__generated_by
+#: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__generated_by
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__generated_by
+msgid "Written By (Agent)"
+msgstr "Scritto da (agente)"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Written by a Person"
+msgstr "Scritti da una persona"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
+msgid "Written by an Agent"
+msgstr "Scritti da un agente"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_search_form
+msgid "e.g. who approves the deploys of this customer?"
+msgstr "es. chi approva i deploy di questo cliente?"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid ""
+"it contains a URL other than github.com/OCA, github.com/odoo or the Odoo "
+"documentation"
+msgstr ""
+"contiene un URL diverso da github.com/OCA, github.com/odoo o dalla "
+"documentazione Odoo"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains a pseudonym marker: describe the role, not the person"
+msgstr ""
+"contiene un marcatore di pseudonimo: descrivi il ruolo, non la persona"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains a reference to a record"
+msgstr "contiene un riferimento a un record"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains a task or ticket number"
+msgstr "contiene un numero di task o ticket"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains an amount of money"
+msgstr "contiene un importo di denaro"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains an e-mail address"
+msgstr "contiene un indirizzo e-mail"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it contains the source reference of the project note"
+msgstr "contiene il riferimento di origine della nota di progetto"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "it names a customer"
+msgstr "nomina un cliente"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "kind"
+msgstr ""
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_ir_attachment__texo_fingerprint
+msgid ""
+"sha256 of the original when it was read; a different one at a later reading "
+"marks it changed."
+msgstr ""
+"sha256 dell'originale quando è stato letto; uno diverso a una lettura "
+"successiva lo segna come cambiato."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "stale"
+msgstr ""
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "state"
+msgstr ""
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/wizard/memory_review.py:0
+msgid "texo_document"
+msgstr ""
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "the shared text must be at least %s characters"
+msgstr "il testo condiviso deve avere almeno %s caratteri"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/leak_filter.py:0
+msgid "the shared text must be at most %s characters"
+msgstr "il testo condiviso deve avere al massimo %s caratteri"
+
+#. module: texo_memory
+#: model_terms:ir.ui.view,arch_db:texo_memory.view_task_form_texo_memory
+msgid ""
+"the words someone will search this task by: the symptom, the technical name,"
+" an acronym, the English term"
+msgstr ""
+"le parole con cui qualcuno cercherà questo task: il sintomo, il nome "
+"tecnico, una sigla, il termine inglese"

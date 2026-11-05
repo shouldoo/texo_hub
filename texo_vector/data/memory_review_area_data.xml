@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="review_area_search" model="memory.review.area">
+        <field name="code">search</field>
+        <field name="name">Search</field>
+        <field name="description">Texts of the memory still waiting for a vector: a number that does not go down is a service that does not answer</field>
+        <field name="sequence">50</field>
+        <field name="main_queue">vectors_pending</field>
+        <field name="group_id" ref="texo.group_texo_admin"/>
+    </record>
+</odoo>

@@ -1,0 +1,11 @@
+<section style="max-width: 860px; margin: 0 auto; padding: 16px;">
+    <h2>Texo - MCP</h2>
+    <p>The memory of Texo as a remote MCP server, behind the Texo token.</p>
+    <ul>
+        <li><code>POST /texo/mcp</code>: one JSON-RPC message per request, with the person's token as
+            bearer; the tools run as the person.</li>
+        <li>The instructions of the server are the rules of the session; the tools are those of the routes,
+            with the same answers and checks.</li>
+        <li>A write waits for <code>confirm: true</code>, after the person's yes.</li>
+    </ul>
+</section>

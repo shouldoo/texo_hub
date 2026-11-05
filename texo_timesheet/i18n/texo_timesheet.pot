@@ -1,0 +1,120 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo_timesheet
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20261102\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-05 17:46+0000\n"
+"PO-Revision-Date: 2026-11-05 17:46+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: texo_timesheet
+#: model:ir.module.module,description:base.module_texo_timesheet
+msgid ""
+"# Texo - Timesheet\n"
+"\n"
+"Odoo 20.0 · LGPL-3\n"
+"\n"
+"Hours on a task from an agent, behind the Texo token. Installed automatically with\n"
+"`texo_project` and `hr_timesheet`, so an instance without timesheets never needs it.\n"
+"\n"
+"| Route (`POST`, bearer = hub token) | Parameters | Returns |\n"
+"|---|---|---|\n"
+"| `/texo/v1/project/log_time` | `task_id`, `hours` (0 to 24), `description` (the worklog line, max 500 characters), `date` (optional, `YYYY-MM-DD`, default today) | the timesheet line id, the hours and the task's total |\n"
+"\n"
+"- The line is created as the calling user, on their employee record: a user without an\n"
+"  employee gets a refusal, a task the user cannot read answers 404.\n"
+"- The hours are the person's, never the agent's estimate; the description says what was done\n"
+"  and why, so the next session reads it in the worklog.\n"
+"- The task context of `texo_project` gains `worklog` (the last 10 lines: date, hours,\n"
+"  who, what) and `hours` (spent and allocated).\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -c <conf> -d test_cohub20 -i texo_timesheet --test-tags /texo_timesheet --http-interface=127.0.0.1 --stop-after-init\n"
+"```\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+"\n"
+"## Author\n"
+"\n"
+"Daniele Lucarelli\n"
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.model.fields,field_description:texo_timesheet.field_project_task__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: texo_timesheet
+#. odoo-python
+#: code:addons/texo_timesheet/models/project_task.py:0
+msgid "Hours must be a number."
+msgstr ""
+
+#. module: texo_timesheet
+#. odoo-python
+#: code:addons/texo_timesheet/models/project_task.py:0
+msgid "Hours must be between 0 and %s."
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.module.module,summary:base.module_texo_timesheet
+msgid ""
+"Hours on a task from an agent, as the person who gives them, behind the Texo"
+" token"
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.model.fields,field_description:texo_timesheet.field_project_task__id
+msgid "ID"
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.model,name:texo_timesheet.model_project_task
+msgid "Task"
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.module.module,shortdesc:base.module_texo_timesheet
+msgid "Texo - Timesheet"
+msgstr ""
+
+#. module: texo_timesheet
+#. odoo-python
+#: code:addons/texo_timesheet/models/project_task.py:0
+msgid "The description is empty or longer than %s characters."
+msgstr ""
+
+#. module: texo_timesheet
+#: model:ir.model.fields,help:texo_timesheet.field_project_task__display_name
+msgid ""
+"Use these keywords in the title to set new tasks:\n"
+"\n"
+"        30h Allocate 30 hours to the task\n"
+"        #tags Set tags on the task\n"
+"        @user Assign the task to a user\n"
+"        ! Set the task a medium priority\n"
+"        !! Set the task a high priority\n"
+"        !!! Set the task a urgent priority\n"
+"\n"
+"        Make sure to use the right format and order e.g. Improve the configuration screen 5h #feature #v16 @Mitchell !"
+msgstr ""
+
+#. module: texo_timesheet
+#. odoo-python
+#: code:addons/texo_timesheet/models/project_task.py:0
+msgid "You have no employee record: hours cannot be logged."
+msgstr ""

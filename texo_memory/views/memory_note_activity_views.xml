@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_note_activity_list" model="ir.ui.view">
+        <field name="name">memory.note.activity.list</field>
+        <field name="model">memory.note.activity</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="description"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_note_activity_search" model="ir.ui.view">
+        <field name="name">memory.note.activity.search</field>
+        <field name="model">memory.note.activity</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="inactive" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_memory_note_activity" model="ir.actions.act_window">
+        <field name="name">Rule Activities</field>
+        <field name="res_model">memory.note.activity</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

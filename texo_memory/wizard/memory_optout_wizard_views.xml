@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_optout_wizard_form" model="ir.ui.view">
+        <field name="name">memory.optout.wizard.form</field>
+        <field name="model">memory.optout.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="partner_id"/>
+                    <field name="task_id"/>
+                    <field name="reason"/>
+                </group>
+                <group string="What will be deleted">
+                    <field name="note_count"/>
+                    <field name="fact_count"/>
+                    <field name="document_count"/>
+                    <field name="attachment_count"/>
+                    <field name="project_count" string="Projects of the customer (kept)"/>
+                    <field name="preview" nolabel="1" colspan="2"/>
+                </group>
+                <group>
+                    <field name="confirm_name"/>
+                </group>
+                <footer>
+                    <button name="action_optout" type="object" string="Delete the memory of this customer" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_memory_optout_wizard" model="ir.actions.act_window">
+        <field name="name">Customer Opt-out</field>
+        <field name="res_model">memory.optout.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_memory_optout_wizard" name="Customer Opt-out" parent="menu_memory_config"
+              action="action_memory_optout_wizard" sequence="85" groups="texo.group_texo_admin"/>
+</odoo>

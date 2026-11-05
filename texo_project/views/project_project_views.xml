@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="edit_project_texo_home" model="ir.ui.view">
+        <field name="name">project.project.form.texo.home</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[field[@name='partner_id']]" position="after">
+                <field name="texo_home" invisible="not texo_home"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_texo_home_search" model="ir.ui.view">
+        <field name="name">project.project.search.texo.home</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter"/>
+        <field name="arch" type="xml">
+            <filter name="my_projects" position="before">
+                <filter name="texo_home" string="Company Homes" domain="[('texo_home', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

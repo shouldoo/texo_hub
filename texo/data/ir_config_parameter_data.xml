@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="config_token_max_days" model="ir.config_parameter">
+        <field name="key">texo.token_max_days</field>
+        <field name="value">90</field>
+    </record>
+</odoo>

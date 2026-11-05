@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_review_form_vectors" model="ir.ui.view">
+        <field name="name">memory.review.form.vectors</field>
+        <field name="model">memory.review</field>
+        <field name="inherit_id" ref="texo_memory.view_memory_review_form"/>
+        <field name="arch" type="xml">
+            <div name="knowledge_queues" position="inside">
+                <button name="action_open_vector_status" type="object" class="oe_stat_button border" icon="refresh"
+                        groups="texo.group_texo_admin"
+                        help="Texts waiting for their vector: a number that does not go down is a service that does not answer or a cron that does not run">
+                    <div class="o_stat_info">
+                        <field name="vectors_pending" class="o_stat_value"/>
+                        <span class="o_stat_text">Texts Without a Vector</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+</odoo>

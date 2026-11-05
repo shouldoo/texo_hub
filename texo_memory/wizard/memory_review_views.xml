@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_review_form" model="ir.ui.view">
+        <field name="name">memory.review.form</field>
+        <field name="model">memory.review</field>
+        <field name="arch" type="xml">
+            <form string="To Review" create="0">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>To Review</h1>
+                        <p class="text-muted">
+                            The weekly review of the memory: each queue opens the records waiting in it. Confirm,
+                            correct, supersede or archive them; what binds is decided by a lead.
+                        </p>
+                    </div>
+                    <group string="Knowledge" name="knowledge">
+                        <div class="d-flex flex-wrap gap-3" name="knowledge_queues" colspan="2">
+                            <button name="action_open_queue" type="object" context="{'queue': 'draft_rules'}"
+                                    class="oe_stat_button border" icon="gavel"
+                                    help="Proposed rules: a lead activates or refuses them">
+                                <div class="o_stat_info">
+                                    <field name="draft_rules" class="o_stat_value"/>
+                                    <span class="o_stat_text">Draft Rules</span>
+                                </div>
+                            </button>
+                            <button name="action_open_queue" type="object" context="{'queue': 'stale_notes'}"
+                                    class="oe_stat_button border" icon="schedule"
+                                    help="Active rules, facts and procedures expired, not verified for six months, or whose source document changed">
+                                <div class="o_stat_info">
+                                    <field name="stale_notes" class="o_stat_value"/>
+                                    <span class="o_stat_text">To Check</span>
+                                </div>
+                            </button>
+                            <button name="action_open_queue" type="object" context="{'queue': 'changed_documents'}"
+                                    class="oe_stat_button border" icon="description"
+                                    help="Documents whose original changed after it was read">
+                                <div class="o_stat_info">
+                                    <field name="changed_documents" class="o_stat_value"/>
+                                    <span class="o_stat_text">Changed Documents</span>
+                                </div>
+                            </button>
+                            <button name="action_open_queue" type="object" context="{'queue': 'draft_lessons'}"
+                                    class="oe_stat_button border" icon="lightbulb"
+                                    groups="texo.group_texo_lead"
+                                    help="Lessons proposed by the agents: activate or archive them">
+                                <div class="o_stat_info">
+                                    <field name="draft_lessons" class="o_stat_value"/>
+                                    <span class="o_stat_text">Draft Lessons</span>
+                                </div>
+                            </button>
+                            <button name="action_open_queue" type="object" context="{'queue': 'duplicate_lessons'}"
+                                    class="oe_stat_button border" icon="content_copy"
+                                    groups="texo.group_texo_lead"
+                                    help="Lessons that say nearly the same thing: merge them into one">
+                                <div class="o_stat_info">
+                                    <field name="duplicate_lessons" class="o_stat_value"/>
+                                    <span class="o_stat_text">Near-duplicate Lessons</span>
+                                </div>
+                            </button>
+                        </div>
+                    </group>
+                    <group string="Projects" name="projects">
+                        <div class="d-flex flex-wrap gap-3" name="project_queues" colspan="2">
+                            <button name="action_open_queue" type="object" context="{'queue': 'projects_without_now'}"
+                                    class="oe_stat_button border" icon="flag"
+                                    help="Projects with open tasks whose last update is missing or old: write an update">
+                                <div class="o_stat_info">
+                                    <field name="projects_without_now" class="o_stat_value"/>
+                                    <span class="o_stat_text">Without a Recent Update</span>
+                                </div>
+                            </button>
+                        </div>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_memory_review" model="ir.actions.act_window">
+        <field name="name">To Review</field>
+        <field name="res_model">memory.review</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

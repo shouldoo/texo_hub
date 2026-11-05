@@ -1,0 +1,526 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* texo_vector
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 20.0-20261102\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-05 17:46+0000\n"
+"PO-Revision-Date: 2026-11-05 17:46+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: texo_vector
+#: model:ir.module.module,description:base.module_texo_vector
+msgid ""
+"# Texo - Vector\n"
+"\n"
+"Vectors for the memory of [`texo_memory`](../texo_memory/README.md): a search by meaning\n"
+"over the episodes, the facts, the procedures, the lessons and the documents, fused with the lexical search, and the near-duplicate lessons\n"
+"of the housekeeping found by meaning. The vectors live in one table of the database (pgvector), the\n"
+"embeddings come from a local service: no text of the memory leaves the machine unless the administrator\n"
+"opts in.\n"
+"\n"
+"Optional: without it the hub is lexical, as before. With it installed but without the extension `vector`\n"
+"on the database, or without an endpoint, the hub is still lexical and says so in the log.\n"
+"\n"
+"## What gets a vector, and what does not\n"
+"\n"
+"| Memory | Vector | Why |\n"
+"|---|---|---|\n"
+"| Episodes (`project.task` of a project: the title and the description, then each human message of the chatter, one vector each) | yes | «has something like this happened before?» is asked with other words than those of the chatter; the measure on the test set went from 17 to 19 hits in 20 paraphrased questions (phase D of the plan) |\n"
+"| Facts (`memory.note`, kind `fact`, active) | yes | the paraphrased questions went from 4 to 9 hits in 14 |\n"
+"| Lessons (`memory.lesson`, draft or active) | yes, for the near-duplicates and available to the search | the search gained little (11 to 13 in 17, under the threshold set beforehand); the three near-duplicate pairs written on purpose in the test set are the closest pairs by cosine where `difflib` sees two different texts |\n"
+"| Rules | never | a rule reaches the agent by chain, in the context pack; it is not something to find by meaning |\n"
+"| Procedures (`memory.note`, kind `procedure`, active) | yes, since 20.0.1.1.0 | like the facts: title, keywords, text; on the seed of a demo customer the lexical search closed them, the scenarios of the workspace (associations, design studios, political lists) test them where the writing is less disciplined |\n"
+"| Documents (`ir.attachment` of the memory) | yes, since 20.0.1.1.0: the title, summary and keywords (chunk 0), then, since 20.0.1.3.0, each passage of the converted text cut by its structure (`texo_memory`, `memory.document.passage`: chunk = its sequence, up to 400), with the title of the document and the path of the passage before it, when the document keeps its text | a press clipping, a call for proposals or a regulation is written by others, not for the search; a sensitive document (no text kept) gets the vector of its summary only |\n"
+"\n"
+"A rule, a to-do without a project, an archived task, a superseded fact: no vector, or the vector is dropped at\n"
+"the next run of the cron.\n"
+"\n"
+"## The search\n"
+"\n"
+"`memory/search` (and the `search` tool of the MCP server) takes `mode`:\n"
+"\n"
+"| `mode` | What it does |\n"
+"|---|---|\n"
+"| `lexical` | the words, as `texo_memory` does: every word first, then some, prefixes, Italian and English stems |\n"
+"| `semantic` | the records nearest to the question by cosine among those the person may read; `score` is the similarity |\n"
+"| `hybrid` | both, fused by reciprocal rank (`models/hybrid.py`, K = 10): a vector and a lexical hit of every word of the question (a code, a name, an acronym) weigh 2, a lexical hit of some words, the fill of the lexical search, weighs 0.5. The values that, on the two sets of the workspace, give the hybrid the paraphrases the vectors find (facts 11 of 14, lessons 16 of 17, episodes 20 of 20) without losing one hit of the words; `score` is the fused rank |\n"
+"\n"
+"Without `mode` the configured one applies (`texo_vector.mode`, `hybrid` by default). Every hit of a\n"
+"semantic or hybrid search says which search found it (`match`: `lexical`, `semantic`, `both`) and its\n"
+"`similarity` when the vectors did; a hit of the words says, as in the lexical search, whether it holds every\n"
+"word of the question or some (`words`). The scopes without vectors (`rules`, `notes`, `procedures`, `documents`)\n"
+"stay lexical whatever the mode; in `all` the facts and the lessons go by meaning too, the rules by their words.\n"
+"\n"
+"The access rules apply as in the lexical search: the nearest chunks come from SQL (the index HNSW, at most\n"
+"60 chunks), the records then go through the ORM as the person, and the domains of the lexical search\n"
+"(state, expiry, `applies_to`, a project for the episodes) apply. The question is embedded by the same\n"
+"service; when the service does not answer (within 10 s) the search is lexical and the log says so once per\n"
+"call.\n"
+"\n"
+"## The reranker (optional)\n"
+"\n"
+"A cross-encoder reads the question and each of the first results of the hybrid search together and puts them\n"
+"in a new order (`models/memory_rerank.py`). It finds nothing new: it reorders what the search found. **Off**\n"
+"until `texo_vector.rerank_endpoint` names a service:\n"
+"\n"
+"| Parameter | Default | What |\n"
+"|---|---|---|\n"
+"| `rerank_endpoint` | empty (off) | the service; a host outside the local network only with `allow_remote_endpoint` |\n"
+"| `rerank_api` | `tei` | `tei`: Text Embeddings Inference, `POST /rerank` (the `tei-rerank` service of the stack, profile `rerank`); `llamacpp`: llama.cpp server with `--reranking`, `POST /v1/rerank`, for AMD and Intel GPUs through Vulkan (`rerank_model` names its model if it serves several) |\n"
+"| `rerank_pool` | 10 | how many of the first results it reorders (2 to 20) |\n"
+"| `rerank_chars` | 800 | characters of each result it reads: the title and the text; for a document the passage chosen for the hit |\n"
+"| `rerank_timeout` | 5 | seconds; past them the hybrid order stays and the log says why |\n"
+"\n"
+"Only the hybrid mode is reranked; each reordered hit carries its score (`rerank`). Measured with\n"
+"`BAAI/bge-reranker-v2-m3` on 40 questions whose answer is one passage of a long act (an evaluation set of a demo customer):\n"
+"on a design studio the right document goes first more often (mrr 0.86 to 0.97 with 10 results of 800\n"
+"characters, to 1.00 with 20 of 2000), on an association whose hybrid was right already nothing changes (0.96 to\n"
+"0.94); the passage named first is the same. On a CPU it costs **7 s per search** (30 s with 20 long results):\n"
+"turn it on where an accelerator serves it.\n"
+"\n"
+"## The vectors\n"
+"\n"
+"- `memory.embedding`: one row per chunk (`res_model`, `res_id`, `chunk`: 0 for the record, the message id\n"
+"  for a message of the chatter), with the model that computed it and the SHA-256 of the text. The column\n"
+"  `embedding vector(n)` and its HNSW index (cosine) are created by `init()`, as the `tsvector` columns of\n"
+"  the memory are; `n` is `texo_vector.dimensions`. A change of dimensions drops the column and every\n"
+"  vector: the cron computes them again. Administrators read the table; everything else is done by the module.\n"
+"- The cron **Memory: vectors of the episodes, the facts and the lessons** (`_cron_embed()`, every 15 minutes,\n"
+"  at most 2,000 chunks per run) computes the vectors missing, those whose text or model changed, and drops\n"
+"  those of the chunks that left the scope. A new fact is found by its words at once and by meaning after the\n"
+"  next run. Nothing is written when the service does not answer: the chunks wait.\n"
+"- The texts: a task is `title`, `description` (plain text); a message its body; a fact `title`, `keywords`,\n"
+"  `body`; a lesson `title`, `keywords`, `finding`, `solution`. At most 6,000 characters each; whitespace folded.\n"
+"\n"
+"## The embedding service\n"
+"\n"
+"[Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) in CPU, or any\n"
+"service with its `POST /embed` (`{\"inputs\": [...], \"truncate\": true}` in, a list of vectors out), named in\n"
+"`ir.config_parameter`:\n"
+"\n"
+"| Parameter | Default | Meaning |\n"
+"|---|---|---|\n"
+"| `texo_vector.endpoint` | none | the URL of the service; `http://tei:80` in the coordination stack of `texo_core`. Without it nothing is computed and the search is lexical |\n"
+"| `texo_vector.model` | `BAAI/bge-m3` | the model the service runs; `intfloat/multilingual-e5-small` is the light alternative (one tenth of the memory, a little weaker); the e5 family gets its `query:` and `passage:` prefixes |\n"
+"| `texo_vector.dimensions` | `1024` | the size of its vectors (`384` for e5-small) |\n"
+"| `texo_vector.mode` | `hybrid` | the mode of a search that gives none |\n"
+"| `texo_vector.duplicate_similarity` | `0.80` | two lessons at least this close are near-duplicates for the housekeeping (`0.93` with e5-small, whose unrelated pairs sit above 0.8) |\n"
+"| `texo_vector.allow_remote_endpoint` | `False` | an endpoint outside the local network (a public name or address) is refused, with a warning, unless this is `True` |\n"
+"\n"
+"The texts of clients and projects are what gets embedded: the endpoint is an outgoing call, declared here and\n"
+"limited to the local network (loopback, private or link-local addresses, a name without a domain such as a\n"
+"compose service, `.localhost`, `.local`, `.internal`, `.lan`) unless the administrator opts in per database.\n"
+"Changing the model: set `model` and `dimensions`, then update the module or wait for the cron; the vectors\n"
+"are computed again (the first run after a change is the long one: a few seconds per hundred chunks in CPU\n"
+"with bge-m3).\n"
+"\n"
+"## Housekeeping\n"
+"\n"
+"`memory.lesson._duplicate_pairs()` (the weekly housekeeping and the review queue) gives the pairs of live\n"
+"lessons about the same thing (a tag in common, or both without tags) whose vectors are at least\n"
+"`duplicate_similarity` close, the ratio in percent; a lesson without a vector yet is compared by `difflib`\n"
+"with the others, as before. The activities to the leads and the rest of the housekeeping do not change:\n"
+"nothing is merged on its own.\n"
+"\n"
+"## State of the search\n"
+"\n"
+"Menu *Memory > Configuration > State of the Search* (administrators): whether the vectors are available, the\n"
+"mode, the model and the service, how many texts of each kind have their vector and how many wait for it, when\n"
+"the cron last ran and runs next. **Compute Now** asks the cron to run as soon as a worker is free. A count of\n"
+"waiting texts that does not go down is a service that does not answer or a cron that does not run. With this\n"
+"module the page *Search the Memory* also offers the search by meaning.\n"
+"\n"
+"## Tests\n"
+"\n"
+"```bash\n"
+"odoo -c <conf> -d test_cohub20 -i texo_vector --test-tags /texo_vector --http-interface=127.0.0.1 --stop-after-init\n"
+"```\n"
+"\n"
+"11 tests, with a fake embedding service (seven dimensions, one per concept the texts of the tests talk about,\n"
+"so that «restituzioni» lands next to «resi» without any word in common): the cron that computes, recomputes\n"
+"and drops the vectors (a message is a chunk of its own, a rule never gets one, a to-do is not an episode,\n"
+"another model recomputes everything); the hybrid search that finds a paraphrase and keeps the lexical hits,\n"
+"the semantic mode, the configured mode, the scopes that stay lexical, a wrong mode refused; only what the\n"
+"person may read; the service down (lexical, the chunks wait) and a service answering with vectors of another\n"
+"size; a remote endpoint refused without the opt-in, the local hosts; the dimensions that follow the model;\n"
+"the near-duplicates by meaning, by tag, and by `difflib` for a lesson without a vector; the route with\n"
+"`mode`; and, with the extension made unavailable on purpose, the search, the cron and the housekeeping as\n"
+"they were. Where the extension `vector` is missing the tests with vectors are skipped; the CI runs on\n"
+"`pgvector/pgvector:pg17`.\n"
+"\n"
+"## Changelog\n"
+"\n"
+"### 20.0.1.0.0\n"
+"\n"
+"- First release in Texo.\n"
+"\n"
+"## Author\n"
+"\n"
+"Daniele Lucarelli, 2026. LGPL-3.\n"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "%(url)s, first %(pool)s results"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_embedding__chunk
+msgid "0: the record itself; a message id: one message of its chatter."
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_review_form_vectors
+msgid "<span class=\"o_stat_text\">Texts Without a Vector</span>"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__chunk
+msgid "Chunk"
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "Compute Now"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__create_uid
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__create_date
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_lesson__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_note__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_review__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_review_area__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_search__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "Documents"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__model_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__model_name
+msgid "Embedding Model"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__endpoint
+msgid "Embedding Service"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "Episodes (Tasks)"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "Facts and Procedures"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_lesson__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_note__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_review__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_review_area__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_search__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__id
+msgid "ID"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__label
+msgid "Kind"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__last_run
+msgid "Last Computed"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__write_uid
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__write_date
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "Lessons"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__line_ids
+msgid "Line"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_embedding
+msgid "Memory Embedding"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_lesson
+msgid "Memory Lesson"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_note
+msgid "Memory Note"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_review_area
+msgid "Memory: Area of the Review"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_vector_status
+msgid "Memory: State of the Search"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_vector_status_line
+msgid "Memory: State of the Search by Kind"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_review
+msgid "Memory: To Review"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.actions.server,name:texo_vector.ir_cron_memory_vectors_ir_actions_server
+msgid "Memory: vectors of the episodes, the facts and the lessons"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__res_model
+msgid "Model"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__next_run
+msgid "Next Computation"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid "Off"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.constraint,message:texo_vector.constraint_memory_embedding_unique_chunk
+msgid "One vector per chunk of a record."
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__res_id
+msgid "Record"
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "Refresh"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__rerank
+msgid "Reranker"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__res_model
+msgid "Res Model"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_embedding__text_hash
+msgid "SHA-256 of the text that was embedded: a change recomputes the vector."
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__cron_active
+msgid "Scheduled"
+msgstr ""
+
+#. module: texo_vector
+#: model:memory.review.area,name:texo_vector.review_area_search
+msgid "Search"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__mode
+msgid "Search Mode"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_search
+msgid "Search the Memory"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+#: model:ir.actions.act_window,name:texo_vector.action_memory_vector_status
+#: model:ir.ui.menu,name:texo_vector.menu_memory_vector_status
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "State of the Search"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__status_id
+msgid "Status"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.module.module,shortdesc:base.module_texo_vector
+msgid "Texo - Vector"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__text_hash
+msgid "Text Hash"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__texts
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__texts
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "Texts"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_review.py:0
+msgid "Texts Waiting for a Vector"
+msgstr ""
+
+#. module: texo_vector
+#: model:memory.review.area,description:texo_vector.review_area_search
+msgid ""
+"Texts of the memory still waiting for a vector: a number that does not go "
+"down is a service that does not answer"
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_review_form_vectors
+msgid ""
+"Texts waiting for their vector: a number that does not go down is a service "
+"that does not answer or a cron that does not run"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_embedding__model_name
+msgid "The model that computed the vector; a change recomputes every vector."
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_vector_status__available
+msgid ""
+"The pgvector extension and the column of the vectors exist in this database."
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid ""
+"The scheduled computation of the vectors is off: the texts waiting get no "
+"vector."
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_vector_status__rerank
+msgid ""
+"The service that reorders the first results of the hybrid search, if any."
+msgstr ""
+
+#. module: texo_vector
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid ""
+"The vectors are not available in this database (the pgvector extension is missing): the search\n"
+"                    uses the words only."
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_vector_status.py:0
+msgid ""
+"The vectors will be computed in the background; refresh this page in a few "
+"minutes."
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__available
+msgid "Vectors Available"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_review__vectors_pending
+msgid "Vectors Pending"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.module.module,summary:base.module_texo_vector
+msgid ""
+"Vectors for the memory: a hybrid search over the episodes, facts, "
+"procedures, lessons and documents, and near-duplicates by meaning, with a "
+"local embedding service and pgvector"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__pending
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__pending
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "Waiting"
+msgstr ""
+
+#. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__stored
+#: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__stored
+#: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
+msgid "With a Vector"
+msgstr ""
+
+#. module: texo_vector
+#. odoo-python
+#: code:addons/texo_vector/models/memory_embedding.py:0
+msgid "mode is one of %s."
+msgstr ""

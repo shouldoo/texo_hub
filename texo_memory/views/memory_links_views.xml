@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <!-- The memory of a work record from its form: buttons with the counts, and the page Memory of the task. -->
+    <record id="edit_project_texo_memory" model="ir.ui.view">
+        <field name="name">project.project.form.texo.memory</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_texo_notes" type="object" class="oe_stat_button" icon="book"
+                        groups="texo.group_texo_member"
+                        help="Rules, facts and procedures of the project">
+                    <field name="texo_note_count" widget="statinfo" string="Memory"/>
+                </button>
+                <button name="action_texo_documents" type="object" class="oe_stat_button" icon="description"
+                        groups="texo.group_texo_member" invisible="not texo_document_count">
+                    <field name="texo_document_count" widget="statinfo" string="Memory Documents"/>
+                </button>
+                <button name="action_texo_lessons" type="object" class="oe_stat_button" icon="lightbulb"
+                        groups="texo.group_texo_member" invisible="not texo_lesson_count"
+                        help="Lessons that share a tag with the project">
+                    <field name="texo_lesson_count" widget="statinfo" string="Lessons"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <record id="view_task_form_texo_memory" model="ir.ui.view">
+        <field name="name">project.task.form.texo.memory</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_texo_documents" type="object" class="oe_stat_button" icon="description"
+                        groups="texo.group_texo_member" invisible="not texo_document_count">
+                    <field name="texo_document_count" widget="statinfo" string="Memory Documents"/>
+                </button>
+            </div>
+            <page name="description_page" position="after">
+                <page name="texo_memory" string="Memory" groups="texo.group_texo_member">
+                    <group>
+                        <field name="texo_keywords"
+                               placeholder="the words someone will search this task by: the symptom, the technical name, an acronym, the English term"/>
+                    </group>
+                    <field name="texo_note_ids" context="{'default_task_id': id, 'default_kind': 'fact'}">
+                        <list>
+                            <field name="name"/>
+                            <field name="kind"/>
+                            <field name="state" widget="badge" decoration-success="state == 'active'"
+                                   decoration-info="state == 'draft'"/>
+                            <field name="verified"/>
+                            <field name="expires"/>
+                        </list>
+                    </field>
+                </page>
+            </page>
+        </field>
+    </record>
+
+    <record id="view_partner_form_texo_memory" model="ir.ui.view">
+        <field name="name">res.partner.form.texo.memory</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_texo_notes" type="object" class="oe_stat_button" icon="book"
+                        groups="texo.group_texo_member" invisible="not texo_note_count"
+                        help="Rules, facts and procedures of the customer">
+                    <field name="texo_note_count" widget="statinfo" string="Memory"/>
+                </button>
+                <button name="action_texo_documents" type="object" class="oe_stat_button" icon="description"
+                        groups="texo.group_texo_member" invisible="not texo_document_count">
+                    <field name="texo_document_count" widget="statinfo" string="Memory Documents"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <record id="view_company_form_texo_memory" model="ir.ui.view">
+        <field name="name">res.company.form.texo.memory</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_texo_notes" type="object" class="oe_stat_button" icon="book"
+                        groups="texo.group_texo_member"
+                        help="Rules, facts and procedures of the organisation">
+                    <field name="texo_note_count" widget="statinfo" string="Memory"/>
+                </button>
+                <button name="action_texo_documents" type="object" class="oe_stat_button" icon="description"
+                        groups="texo.group_texo_member" invisible="not texo_document_count">
+                    <field name="texo_document_count" widget="statinfo" string="Memory Documents"/>
+                </button>
+            </div>
+        </field>
+    </record>
+</odoo>

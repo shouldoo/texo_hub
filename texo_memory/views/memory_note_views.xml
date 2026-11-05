@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_note_list" model="ir.ui.view">
+        <field name="name">memory.note.list</field>
+        <field name="model">memory.note</field>
+        <field name="arch" type="xml">
+            <list>
+                <header>
+                    <button name="action_verify" type="object" string="Verified today"/>
+                    <button name="action_activate" type="object" string="Activate"
+                            groups="texo.group_texo_lead"/>
+                    <button name="action_archive_note" type="object" string="Archive"/>
+                </header>
+                <field name="name"/>
+                <field name="body" optional="hide"/>
+                <field name="keywords" optional="hide"/>
+                <field name="kind" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-info="state == 'draft'"/>
+                <field name="severity" widget="badge" decoration-danger="severity == 'never'" decoration-warning="severity == 'must'"
+                       invisible="kind != 'rule'"/>
+                <field name="section_id" optional="show"/>
+                <field name="rule_activity_ids" widget="many2many_tags" optional="show"/>
+                <field name="company_id" optional="hide"/>
+                <field name="customer_id"/>
+                <field name="project_id"/>
+                <field name="task_id" optional="hide"/>
+                <field name="verified"/>
+                <field name="expires"/>
+                <field name="stale" optional="show" widget="boolean_toggle" readonly="1"/>
+                <field name="origin" optional="hide"/>
+                <field name="write_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_note_form" model="ir.ui.view">
+        <field name="name">memory.note.form</field>
+        <field name="model">memory.note</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" type="object" string="Activate" class="btn-primary"
+                            invisible="state != 'draft'" groups="texo.group_texo_lead"/>
+                    <button name="action_verify" type="object" string="Verified today"
+                            invisible="state != 'active'"/>
+                    <button name="action_archive_note" type="object" string="Archive" invisible="state == 'archived'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,superseded"/>
+                </header>
+                <div class="alert alert-warning mb-0" role="alert" invisible="not stale">
+                    To check: expired, not verified for six months, or its source document changed. Confirm it with
+                    «Verified today», correct it, or archive it.
+                </div>
+                <field name="stale" invisible="1"/>
+                <sheet>
+                    <h1><field name="name" placeholder="Title" class="w-100"/></h1>
+                    <group>
+                        <group>
+                            <field name="kind" widget="radio" options="{'horizontal': true}"/>
+                            <field name="severity" widget="radio" options="{'horizontal': true}"
+                                   invisible="kind != 'rule'" required="kind == 'rule'"/>
+                            <field name="section_id"/>
+                            <field name="rule_activity_ids" widget="many2many_tags" placeholder="Every activity"/>
+                            <field name="company_id"/>
+                            <field name="partner_id"/>
+                            <field name="project_id"/>
+                            <field name="task_id" invisible="kind == 'rule'"/>
+                            <field name="customer_id"/>
+                        </group>
+                        <group>
+                            <field name="verified"/>
+                            <field name="verified_by_id"/>
+                            <field name="expires"/>
+                            <field name="applies_to"/>
+                            <field name="keywords"/>
+                            <field name="origin"/>
+                            <field name="generated_by" invisible="origin != 'agent'"/>
+                            <field name="source_ref"/>
+                            <field name="document_id"/>
+                            <field name="source_checked" invisible="not document_id"/>
+                        </group>
+                    </group>
+                    <field name="body" placeholder="What an agent must always or never do; what the record is; how an operation is done"/>
+                    <group>
+                        <field name="supersedes_id"/>
+                        <field name="superseded_by_id"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_memory_note_search" model="ir.ui.view">
+        <field name="name">memory.note.search</field>
+        <field name="model">memory.note</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="body"/>
+                <field name="keywords"/>
+                <field name="customer_id"/>
+                <field name="project_id"/>
+                <field name="section_id"/>
+                <field name="rule_activity_ids"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="active" string="Active" domain="[('state', '=', 'active')]"/>
+                <filter name="superseded" string="Superseded" domain="[('state', '=', 'superseded')]"/>
+                <separator/>
+                <filter name="stale" string="To Check" domain="[('stale', '=', True)]"
+                        help="Expired, not verified for six months, or its source document changed"/>
+                <filter name="expired" string="Expired" domain="[('expires', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="expiring" string="Expiring in 30 Days"
+                        domain="[('expires', '&gt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('expires', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="by_agent" string="Written by an Agent" domain="[('origin', '=', 'agent')]"/>
+                <filter name="by_person" string="Written by a Person" domain="[('origin', '=', 'person')]"/>
+                <filter name="mine" string="Mine" domain="[('create_uid', '=', uid)]"/>
+                <separator/>
+                <filter name="organisation" string="Organisation" domain="[('company_id', '!=', False)]"/>
+                <filter name="of_customer" string="Of a Customer" domain="[('partner_id', '!=', False)]"/>
+                <filter name="of_project" string="Of a Project" domain="[('project_id', '!=', False)]"/>
+                <filter name="of_task" string="Of a Task" domain="[('task_id', '!=', False)]"/>
+                <separator/>
+                <filter name="never" string="Never" domain="[('severity', '=', 'never')]"/>
+                <filter name="must" string="Must" domain="[('severity', '=', 'must')]"/>
+                <filter name="prefer" string="Prefer" domain="[('severity', '=', 'prefer')]"/>
+                <separator/>
+                <filter name="modified" string="Modified" date="write_date"/>
+                <separator/>
+                <filter name="group_kind" string="Kind" context="{'group_by': 'kind'}"/>
+                <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                <filter name="group_section" string="Section" context="{'group_by': 'section_id'}"/>
+                <filter name="group_severity" string="Severity" context="{'group_by': 'severity'}"/>
+                <filter name="group_customer" string="Customer" context="{'group_by': 'customer_id'}"/>
+                <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                <filter name="group_origin" string="Written By" context="{'group_by': 'origin'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_memory_note" model="ir.actions.act_window">
+        <field name="name">Rules</field>
+        <field name="res_model">memory.note</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('kind', '=', 'rule')]</field>
+        <field name="context">{'search_default_active': 1, 'default_kind': 'rule'}</field>
+    </record>
+
+    <record id="action_memory_fact" model="ir.actions.act_window">
+        <field name="name">Facts</field>
+        <field name="res_model">memory.note</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('kind', '=', 'fact')]</field>
+        <field name="context">{'search_default_active': 1, 'default_kind': 'fact', 'default_state': 'active'}</field>
+    </record>
+
+    <record id="action_memory_procedure" model="ir.actions.act_window">
+        <field name="name">Procedures</field>
+        <field name="res_model">memory.note</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('kind', '=', 'procedure')]</field>
+        <field name="context">{'search_default_active': 1, 'default_kind': 'procedure', 'default_state': 'active'}</field>
+    </record>
+
+    <record id="view_memory_section_list" model="ir.ui.view">
+        <field name="name">memory.section.list</field>
+        <field name="model">memory.section</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="description"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_memory_section" model="ir.actions.act_window">
+        <field name="name">Sections</field>
+        <field name="res_model">memory.section</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

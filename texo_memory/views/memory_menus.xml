@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <!-- Review first (the app opens on its first menu: the dashboard of what waits), then search, the knowledge by
+         kind, the configuration last: the daily work apart from the setup. -->
+    <menuitem id="menu_memory_root" name="Memory" sequence="60" groups="texo.group_texo_member"/>
+    <menuitem id="menu_memory_search" name="Search the Memory" parent="menu_memory_root" action="action_memory_search"
+              sequence="5"/>
+    <menuitem id="menu_memory_review" name="To Review" parent="menu_memory_root" action="action_memory_review_area"
+              sequence="2"/>
+    <menuitem id="menu_memory_knowledge" name="Knowledge" parent="menu_memory_root" sequence="10"/>
+    <menuitem id="menu_memory_note" name="Rules" parent="menu_memory_knowledge" action="action_memory_note" sequence="10"/>
+    <menuitem id="menu_memory_fact" name="Facts" parent="menu_memory_knowledge" action="action_memory_fact" sequence="12"/>
+    <menuitem id="menu_memory_procedure" name="Procedures" parent="menu_memory_knowledge" action="action_memory_procedure"
+              sequence="13"/>
+    <menuitem id="menu_memory_document" name="Documents" parent="menu_memory_knowledge" action="action_memory_document"
+              sequence="15"/>
+    <menuitem id="menu_memory_lesson" name="Lessons" parent="menu_memory_knowledge" action="action_memory_lesson"
+              sequence="20"/>
+    <menuitem id="menu_memory_config" name="Configuration" parent="menu_memory_root" sequence="90"
+              groups="texo.group_texo_lead"/>
+    <menuitem id="menu_memory_section" name="Sections" parent="menu_memory_config" action="action_memory_section"
+              sequence="10"/>
+    <menuitem id="menu_memory_note_activity" name="Rule Activities" parent="menu_memory_config"
+              action="action_memory_note_activity" sequence="20"/>
+    <menuitem id="menu_memory_optout_name" name="Opt-out Names" parent="menu_memory_config" action="action_memory_optout_name"
+              sequence="80" groups="texo.group_texo_admin"/>
+</odoo>

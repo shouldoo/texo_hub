@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <!-- One record per kind of memory, on the organisation itself: the main company. -->
+
+    <!-- A document whose original lives elsewhere: a link, with its converted text next to it. -->
+    <record id="demo_document_manuale_comunicazioni" model="ir.attachment">
+        <field name="name">Manuale delle comunicazioni ai clienti</field>
+        <field name="type">url</field>
+        <field name="url">https://example.com/manuale-comunicazioni-clienti</field>
+        <field name="res_model">res.company</field>
+        <field name="res_id" ref="base.main_company"/>
+        <field name="description">Come l'azienda scrive ai clienti: chi firma, il tono, i tempi di risposta. Ogni comunicazione esce a nome di una persona.</field>
+        <field name="texo_document" eval="True"/>
+        <field name="texo_created" eval="True"/>
+        <field name="texo_read_on" eval="DateTime.today()"/>
+    </record>
+
+    <record id="demo_document_manuale_comunicazioni_text" model="ir.attachment">
+        <field name="name">Manuale delle comunicazioni ai clienti.md</field>
+        <field name="raw" type="bytes" file="texo_memory/demo/manuale-comunicazioni-clienti.md"/>
+        <field name="mimetype">text/markdown</field>
+        <field name="res_model">res.company</field>
+        <field name="res_id" ref="base.main_company"/>
+        <field name="texo_text_of_id" ref="demo_document_manuale_comunicazioni"/>
+        <field name="texo_created" eval="True"/>
+    </record>
+
+    <!-- A procedure of the organisation: a text file, its own text. -->
+    <record id="demo_document_apertura_progetto" model="ir.attachment">
+        <field name="name">come-si-apre-un-progetto.md</field>
+        <field name="raw" type="bytes" file="texo_memory/demo/come-si-apre-un-progetto.md"/>
+        <field name="mimetype">text/markdown</field>
+        <field name="res_model">res.company</field>
+        <field name="res_id" ref="base.main_company"/>
+        <field name="description">La procedura per aprire un progetto: cliente, descrizione, milestone, primo aggiornamento, documenti.</field>
+        <field name="texo_document" eval="True"/>
+        <field name="texo_created" eval="True"/>
+        <field name="texo_read_on" eval="DateTime.today()"/>
+    </record>
+
+    <!-- A rule of the organisation, taken from the manual: it binds every session. -->
+    <record id="demo_rule_nessun_invio" model="memory.note">
+        <field name="name">Nessun invio al cliente senza la persona</field>
+        <field name="body">L'agente prepara le bozze di e-mail e messaggi per i clienti, ma non le invia mai: le invia la persona, dopo averle lette.</field>
+        <field name="severity">never</field>
+        <field name="rule_activity_ids" eval="[Command.set([ref('activity_communication')])]"/>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="section_id" ref="section_operations"/>
+        <field name="state">active</field>
+        <field name="verified" eval="DateTime.today()"/>
+        <field name="document_id" ref="demo_document_manuale_comunicazioni"/>
+        <field name="source_checked" eval="DateTime.now()"/>
+    </record>
+
+    <!-- A fact: what the organisation is, one fact at a time. -->
+    <record id="demo_fact_orari" model="memory.note">
+        <field name="name">Orari e reperibilità</field>
+        <field name="kind">fact</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="section_id" ref="section_operations"/>
+        <field name="body">L'ufficio risponde dal lunedì al venerdì, dalle 9 alle 18. Fuori orario c'è una reperibilità solo per i clienti con il canone di assistenza.</field>
+        <field name="keywords">orario, apertura, assistenza, supporto</field>
+    </record>
+
+    <!-- A procedure: how an operation is done, taken from the document that stays its source. -->
+    <record id="demo_procedure_apertura" model="memory.note">
+        <field name="name">Aprire un progetto</field>
+        <field name="kind">procedure</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="section_id" ref="section_operations"/>
+        <field name="body">1. Il cliente e il progetto in Odoo, con la description: scopo, perimetro, vincoli.
+2. Le milestone della roadmap, con le scadenze concordate.
+3. Il primo aggiornamento del progetto, che ne diventa il presente.
+4. I documenti del cliente come documenti della memoria del progetto.</field>
+        <field name="keywords">nuovo progetto, avvio, onboarding</field>
+        <field name="document_id" ref="demo_document_apertura_progetto"/>
+        <field name="source_checked" eval="DateTime.now()"/>
+    </record>
+
+    <!-- A lesson: a technical fact without the customer, tagged as the projects it helps. -->
+    <record id="demo_tag_orm" model="project.tags">
+        <field name="name">orm</field>
+    </record>
+
+    <record id="demo_lesson_campo_calcolato" model="memory.lesson">
+        <field name="name">Un campo calcolato non salvato non si cerca</field>
+        <field name="kind">lesson</field>
+        <field name="tag_ids" eval="[Command.set([ref('demo_tag_orm')])]"/>
+        <field name="lesson_activity_ids" eval="[Command.set([ref('activity_code')])]"/>
+        <field name="state">active</field>
+        <field name="applies_to">Odoo 17.0 e successive</field>
+        <field name="finding">Un campo calcolato senza store=True non ha una colonna nel database: un dominio che lo usa in una ricerca, in un filtro o in un raggruppamento fallisce.</field>
+        <field name="solution">Si dà al campo un metodo di ricerca (search=) che traduce la condizione in un dominio sui campi salvati, oppure lo si salva con store=True e le sue dipendenze in @api.depends; per raggruppare serve store=True.</field>
+        <field name="verified">Comportamento dell'ORM, documentazione per sviluppatori</field>
+    </record>
+</odoo>

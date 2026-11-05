@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="review_area_knowledge" model="memory.review.area">
+        <field name="code">knowledge</field>
+        <field name="name">Knowledge</field>
+        <field name="description">Rules, facts and procedures to check, draft rules, changed documents</field>
+        <field name="sequence">10</field>
+        <field name="main_queue">stale_notes</field>
+    </record>
+    <record id="review_area_lessons" model="memory.review.area">
+        <field name="code">lessons</field>
+        <field name="name">Lessons</field>
+        <field name="description">Lessons proposed by the agents and lessons that say nearly the same thing</field>
+        <field name="sequence">20</field>
+        <field name="main_queue">draft_lessons</field>
+        <field name="group_id" ref="texo.group_texo_lead"/>
+    </record>
+    <record id="review_area_projects" model="memory.review.area">
+        <field name="code">projects</field>
+        <field name="name">Projects</field>
+        <field name="description">Projects with open work and no recent update</field>
+        <field name="sequence">30</field>
+        <field name="main_queue">projects_without_now</field>
+    </record>
+</odoo>

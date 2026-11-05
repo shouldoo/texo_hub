@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <!-- The cards to approve are the main queue: for a member, who does not approve, the button shows 0 and
+         the lines still lead to the candidates to sort and the cards to review. -->
+    <record id="review_area_sources" model="memory.review.area">
+        <field name="code">sources</field>
+        <field name="name">External Sources</field>
+        <field name="description">Cards to approve, candidates to sort, cards to write, cards due for review, channels overdue</field>
+        <field name="sequence">40</field>
+        <field name="main_queue">source_to_approve</field>
+    </record>
+
+    <!-- Approve from the list: the same check as the button of the card (a lead, a card to approve). -->
+    <record id="action_server_memory_source_approve" model="ir.actions.server">
+        <field name="name">Approve</field>
+        <field name="model_id" ref="model_memory_source_item"/>
+        <field name="binding_model_id" ref="model_memory_source_item"/>
+        <field name="binding_view_types">list</field>
+        <field name="group_ids" eval="[(4, ref('texo.group_texo_lead'))]"/>
+        <field name="state">code</field>
+        <field name="code">records.action_approve()</field>
+    </record>
+</odoo>

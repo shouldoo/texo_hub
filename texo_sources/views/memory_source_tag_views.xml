@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_source_tag_list" model="ir.ui.view">
+        <field name="name">memory.source.tag.list</field>
+        <field name="model">memory.source.tag</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="kind"/>
+                <field name="note"/>
+                <field name="color" widget="color_picker"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_memory_source_tag_search" model="ir.ui.view">
+        <field name="name">memory.source.tag.search</field>
+        <field name="model">memory.source.tag</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="note"/>
+                <filter name="person" string="Public Persons" domain="[('kind', '=', 'person')]"/>
+                <filter name="body" string="Bodies" domain="[('kind', '=', 'body')]"/>
+                <filter name="place" string="Places" domain="[('kind', '=', 'place')]"/>
+                <filter name="theme" string="Themes" domain="[('kind', '=', 'theme')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_kind" string="Kind" context="{'group_by': 'kind'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_memory_source_tag" model="ir.actions.act_window">
+        <field name="name">Source Labels</field>
+        <field name="res_model">memory.source.tag</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_group_kind': 1}</field>
+    </record>
+</odoo>

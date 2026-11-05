@@ -1,0 +1,16 @@
+<section style="max-width: 860px; margin: 0 auto; padding: 16px;">
+    <h2>Texo</h2>
+    <p>Makes Odoo the identity provider of Texo: people, hub roles and personal hub tokens live in Odoo,
+        and every agent route of the hub modules runs as the person behind the token.</p>
+    <ul>
+        <li>API key scope <b>Texo</b> in the standard <i>New API Key</i> wizard: such a key opens only the
+            hub routes, never <code>/json/2</code> or XML-RPC.</li>
+        <li>Hub tokens always expire, within <code>texo.token_max_days</code> days (default 90).</li>
+        <li>Hub roles Member, Lead and Administrator as Odoo groups.</li>
+        <li><code>POST /texo/v1/whoami</code>: identity and hub role behind a token, for the agent's client.</li>
+        <li>Users &gt; Texo Tokens: every hub token with its owner, expiry and last use.</li>
+        <li>Generic read-only routes for agents (<code>search_read</code>, <code>read_group</code>,
+            <code>fields</code>, <code>models</code>): the agent writes the query, Odoo runs it as the user on a
+            read-only cursor, without technical models or sensitive fields.</li>
+    </ul>
+</section>

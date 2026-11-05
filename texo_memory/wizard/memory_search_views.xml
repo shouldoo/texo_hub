@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_search_form" model="ir.ui.view">
+        <field name="name">memory.search.form</field>
+        <field name="model">memory.search</field>
+        <field name="arch" type="xml">
+            <form string="Search the Memory">
+                <sheet>
+                    <div class="d-flex gap-2 align-items-center">
+                        <field name="query" class="flex-grow-1 fs-4" placeholder="e.g. who approves the deploys of this customer?"/>
+                        <button name="action_search" type="object" string="Search" class="btn-primary" icon="search"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="scope" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                        <group invisible="not vectors">
+                            <field name="mode" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                    </group>
+                    <field name="vectors" invisible="1"/>
+                    <field name="searched" invisible="1"/>
+                    <div class="text-muted" invisible="not searched or line_ids">
+                        Nothing found. Try other words, a synonym, or another scope.
+                    </div>
+                    <field name="line_ids" nolabel="1" invisible="not line_ids">
+                        <list create="0" delete="0" edit="0">
+                            <field name="sequence" column_invisible="1"/>
+                            <field name="kind" string="Kind"/>
+                            <field name="title" string="Title"/>
+                            <field name="state" string="State" widget="badge" optional="show"/>
+                            <field name="match" widget="badge" decoration-success="match in ('all', 'both')"
+                                   decoration-info="match == 'semantic'" decoration-muted="match == 'some'"/>
+                            <field name="path" optional="show"/>
+                            <field name="snippet"/>
+                            <button name="action_open" type="object" string="Open" icon="open_in_new"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_memory_search" model="ir.actions.act_window">
+        <field name="name">Search the Memory</field>
+        <field name="res_model">memory.search</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

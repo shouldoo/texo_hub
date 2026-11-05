@@ -1,0 +1,4 @@
+id,name,model_id,group_id/id,operation,domain
+access_memory_embedding_admin,Memory embedding: administrators read the vectors of the memory,memory.embedding,texo.group_texo_admin,r,
+access_memory_vector_status_admin,Memory state of the search: administrators,memory.vector.status,texo.group_texo_admin,crud,
+access_memory_vector_status_line_admin,Memory state of the search by kind: administrators,memory.vector.status.line,texo.group_texo_admin,crud,

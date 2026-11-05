@@ -1,0 +1,17 @@
+id,name,model_id,group_id/id,operation,domain
+access_memory_source_channel_member,External source channel: members read,memory.source.channel,texo.group_texo_member,r,
+access_memory_source_channel_lead,External source channel: leads decide the channels,memory.source.channel,texo.group_texo_lead,crud,
+memory_source_channel_rule,External source channel: of my organisations and of the projects I may read,memory.source.channel,,crud,"['&', ('company_id', 'in', user.company_ids.ids), '|', ('project_id', '=', False), ('project_id', 'access', 'read')]"
+access_memory_source_feed_member,External source feed: members read,memory.source.feed,texo.group_texo_member,r,
+access_memory_source_feed_lead,External source feed: leads decide how a channel is read,memory.source.feed,texo.group_texo_lead,crud,
+memory_source_feed_rule,External source feed: of my organisations,memory.source.feed,,crud,"[('company_id', 'in', user.company_ids.ids)]"
+access_memory_source_item_member,External source card: members triage and write,memory.source.item,texo.group_texo_member,cru,
+access_memory_source_item_lead,External source card: leads approve and delete,memory.source.item,texo.group_texo_lead,crud,
+memory_source_item_rule,External source card: of my organisations and of the projects I may read,memory.source.item,,crud,"['&', ('company_id', 'in', user.company_ids.ids), '|', ('project_id', '=', False), ('project_id', 'access', 'read')]"
+access_memory_source_segment_member,External source segment: members write,memory.source.segment,texo.group_texo_member,crud,
+memory_source_segment_rule,External source segment: of my organisations,memory.source.segment,,crud,"[('company_id', 'in', user.company_ids.ids)]"
+access_memory_source_flag_member,External source doubt: every member reads,memory.source.flag,texo.group_texo_member,r,
+access_memory_source_flag_admin,External source doubt: administrators define them,memory.source.flag,texo.group_texo_admin,crud,
+access_memory_source_tag_member,External source label: members read and add,memory.source.tag,texo.group_texo_member,cru,
+access_memory_source_tag_lead,External source label: leads curate,memory.source.tag,texo.group_texo_lead,crud,
+memory_source_tag_rule,External source label: of my organisations,memory.source.tag,,crud,"[('company_id', 'in', user.company_ids.ids)]"

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_memory_vector_status_form" model="ir.ui.view">
+        <field name="name">memory.vector.status.form</field>
+        <field name="model">memory.vector.status</field>
+        <field name="arch" type="xml">
+            <form string="State of the Search" create="0">
+                <header>
+                    <button name="action_compute_now" type="object" string="Compute Now" class="btn-primary"
+                            invisible="not available or not pending"/>
+                    <button name="action_refresh" type="object" string="Refresh"/>
+                </header>
+                <div class="alert alert-warning mb-0" role="alert" invisible="available">
+                    The vectors are not available in this database (the pgvector extension is missing): the search
+                    uses the words only.
+                </div>
+                <div class="alert alert-warning mb-0" role="alert" invisible="not available or not pending or cron_active">
+                    The scheduled computation of the vectors is off: the texts waiting get no vector.
+                </div>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="available"/>
+                            <field name="mode"/>
+                            <field name="model_name"/>
+                            <field name="endpoint"/>
+                            <field name="rerank"/>
+                        </group>
+                        <group>
+                            <field name="texts" invisible="not available"/>
+                            <field name="stored" invisible="not available"/>
+                            <field name="pending" invisible="not available"
+                                   decoration-warning="pending"/>
+                            <field name="cron_active"/>
+                            <field name="last_run"/>
+                            <field name="next_run"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" nolabel="1" invisible="not available">
+                        <list create="0" delete="0" decoration-warning="pending">
+                            <field name="label"/>
+                            <field name="texts" sum="Texts"/>
+                            <field name="stored" sum="With a Vector"/>
+                            <field name="pending" sum="Waiting"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_memory_vector_status" model="ir.actions.act_window">
+        <field name="name">State of the Search</field>
+        <field name="res_model">memory.vector.status</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_memory_vector_status" name="State of the Search" parent="texo_memory.menu_memory_config"
+              action="action_memory_vector_status" sequence="70" groups="texo.group_texo_admin"/>
+</odoo>

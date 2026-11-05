@@ -1,0 +1,23 @@
+<section style="max-width: 860px; margin: 0 auto; padding: 16px;">
+    <h2>Texo - Memory</h2>
+    <p>The working memory of an organisation, in its own Odoo Community: the project lives in Odoo itself
+        (description, milestones, updates, tasks and their chatter); this module adds the rules an agent follows,
+        the lessons learned without the customer and the map of the documentation. Agents read it through the
+        Texo token and write it after the person's confirmation.</p>
+    <ul>
+        <li><b>Rules</b> on the organisation, a customer or a project, each with its state (draft, active,
+            superseded, archived), confirmation and expiry dates; the rules of the organisation open every session.</li>
+        <li><b>Lessons</b> that belong to nobody: findings written by the agents, curated lessons, procedures.
+            No field points back to a customer; every hub member reads them; they survive a customer's opt-out.</li>
+        <li><b>Roles</b>: a member writes drafts that a lead reviews; a lead's confirmed rule is active at once.</li>
+        <li><b>Leak filter</b>: a finding that names a customer, a person, an amount or a record is refused
+            and nothing is stored.</li>
+        <li><b>Context pack</b>: the task with its chatter, chain task &gt; project &gt; customer with the rules and
+            documents of each level, pending drafts, stale warnings and matching lessons, composed on the server.</li>
+        <li><b>Search</b>: PostgreSQL full-text search on lessons, Italian and English stems side by side.</li>
+        <li><b>Routes</b> behind the Texo token: rules, context, search, read, note, lesson, state.</li>
+        <li><b>Opt-out</b> of a customer: their rules and documents go, the lessons stay, a certificate is posted on the request.</li>
+        <li><b>Weekly housekeeping</b>: lessons that name a later customer are archived; near-duplicates become an
+            activity for the leads.</li>
+    </ul>
+</section>
