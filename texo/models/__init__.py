@@ -4,3 +4,4 @@ from . import texo_api
 from . import res_users
 from . import res_users_apikeys
 from . import res_users_apikeys_description
+from . import texo_config

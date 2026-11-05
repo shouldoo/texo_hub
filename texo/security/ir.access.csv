@@ -1,2 +1,8 @@
 id,name,model_id,group_id/id,operation,domain
 access_apikeys_texo_admin,Texo administrators read hub tokens,res.users.apikeys,texo.group_texo_admin,r,"[('scope', '=', 'texo')]"
+access_texo_pack_member,Texo pack: every member reads the packs of the organisation,texo.pack,texo.group_texo_member,r,
+access_texo_pack_admin,Texo pack: administrators configure them,texo.pack,texo.group_texo_admin,crud,
+texo_pack_company_rule,Texo pack: the packs of the companies of the user,texo.pack,,crud,"[('company_id', 'in', user.company_ids.ids)]"
+access_texo_thread_member,Texo thread: every member reads the threads of the organisation,texo.thread,texo.group_texo_member,r,
+access_texo_thread_admin,Texo thread: administrators configure them,texo.thread,texo.group_texo_admin,crud,
+texo_thread_company_rule,Texo thread: the threads of the companies of the user,texo.thread,,crud,"[('company_id', 'in', user.company_ids.ids)]"

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 Daniele Lucarelli
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
+<odoo>
+    <record id="view_texo_pack_list" model="ir.ui.view">
+        <field name="name">texo.pack.list</field>
+        <field name="model">texo.pack</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="version"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_texo_pack" model="ir.actions.act_window">
+        <field name="name">Texo Skill Packs</field>
+        <field name="res_model">texo.pack</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No skill pack yet</p>
+            <p>The packs of the marketplace the organisation installs: the texo CLI installs them for every assistant.</p>
+        </field>
+    </record>
+
+    <record id="view_texo_thread_list" model="ir.ui.view">
+        <field name="name">texo.thread.list</field>
+        <field name="model">texo.thread</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="thread_type"/>
+                <field name="driver"/>
+                <field name="data_class"/>
+                <field name="writes"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_texo_thread_form" model="ir.ui.view">
+        <field name="name">texo.thread.form</field>
+        <field name="model">texo.thread</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="thread_type"/>
+                            <field name="driver"/>
+                        </group>
+                        <group>
+                            <field name="data_class"/>
+                            <field name="writes"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="guide" placeholder="When the agent uses it, and its limits"/>
+                    <label for="settings"/>
+                    <field name="settings" widget="code" options="{'mode': 'json'}"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_texo_thread" model="ir.actions.act_window">
+        <field name="name">Texo Threads</field>
+        <field name="res_model">texo.thread</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No thread yet</p>
+            <p>The sources, tools and connectors the organisation mounts next to the memory. A credential is never written here: name it as env:NAME in the settings.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_texo_packs" name="Texo Skill Packs" parent="base.menu_users"
+              action="action_texo_pack" groups="texo.group_texo_admin" sequence="91"/>
+    <menuitem id="menu_texo_threads" name="Texo Threads" parent="base.menu_users"
+              action="action_texo_thread" groups="texo.group_texo_admin" sequence="92"/>
+</odoo>

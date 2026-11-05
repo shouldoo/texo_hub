@@ -2,8 +2,8 @@
 
 Odoo 20.0 · LGPL-3
 
-Makes Odoo the identity provider of Texo: people, hub roles and personal hub tokens
-live in Odoo, and every agent route of the hub modules runs as the person behind the token.
+Makes Odoo the identity provider and the configuration of Texo: people, hub roles, personal hub tokens
+and what the CLI mounts live in Odoo, and every agent route of the hub modules runs as the person behind the token.
 
 ## How it works
 
@@ -43,6 +43,25 @@ Guarantees:
 
 Task, ticket and chatter routes live in companion modules (`texo_project`).
 
+## The configuration of the organisation
+
+What the `texo` CLI mounts on the machine of every person of the organisation lives here, never in a repository:
+
+| Model | What |
+|---|---|
+| `texo.pack` | the skill packs of the marketplace the organisation installs, each at a version (`odoo_partner`, `v1.0.0`) |
+| `texo.thread` | the threads it mounts next to the memory: id, type (`source`, `tool`, `connector`), driver, `data_class`, `writes`, guide, and the settings of the driver as a JSON object |
+| `res.company.texo_slug` | the name of the organisation for the CLI: its credentials file is `~/.config/texo/<slug>.env` (empty: derived from the name of the company) |
+
+A credential is never stored: a thread names it as `env:NAME` and the person keeps its value on the machine; a
+value in its place is refused. Administrators edit both lists in *Settings > Users* (*Texo Skill Packs*, *Texo
+Threads*) or through the route `admin/config`.
+
+| Route (`POST /texo/v1/...`) | Who | Parameters | Returns |
+|---|---|---|---|
+| `config` | every role | `company_id` (optional) | `organisation` (the slug), `company`, `packs` (`name`, `version`), `threads` (each as a `[[thread]]` of `texo.toml`) |
+| `admin/config` | administrators | `packs`, `threads` (the full lists; one left out is not touched), `slug`, `company_id`, `apply` (default false) | every pack and thread `created`, `updated` (with `changes`), `unchanged` or `archived` (left out of the list: never deleted), and the counts; written only with `apply` |
+
 ## Client configuration
 
 A client needs three values, kept in a file of the person outside any repository (mode 600):
@@ -68,6 +87,11 @@ odoo -c <conf> -d test_cohub20 -i texo --test-tags /texo --stop-after-init --htt
 ```
 
 ## Changelog
+
+### 20.0.1.1.0
+
+- The configuration of the organisation for the texo CLI: skill packs and threads, the slug of the organisation,
+  the routes `config` and `admin/config`, the menus for administrators.
 
 ### 20.0.1.0.0
 

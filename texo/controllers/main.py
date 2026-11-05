@@ -40,6 +40,18 @@ class TexoController(http.Controller):
             'role': role,
         }
 
+    # -- the configuration of the organisation, for the texo CLI ----------------
+    @http.route('/texo/v1/config', readonly=True, **HUB_ROUTE)
+    def config(self, company_id=None):
+        """The skill packs and the threads the organisation mounts, for every role."""
+        return request.env['texo.config']._agent_config(company_id)
+
+    @http.route('/texo/v1/admin/config', **HUB_ROUTE)
+    def set_config(self, packs=None, threads=None, slug=None, company_id=None, apply=False):
+        """Administrators: the configuration made to say what the payload says; a dry run without apply."""
+        return request.env['texo.config']._agent_set_config(packs=packs, threads=threads, slug=slug,
+                                                           company_id=company_id, apply=apply)
+
     # -- generic read-only access: the agent writes the query -----------------
     @http.route('/texo/v1/search_read', readonly=True, **HUB_ROUTE)
     def search_read(self, model, domain=None, fields=None, limit=None, offset=0, order=None):
