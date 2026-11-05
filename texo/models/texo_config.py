@@ -182,7 +182,9 @@ class TexoConfig(models.AbstractModel):
         items = []
         with self.env.cr.savepoint() as savepoint:
             if slug is not None and slug != company._texo_slug():
-                company.texo_slug = slug
+                # sudo: the Texo administrator may not administer the companies of Odoo; the slug is a field of
+                # Texo, on a company of the user (_company refuses the others)
+                company.sudo().texo_slug = slug
                 items.append({'kind': 'organisation', 'key': slug, 'status': 'updated'})
             if packs is not None:
                 items += self._sync(company, 'texo.pack', 'name', packs, self._pack_vals)
