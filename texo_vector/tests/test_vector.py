@@ -87,6 +87,23 @@ class TestVector(VectorCase):
         self.assertEqual(rest['embedded'], outcome['pending'], "outside the cron the rest in one go, no commit")
         self.assertEqual(self.cron()['embedded'], 0)
 
+    def test_the_cron_reports_no_work_without_a_service(self):
+        """Without an endpoint nothing is computed: the cron does not announce a backlog it
+        cannot work off (ir.cron would log a warning at every run)."""
+        self.fact('Fatturazione', 'Le fatture si emettono a fine mese.')
+        self.env['ir.config_parameter'].sudo().set_str(PARAM_ENDPOINT, '')
+        calls = []
+
+        def progress(cron_self, processed=0, *, remaining=None, deactivate=False):
+            calls.append((processed, remaining))
+            return 60
+
+        with patch.object(type(self.env['ir.cron']), '_commit_progress', progress):
+            outcome = self.env['memory.embedding'].with_context(cron_id=1)._cron_embed()
+        self.assertEqual(calls, [])
+        self.assertEqual((outcome['embedded'], outcome['skipped']), (0, 'endpoint'))
+        self.assertGreater(outcome['pending'], 0)
+
     def no_thread_limit(self):
         return patch.object(memory_embedding, 'config', {'limit_time_real_cron': -1, 'limit_time_real': 0})
 

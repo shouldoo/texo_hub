@@ -356,6 +356,10 @@ class MemoryEmbedding(models.Model):
                 if key not in have or have[key].model_name != model_name or have[key].text_hash != text_hash(text)]
         pending = len(todo) - min(len(todo), limit)
         todo = todo[:limit]
+        if todo and not self._endpoint():
+            # no service: nothing can be computed, and a cron that reports work it never does
+            # is logged as a warning at every run; the search stays lexical until one is named
+            return {'embedded': 0, 'deleted': len(gone), 'pending': len(todo) + pending, 'skipped': 'endpoint'}
         in_cron = bool(self.env.context.get('cron_id'))
         Cron = self.env['ir.cron']
         left = Cron._commit_progress(remaining=len(todo)) if in_cron else float('inf')
