@@ -59,9 +59,9 @@ TOOLS = [
                     "present); the chain with the active rules of each level (the text of a prohibition or an "
                     "obligation, the title of a preference), its facts and procedures by title and its documents; draft rules, warnings (now_missing, "
                     "now_stale, stale rules) and the lessons that share a tag with the task or its project, by title. "
-                    "Read it before touching code. With neither, the pack of the organisation itself (the "
-                    "company, or company_id), by section. Pass the activity of the session (e.g. code, deploy, "
-                    "data, communication, analysis, migration; several comma-separated) to get only the rules that "
+                    "Read it before you start the work. With neither, the pack of the organisation itself (the "
+                    "company, or company_id), by section. Pass the activity of the session (analysis, "
+                    "communication or another of the organisation's; several comma-separated) to get only the rules that "
                     "concern it. With format okf, the pack as an Open Knowledge Format bundle: index.md (every level "
                     "with its rules, facts, procedures and documents by title and one line, the lessons, the pending items, the "
                     "warnings), the task and the project as concepts, the binding rules in full (a short one is whole in its "
@@ -131,9 +131,9 @@ TOOLS = [
          {'fact_id': INTEGER, 'expected_version': STRING, 'body': STRING, 'name': STRING, 'keywords': STRINGS,
           'applies_to': STRING, 'expires': STRING, 'verified': {'type': 'boolean'}}, ['fact_id'],
          route=('memory', 'fact_update'), write=True),
-    tool('lesson', "Write a finding after the person's yes: a technical fact learned on a project that will help "
+    tool('lesson', "Write a finding after the person's yes: something learned on a project that will help "
                    "another one, with no customer, person, amount, record or task number in it (refused otherwise: "
-                   "rewrite it). tags: what it is about (a module, a version, an area), as the projects are tagged: "
+                   "rewrite it). tags: what it is about (a topic, a process, a version, an area), as the projects are tagged: "
                    "the pack of a task gives the lessons that share a tag with the task or its project. keywords: "
                    "synonyms, translations and other names, so the search finds it by other words. activities: the "
                    "codes of the work it helps. source_ref (the task) only feeds the leak filter. state active only "

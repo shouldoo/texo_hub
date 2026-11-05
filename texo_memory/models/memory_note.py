@@ -64,7 +64,7 @@ class MemoryNote(models.Model):
     """
     _name = 'memory.note'
     _description = "Memory Note"
-    _inherit = ['memory.anchor.mixin', 'mail.thread', 'mail.activity.mixin']
+    _inherit = ['memory.anchor.mixin', 'memory.seed.mixin', 'mail.thread', 'mail.activity.mixin']
     _order = 'write_date desc, id desc'
 
     name = fields.Char(string="Title", required=True, tracking=True)
@@ -589,7 +589,7 @@ class MemoryNote(models.Model):
         if kind not in dict(KINDS):
             raise UserError(self.env._(
                 "A note is a rule, a fact or a procedure. What happened on a task goes in a note on the task; a "
-                "technical fact without the customer goes in a lesson; the state of a project goes in a project update."))
+                "finding without the customer goes in a lesson; the state of a project goes in a project update."))
         if not (name or '').strip():
             raise UserError(self.env._("A note needs a title."))
         vals = self._anchor_vals(task_id, project_id, partner_id, company_id)

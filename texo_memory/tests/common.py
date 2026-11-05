@@ -9,6 +9,15 @@ CLEAN_SOLUTION = ("Rename the field to uom_id in Python, views, domains and test
                   "with _compute_quantity between the move and the line unit.")
 
 
+def sector_activities(env):
+    """The activities a sector adds through the seed of its industry, as the tests use them:
+    the module itself ships only analysis and communication."""
+    Activity = env['memory.note.activity']
+    for sequence, code in enumerate(('code', 'deploy', 'migration'), start=30):
+        if not Activity.search_count([('code', '=', code)]):
+            Activity.create({'name': code.capitalize(), 'code': code, 'sequence': sequence})
+
+
 def clear_home(env):
     """The organisation without the notes and documents of the demo data: the tests write
     their own."""
@@ -25,6 +34,7 @@ class MemoryFixtures:
     def setUpClass(cls):
         super().setUpClass()
         clear_home(cls.env)
+        sector_activities(cls.env)
         Users = cls.env['res.users'].with_context(no_reset_password=True)
         project_user = Command.link(cls.env.ref('project.group_project_user').id)
         cls.member = Users.create({

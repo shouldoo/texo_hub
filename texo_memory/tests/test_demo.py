@@ -26,10 +26,10 @@ class TestDemo(TransactionCase):
         Note = self.env['memory.note'].with_user(self.lead)
         manual = self.env.ref('texo_memory.demo_document_manuale_comunicazioni')
         procedure = self.env.ref('texo_memory.demo_document_apertura_progetto')
-        lesson = self.env.ref('texo_memory.demo_lesson_campo_calcolato')
+        lesson = self.env.ref('texo_memory.demo_lesson_pdf_scansionato')
         rules = Note._agent_rules_text("Common.", activity='communication')
         self.assertIn("- [never] Nessun invio al cliente senza la persona:", rules['rules'])
-        self.assertNotIn(self.rule.id, [r['id'] for r in Note._agent_rules_text("Common.", activity='code')['company_rules']],
+        self.assertNotIn(self.rule.id, [r['id'] for r in Note._agent_rules_text("Common.", activity='analysis')['company_rules']],
                          "the rule concerns the communication only")
         self.assertEqual(self.rule.document_id, manual)
         self.assertNotIn('stale', self.rule._agent_summary()[0])
@@ -49,4 +49,4 @@ class TestDemo(TransactionCase):
         # a word with an accent, only in the text of the manual
         self.assertEqual([r['id'] for r in Note._agent_search('può', scope='documents')], [manual.id])
         self.assertEqual([r['id'] for r in Note._agent_search('milestone', scope='documents')], [procedure.id])
-        self.assertEqual([r['id'] for r in Note._agent_search('calcolato store', scope='lessons')], [lesson.id])
+        self.assertEqual([r['id'] for r in Note._agent_search('scansionato OCR', scope='lessons')], [lesson.id])

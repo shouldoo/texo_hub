@@ -15,6 +15,7 @@ class MemorySection(models.Model):
     by section (a level of the OKF bundle: organisation/compliance/...). The organisation
     adds its own sections."""
     _name = 'memory.section'
+    _inherit = ['memory.seed.mixin']
     _description = "Memory Section"
     _order = 'sequence, id'
 

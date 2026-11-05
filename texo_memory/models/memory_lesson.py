@@ -229,7 +229,7 @@ class MemoryLesson(models.Model):
     @api.model
     def _agent_lesson(self, finding, solution, tags=None, title=None, applies_to=None, verified=None,
                       state='draft', source_ref=None, activities=None, keywords=None, generated_by=None):
-        """Write a finding as the user: a technical fact learned on a project, without
+        """Write a finding as the user: something learned on a project, without
         the project. A member's is a draft for the leads; a lead's may be active at once.
         source_ref (the task it comes from) only feeds the leak filter: nothing in the
         lesson points back to the work."""

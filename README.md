@@ -132,6 +132,7 @@ anything on the person's machine through the remote MCP server of `texo_mcp`
 | Project | `project/my_work`, `project/task`, `project/task_note` | `texo_project` |
 | Memory | `memory/rules`, `memory/context`, `memory/search`, `memory/read`, `memory/note`, `memory/state`, `memory/review`, `memory/confirm` | `texo_memory` |
 | Documents | `document/list`, `document/read`, `document/write`, `document/remove`, `document/attachment` | `texo_memory` |
+| Seed of an industry | `admin/seed` (administrators) | `texo_memory` |
 | Hours | `project/log_time` | `texo_timesheet` |
 | MCP | `/texo/mcp` (JSON-RPC: `initialize`, `tools/list`, `tools/call`, `ping`) | `texo_mcp` |
 

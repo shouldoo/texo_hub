@@ -79,20 +79,20 @@
         <field name="source_checked" eval="DateTime.now()"/>
     </record>
 
-    <!-- A lesson: a technical fact without the customer, tagged as the projects it helps. -->
-    <record id="demo_tag_orm" model="project.tags">
-        <field name="name">orm</field>
+    <!-- A lesson: a finding without the customer, tagged as the projects it helps. -->
+    <record id="demo_tag_documenti" model="project.tags">
+        <field name="name">documenti</field>
     </record>
 
-    <record id="demo_lesson_campo_calcolato" model="memory.lesson">
-        <field name="name">Un campo calcolato non salvato non si cerca</field>
+    <record id="demo_lesson_pdf_scansionato" model="memory.lesson">
+        <field name="name">Un PDF scansionato non si cerca finché non passa dall'OCR</field>
         <field name="kind">lesson</field>
-        <field name="tag_ids" eval="[Command.set([ref('demo_tag_orm')])]"/>
-        <field name="lesson_activity_ids" eval="[Command.set([ref('activity_code')])]"/>
+        <field name="tag_ids" eval="[Command.set([ref('demo_tag_documenti')])]"/>
+        <field name="lesson_activity_ids" eval="[Command.set([ref('activity_analysis')])]"/>
         <field name="state">active</field>
-        <field name="applies_to">Odoo 17.0 e successive</field>
-        <field name="finding">Un campo calcolato senza store=True non ha una colonna nel database: un dominio che lo usa in una ricerca, in un filtro o in un raggruppamento fallisce.</field>
-        <field name="solution">Si dà al campo un metodo di ricerca (search=) che traduce la condizione in un dominio sui campi salvati, oppure lo si salva con store=True e le sue dipendenze in @api.depends; per raggruppare serve store=True.</field>
-        <field name="verified">Comportamento dell'ORM, documentazione per sviluppatori</field>
+        <field name="applies_to">Documenti PDF</field>
+        <field name="finding">Un PDF ottenuto da uno scanner contiene solo immagini: la conversione in testo restituisce un testo vuoto e la ricerca della memoria non trova niente di quello che c'è scritto.</field>
+        <field name="solution">Si converte il PDF con il riconoscimento ottico dei caratteri (OCR) attivo e si controlla un passaggio del testo convertito prima di scrivere il documento nella memoria; se l'OCR non è disponibile, si scrive il documento senza testo e lo si segnala nel sommario.</field>
+        <field name="verified">Prova di conversione su un PDF scansionato</field>
     </record>
 </odoo>

@@ -73,7 +73,7 @@ class TestMemoryLesson(MemoryCase):
     def test_the_pack_gives_the_lessons_of_the_tags_of_the_task_and_its_project(self):
         Tag = self.env['project.tags']
         stock, v20, other = Tag.create({'name': 'chm-stock'}), Tag.create({'name': 'chm-20.0'}), Tag.create({'name': 'chm-other'})
-        code = self.env.ref('texo_memory.activity_code')
+        code = self.env['memory.note.activity'].search([('code', '=', 'code')])
         two = self.lesson(self.lead, name='Two tags', state='active', tag_ids=[(6, 0, (stock | v20).ids)])
         one = self.lesson(self.lead, name='One tag', state='active', tag_ids=[(6, 0, stock.ids)],
                           lesson_activity_ids=[(6, 0, code.ids)], finding=CLEAN_FINDING + " Another case.")

@@ -136,7 +136,7 @@ class TestMemoryNote(MemoryCase):
 
     def test_a_rule_has_a_severity_and_the_activities_it_concerns(self):
         Note = self.env['memory.note']
-        code = self.env.ref('texo_memory.activity_code')
+        code = self.env['memory.note.activity'].search([('code', '=', 'code')])
         rule = Note.browse(self.note_as(self.lead, state='active', severity='never', activities='code, deploy')['id'])
         self.assertEqual(rule.severity, 'never')
         self.assertEqual(rule.rule_activity_ids.mapped('code'), ['code', 'deploy'])

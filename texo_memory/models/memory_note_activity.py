@@ -15,11 +15,12 @@ class MemoryNoteActivity(models.Model):
     only activities every organisation has; a sector adds its own through the seed of
     its industry (writing code, deploying), the organisation through the backend."""
     _name = 'memory.note.activity'
+    _inherit = ['memory.seed.mixin']
     _description = "Rule Activity"
     _order = 'sequence, id'
 
     name = fields.Char(required=True, translate=True)
-    code = fields.Char(required=True, help="The word an agent passes for the activity of its session, e.g. code.")
+    code = fields.Char(required=True, help="The word an agent passes for the activity of its session, e.g. analysis.")
     description = fields.Text(translate=True, help="What work the activity covers: the agent reads it to choose one.")
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)

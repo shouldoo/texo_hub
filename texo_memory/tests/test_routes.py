@@ -7,7 +7,7 @@ from odoo import Command
 from odoo.tests import HttpCase, tagged
 from odoo.tools import mute_logger
 
-from .common import CLEAN_FINDING, CLEAN_SOLUTION, clear_home
+from .common import CLEAN_FINDING, CLEAN_SOLUTION, clear_home, sector_activities
 
 
 @tagged('post_install', '-at_install')
@@ -17,6 +17,7 @@ class TestMemoryRoutes(HttpCase):
     def setUpClass(cls):
         super().setUpClass()
         clear_home(cls.env)
+        sector_activities(cls.env)
         Users = cls.env['res.users'].with_context(no_reset_password=True)
         project_user = Command.link(cls.env.ref('project.group_project_user').id)
         # English users: the assertions read the messages of the routes.

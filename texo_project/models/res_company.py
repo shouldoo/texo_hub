@@ -42,8 +42,8 @@ class ResCompany(models.Model):
 
     @api.model
     def _texo_ensure_homes(self):
-        """A home for every company, existing ones included: the installation hook and
-        the migration call it; idempotent."""
+        """A home for every company, existing ones included: the installation hook
+        calls it; idempotent."""
         homes = self.env['project.project']
         for company in self.sudo().with_context(active_test=False).search([]):
             homes |= company._texo_home_project()

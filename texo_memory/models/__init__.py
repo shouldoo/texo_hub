@@ -5,6 +5,7 @@ from . import (
     memory_document_passage,
     mail_message,
     memory_anchor_mixin,
+    memory_seed,  # the seed mixin, before the models that inherit it
     memory_lesson,
     memory_links,
     memory_note,
@@ -12,5 +13,6 @@ from . import (
     memory_optout_name,
     memory_review_area,
     memory_section,
+    project_project,
     project_task,
 )

@@ -56,8 +56,9 @@ msgid ""
 "- `severity`: how it binds, `never` (a prohibition), `must` (an obligation, the default) or `prefer`\n"
 "  (what the agent does unless the person decides otherwise);\n"
 "- `rule_activity_ids` («Applies to»): the work it concerns, among the activities of\n"
-"  `memory.note.activity` (`code`, `deploy`, `data`, `communication`, `analysis`, `migration` in the\n"
-"  data of the module; a lead adds the organisation's own in *Memory > Rule Activities*). None means\n"
+"  `memory.note.activity` (`analysis` and `communication` in the data of the module; the seed of an\n"
+"  industry adds those of its sector, such as `code` or `deploy`, and a lead the organisation's own in\n"
+"  *Memory > Rule Activities*). None means\n"
 "  every activity. A session that passes its activity gets the rules of that activity and those of\n"
 "  every activity; the field is not `activity_ids`, which is the to-do list of the chatter.\n"
 "\n"
@@ -98,7 +99,7 @@ msgid ""
 "The server enforces this whatever the client says: a member asking for an active rule or lesson\n"
 "gets an `AccessError`.\n"
 "\n"
-"## Findings: a technical fact without the customer\n"
+"## Findings: what a project learned, without the customer\n"
 "\n"
 "`memory/lesson` (`_agent_lesson`) writes a `memory.lesson` of kind `finding` (`finding`, `solution`,\n"
 "optional `tags`, `title`, `applies_to`, `verified`, `activities`) after the leak filter: a member's is a draft for\n"
@@ -451,6 +452,15 @@ msgstr "<span class=\"o_stat_text\">Senza un aggiornamento recente</span>"
 
 #. module: texo_memory
 #. odoo-python
+#: code:addons/texo_memory/models/memory_seed.py:0
+msgid ""
+"A %(kind)s of the seed needs a %(field)s of one lowercase word: %(code)s."
+msgstr ""
+"Un elemento %(kind)s del seed richiede un %(field)s di una sola parola "
+"minuscola: %(code)s."
+
+#. module: texo_memory
+#. odoo-python
 #: code:addons/texo_memory/controllers/main.py:0
 msgid "A %s is not read as a concept: read its pack."
 msgstr "Un %s non si legge come concetto: leggi il suo pacchetto."
@@ -526,11 +536,11 @@ msgstr "Una nota diventa attiva, superata o archiviata."
 #: code:addons/texo_memory/models/memory_note.py:0
 msgid ""
 "A note is a rule, a fact or a procedure. What happened on a task goes in a "
-"note on the task; a technical fact without the customer goes in a lesson; "
-"the state of a project goes in a project update."
+"note on the task; a finding without the customer goes in a lesson; the state"
+" of a project goes in a project update."
 msgstr ""
 "Una nota è una regola, un fatto o una procedura. Ciò che è successo su un "
-"task va in una nota sul task; un fatto tecnico senza il cliente va in una "
+"task va in una nota sul task; una scoperta senza il cliente va in una "
 "lezione; lo stato di un progetto va in un aggiornamento del progetto."
 
 #. module: texo_memory
@@ -821,9 +831,13 @@ msgstr "Cambiato il"
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__code
 #: model:ir.model.fields,field_description:texo_memory.field_memory_review_area__code
 #: model:ir.model.fields,field_description:texo_memory.field_memory_section__code
-#: model:memory.note.activity,name:texo_memory.activity_code
 msgid "Code"
 msgstr "Codice"
+
+#. module: texo_memory
+#: model:memory.note.activity,name:texo_memory.activity_communication
+msgid "Communication"
+msgstr "Comunicazione"
 
 #. module: texo_memory
 #: model:ir.model,name:texo_memory.model_res_company
@@ -921,24 +935,9 @@ msgid "Customer Opt-out"
 msgstr "Opt-out del cliente"
 
 #. module: texo_memory
-#: model:memory.note.activity,name:texo_memory.activity_communication
-msgid "Customer communication"
-msgstr "Comunicazione al cliente"
-
-#. module: texo_memory
-#: model:memory.note.activity,name:texo_memory.activity_data
-msgid "Customer data"
-msgstr "Dati del cliente"
-
-#. module: texo_memory
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_optout_wizard_form
 msgid "Delete the memory of this customer"
 msgstr "Cancella la memoria di questo cliente"
-
-#. module: texo_memory
-#: model:memory.note.activity,name:texo_memory.activity_deploy
-msgid "Deploy and environments"
-msgstr "Deploy e ambienti"
 
 #. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__description
@@ -962,6 +961,8 @@ msgstr "Descrizione"
 #: model:ir.model.fields,field_description:texo_memory.field_memory_search__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_section__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed_mixin__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_project_project__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_project_task__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_res_company__display_name
@@ -1212,6 +1213,8 @@ msgstr "Quanti finding raccoglie questa lezione."
 #: model:ir.model.fields,field_description:texo_memory.field_memory_search__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_search_line__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_section__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed_mixin__id
 #: model:ir.model.fields,field_description:texo_memory.field_project_project__id
 #: model:ir.model.fields,field_description:texo_memory.field_project_task__id
 #: model:ir.model.fields,field_description:texo_memory.field_res_company__id
@@ -1252,10 +1255,9 @@ msgid "In the Memory"
 msgstr "In memoria"
 
 #. module: texo_memory
-#: model:memory.note.activity,description:texo_memory.activity_deploy
-msgid ""
-"Instances, databases, servers and releases: local, stage and production."
-msgstr "Istanze, database, server e rilasci: locale, stage e produzione."
+#: model:ir.model,name:texo_memory.model_memory_seed
+msgid "Industry Seed"
+msgstr "Seed del settore"
 
 #. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__message_is_follower
@@ -1536,11 +1538,6 @@ msgid "Messages"
 msgstr "Messaggi"
 
 #. module: texo_memory
-#: model:memory.note.activity,name:texo_memory.activity_migration
-msgid "Migration"
-msgstr "Migrazione"
-
-#. module: texo_memory
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
@@ -1557,11 +1554,6 @@ msgstr "Modo"
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_note_search
 msgid "Modified"
 msgstr "Modificati"
-
-#. module: texo_memory
-#: model:memory.note.activity,description:texo_memory.activity_migration
-msgid "Moving an instance or a module to another version of Odoo."
-msgstr "Portare un'istanza o un modulo a un'altra versione di Odoo."
 
 #. module: texo_memory
 #: model:ir.model.fields.selection,name:texo_memory.selection__memory_note__severity__must
@@ -1726,6 +1718,12 @@ msgstr "Posizione dopo la fine del passaggio nel testo convertito."
 #: model:ir.model.constraint,message:texo_memory.constraint_memory_document_passage_unique_sequence
 msgid "One passage per place in a document."
 msgstr "Un passaggio per ogni posizione in un documento."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_seed.py:0
+msgid "Only a Texo administrator applies the seed of an industry."
+msgstr "Solo un amministratore di Texo applica il seed di un settore."
 
 #. module: texo_memory
 #. odoo-python
@@ -1950,14 +1948,6 @@ msgid "Read On"
 msgstr "Letto il"
 
 #. module: texo_memory
-#: model:memory.note.activity,description:texo_memory.activity_data
-msgid ""
-"Reading, copying, importing or converting the data and documents of a "
-"customer."
-msgstr ""
-"Leggere, copiare, importare o convertire i dati e i documenti di un cliente."
-
-#. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_optout_name__reason
 #: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__reason
 msgid "Reason"
@@ -2099,6 +2089,29 @@ msgid "Sector"
 msgstr "Settore"
 
 #. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__seed_fingerprint
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__seed_fingerprint
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__seed_fingerprint
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed_mixin__seed_fingerprint
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__seed_fingerprint
+msgid "Seed Fingerprint"
+msgstr "Impronta del seed"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__seed_key
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note_activity__seed_key
+#: model:ir.model.fields,field_description:texo_memory.field_memory_section__seed_key
+#: model:ir.model.fields,field_description:texo_memory.field_memory_seed_mixin__seed_key
+#: model:ir.model.fields,field_description:texo_memory.field_project_project__seed_key
+msgid "Seed Key"
+msgstr "Chiave del seed"
+
+#. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_seed_mixin
+msgid "Seeded Record"
+msgstr "Record dal seed"
+
+#. module: texo_memory
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_search
 msgid "Sensitive"
 msgstr "Sensibili"
@@ -2191,9 +2204,10 @@ msgstr "Fine"
 #. module: texo_memory
 #: model:memory.note.activity,description:texo_memory.activity_analysis
 msgid ""
-"Studying requirements, processes or an instance before deciding what to do."
+"Studying a request, a process or a document before deciding what to do."
 msgstr ""
-"Studiare requisiti, processi o un'istanza prima di decidere cosa fare."
+"Studiare una richiesta, un processo o un documento prima di decidere che "
+"cosa fare."
 
 #. module: texo_memory
 #: model:ir.model.fields.selection,name:texo_memory.selection__memory_anchor_mixin__state__superseded
@@ -2287,9 +2301,10 @@ msgstr "Testo"
 #. module: texo_memory
 #: model:memory.note.activity,description:texo_memory.activity_communication
 msgid ""
-"Texts that reach a customer: proposals, diagnoses, messages, documentation."
+"Texts that leave the organisation: proposals, answers, messages, "
+"documentation."
 msgstr ""
-"Testi che arrivano a un cliente: proposte, diagnosi, messaggi, "
+"Testi che escono dall'organizzazione: proposte, risposte, messaggi, "
 "documentazione."
 
 #. module: texo_memory
@@ -2388,6 +2403,23 @@ msgid "The file is larger than %s MB."
 msgstr "Il file supera i %s MB."
 
 #. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__seed_key
+#: model:ir.model.fields,help:texo_memory.field_memory_note_activity__seed_key
+#: model:ir.model.fields,help:texo_memory.field_memory_section__seed_key
+#: model:ir.model.fields,help:texo_memory.field_memory_seed_mixin__seed_key
+#: model:ir.model.fields,help:texo_memory.field_project_project__seed_key
+msgid "The industry and the key of the seed item this record comes from."
+msgstr ""
+"Il settore e la chiave dell'elemento del seed da cui viene questo record."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/memory_seed.py:0
+msgid "The industry is one lowercase word (letters, digits, underscore): %s."
+msgstr ""
+"Il settore è una sola parola minuscola (lettere, cifre, trattino basso): %s."
+
+#. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_optout_wizard__task_id
 msgid ""
 "The internal task that tracks the opt-out request; the certificate is posted"
@@ -2480,7 +2512,14 @@ msgstr ""
 
 #. module: texo_memory
 #. odoo-python
+#: code:addons/texo_memory/models/memory_seed.py:0
+msgid "The seed has the %(kind)s %(code)s twice."
+msgstr "Il seed contiene due volte l'elemento %(kind)s %(code)s."
+
+#. module: texo_memory
+#. odoo-python
 #: code:addons/texo_memory/models/memory_note.py:0
+#: code:addons/texo_memory/models/memory_seed.py:0
 msgid "The severity of a rule is never, must or prefer."
 msgstr "La gravità di una regola è never, must o prefer."
 
@@ -2524,6 +2563,18 @@ msgstr ""
 " indice."
 
 #. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__seed_fingerprint
+#: model:ir.model.fields,help:texo_memory.field_memory_note_activity__seed_fingerprint
+#: model:ir.model.fields,help:texo_memory.field_memory_section__seed_fingerprint
+#: model:ir.model.fields,help:texo_memory.field_memory_seed_mixin__seed_fingerprint
+#: model:ir.model.fields,help:texo_memory.field_project_project__seed_fingerprint
+msgid ""
+"The values the seed last wrote: a record changed since is kept as it is."
+msgstr ""
+"I valori scritti dal seed l'ultima volta: un record modificato da allora "
+"resta com'è."
+
+#. module: texo_memory
 #: model_terms:ir.actions.act_window,help:texo_memory.action_memory_review_area
 msgid ""
 "The weekly review of the memory: each card is an area, its button opens what"
@@ -2544,10 +2595,11 @@ msgstr ""
 
 #. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_note_activity__code
-msgid "The word an agent passes for the activity of its session, e.g. code."
+msgid ""
+"The word an agent passes for the activity of its session, e.g. analysis."
 msgstr ""
 "La parola che un agente passa per l'attività della sua sessione, per esempio"
-" code."
+" analysis."
 
 #. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_section__code
@@ -2840,15 +2892,6 @@ msgid ""
 msgstr ""
 "Parole: la ricerca testuale. Significato: i vettori, se il hub li ha. "
 "Entrambi, fusi."
-
-#. module: texo_memory
-#: model:memory.note.activity,description:texo_memory.activity_code
-msgid ""
-"Writing, reviewing or testing code: modules, scripts, configuration in a "
-"repository."
-msgstr ""
-"Scrivere, rivedere o provare codice: moduli, script, configurazione in un "
-"repository."
 
 #. module: texo_memory
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_lesson_search

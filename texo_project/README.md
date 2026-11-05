@@ -51,8 +51,7 @@ The internal work of the organisation (its own tasks and updates) needs a projec
 work: every company of the instance has a
 **home project** (`project.project.texo_home`), named after the company, with the company
 as `company_id`, no customer and visible to every internal user. It is created for every existing
-company when the module is installed (`post_init_hook`, and the migration to 20.0.1.1.0 for a
-database installed before) and for every new company at its creation (`res.company.create`);
+company when the module is installed (`post_init_hook`) and for every new company at its creation (`res.company.create`);
 `res.company._texo_home_project()` finds it whatever its state and recreates it when
 missing, `_texo_ensure_homes()` does it for every company. One per company, no customer
 on it, never deleted (archive it). With several companies, the home of each one follows the

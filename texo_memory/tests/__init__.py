@@ -13,6 +13,7 @@ from . import (
     test_passage,
     test_review,
     test_routes,
+    test_seed,
     test_task_search,
     test_ui,
 )
