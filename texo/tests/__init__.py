@@ -3,3 +3,4 @@
 from . import test_agent_api
 from . import test_hub_tokens
 from . import test_whoami
+from . import test_config
