@@ -10,7 +10,8 @@ the rules: the context pack gives them by chain, a rule is not something to find
 The vectors are derived data: a cron computes those missing or whose text changed (a hash of
 the text) and drops those of records that left the scope, so nothing else in the hub has to
 know about them. The embedding service is Text Embeddings Inference (or any service with its
-POST /embed) reached at a configured endpoint; a host outside the local network is refused
+POST /embed) or llama.cpp server started with --embedding (POST /v1/embeddings, for the AMD and Intel GPUs that
+TEI does not support, through Vulkan), reached at a configured endpoint; a host outside the local network is refused
 unless the administrator opts in: the texts of the memory never leave the machine by default.
 
 Raw SQL on purpose: the type vector and its operators have no ORM form (memory_note does the
@@ -39,6 +40,7 @@ from odoo.addons.texo_memory.models.project_task import EPISODE_MESSAGE_TYPES
 _logger = logging.getLogger(__name__)
 
 PARAM_ENDPOINT = 'texo_vector.endpoint'
+PARAM_API = 'texo_vector.api'
 PARAM_MODEL = 'texo_vector.model'
 PARAM_DIMENSIONS = 'texo_vector.dimensions'
 PARAM_MODE = 'texo_vector.mode'
@@ -200,22 +202,30 @@ class MemoryEmbedding(models.Model):
 
     @api.model
     def _embed(self, texts, kind='passage', timeout=None):
-        """The vectors of the texts from the service (TEI: POST /embed), in batches, or None
-        when the service is not configured, not allowed, not reachable or answers with
-        vectors of another size: the caller falls back to the lexical search or waits.
+        """The vectors of the texts from the service, in batches, or None when the service is
+        not configured, not allowed, not reachable or answers with vectors of another size: the
+        caller falls back to the lexical search or waits. The API is texo_vector.api: tei (POST
+        /embed) or llamacpp (POST /v1/embeddings, the vectors in the order of their index).
         timeout: the seconds a call may take, when shorter than the default of the kind."""
         url = self._endpoint()
         if not url or not texts:
             return None
         prefix, dims, vectors = self._prefix(kind), self._dimensions(), []
+        llamacpp = (self._param(PARAM_API, 'str', 'tei') or 'tei').strip() == 'llamacpp'
         try:
             for start in range(0, len(texts), BATCH):
-                answer = requests.post(f"{url}/embed", timeout=timeout or TIMEOUTS[kind],
-                                       json={'inputs': [prefix + text[:MAX_CHARS] for text in texts[start:start + BATCH]],
-                                             'truncate': True})
-                answer.raise_for_status()
-                vectors += answer.json()
-        except (requests.RequestException, ValueError) as error:
+                batch = [prefix + text[:MAX_CHARS] for text in texts[start:start + BATCH]]
+                if llamacpp:
+                    answer = requests.post(f"{url}/v1/embeddings", timeout=timeout or TIMEOUTS[kind],
+                                           json={'input': batch})
+                    answer.raise_for_status()
+                    vectors += [item['embedding'] for item in sorted(answer.json()['data'], key=lambda i: i['index'])]
+                else:
+                    answer = requests.post(f"{url}/embed", timeout=timeout or TIMEOUTS[kind],
+                                           json={'inputs': batch, 'truncate': True})
+                    answer.raise_for_status()
+                    vectors += answer.json()
+        except (requests.RequestException, ValueError, KeyError, TypeError) as error:
             _logger.warning("The embedding service at %s did not answer: %s", url, error)
             return None
         if len(vectors) != len(texts) or any(len(vector) != dims for vector in vectors):

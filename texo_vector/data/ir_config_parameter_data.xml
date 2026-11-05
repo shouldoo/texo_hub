@@ -7,6 +7,12 @@
          Inference in the compose network) and until then no text leaves Odoo and the search is
          lexical. A host outside the local network is refused unless
          texo_vector.allow_remote_endpoint is True: an explicit opt-in. -->
+    <!-- The API of the embedding service: tei (Text Embeddings Inference, POST /embed) or llamacpp
+         (llama.cpp server with embedding, POST /v1/embeddings, for AMD and Intel GPUs through Vulkan). -->
+    <record id="config_api" model="ir.config_parameter">
+        <field name="key">texo_vector.api</field>
+        <field name="value">tei</field>
+    </record>
     <record id="config_model" model="ir.config_parameter">
         <field name="key">texo_vector.model</field>
         <field name="value">BAAI/bge-m3</field>

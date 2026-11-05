@@ -10,7 +10,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 from ..models import memory_embedding
-from ..models.memory_embedding import PARAM_ALLOW_REMOTE, PARAM_DIMENSIONS, PARAM_ENDPOINT, PARAM_MODE
+from ..models.memory_embedding import PARAM_ALLOW_REMOTE, PARAM_API, PARAM_DIMENSIONS, PARAM_ENDPOINT, PARAM_MODE
 from .common import DIMENSIONS, VectorCase, fake_embed
 
 LOGGER = 'odoo.addons.texo_vector.models.memory_embedding'
@@ -307,6 +307,25 @@ class TestVector(VectorCase):
             post.return_value.json.return_value = [[0.1, 0.2]]
             self.assertIsNone(self.env['memory.embedding']._embed(['a text']))
             self.assertEqual(post.call_args.kwargs['json'], {'inputs': ['a text'], 'truncate': True})
+
+    def test_the_api_of_llamacpp(self):
+        Params = self.env['ir.config_parameter'].sudo()
+        Params.set_str(PARAM_API, 'llamacpp')
+        answer = patch.object(memory_embedding.requests, 'post')
+        with patch.object(self.EmbeddingClass, '_embed', self.real_embed), answer as post:
+            # the vectors come back in the order of their index, whatever the order of the list
+            post.return_value.json.return_value = {'data': [
+                {'index': 1, 'embedding': [0.0] * (DIMENSIONS - 1) + [1.0]},
+                {'index': 0, 'embedding': [1.0] + [0.0] * (DIMENSIONS - 1)}]}
+            vectors = self.env['memory.embedding']._embed(['first', 'second'])
+            self.assertEqual(post.call_args.args[0], 'http://tei:80/v1/embeddings')
+            self.assertEqual(post.call_args.kwargs['json'], {'input': ['first', 'second']})
+            self.assertEqual([vector[0] for vector in vectors], [1.0, 0.0])
+            # an answer without data is a service that did not answer: no vectors, a warning
+            post.return_value.json.return_value = {'error': {'message': 'too long'}}
+            with self.assertLogs(LOGGER, 'WARNING') as log:
+                self.assertIsNone(self.env['memory.embedding']._embed(['first']))
+            self.assertIn('did not answer', log.output[0])
 
     def test_a_remote_endpoint_needs_the_opt_in(self):
         Embedding = self.env['memory.embedding']

@@ -83,12 +83,15 @@ turn it on where an accelerator serves it.
 ## The embedding service
 
 [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) in CPU, or any
-service with its `POST /embed` (`{"inputs": [...], "truncate": true}` in, a list of vectors out), named in
-`ir.config_parameter`:
+service with its `POST /embed` (`{"inputs": [...], "truncate": true}` in, a list of vectors out); or
+[llama.cpp server](https://github.com/ggml-org/llama.cpp) started with `--embedding` and the pooling of the model
+(`--pooling cls` for bge-m3), `POST /v1/embeddings`, which runs on the AMD and Intel GPUs that TEI does not support,
+through Vulkan. Named in `ir.config_parameter`:
 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `texo_vector.endpoint` | none | the URL of the service; `http://tei:80` in the coordination stack of `texo_core`. Without it nothing is computed and the search is lexical |
+| `texo_vector.api` | `tei` | `tei`: `POST /embed`; `llamacpp`: `POST /v1/embeddings` (`{"input": [...]}` in, `data[].embedding` out). The texts are cut at 6000 characters: start llama.cpp with a context of at least 8192 tokens (`-c 8192 -b 8192 -ub 8192`), since it refuses an input longer than its batch |
 | `texo_vector.model` | `BAAI/bge-m3` | the model the service runs; `intfloat/multilingual-e5-small` is the light alternative (one tenth of the memory, a little weaker); the e5 family gets its `query:` and `passage:` prefixes |
 | `texo_vector.dimensions` | `1024` | the size of its vectors (`384` for e5-small) |
 | `texo_vector.mode` | `hybrid` | the mode of a search that gives none |
@@ -124,19 +127,24 @@ module the page *Search the Memory* also offers the search by meaning.
 odoo -c <conf> -d test_cohub20 -i texo_vector --test-tags /texo_vector --http-interface=127.0.0.1 --stop-after-init
 ```
 
-11 tests, with a fake embedding service (seven dimensions, one per concept the texts of the tests talk about,
+The tests run with a fake embedding service (seven dimensions, one per concept the texts of the tests talk about,
 so that «restituzioni» lands next to «resi» without any word in common): the cron that computes, recomputes
 and drops the vectors (a message is a chunk of its own, a rule never gets one, a to-do is not an episode,
 another model recomputes everything); the hybrid search that finds a paraphrase and keeps the lexical hits,
 the semantic mode, the configured mode, the scopes that stay lexical, a wrong mode refused; only what the
 person may read; the service down (lexical, the chunks wait) and a service answering with vectors of another
-size; a remote endpoint refused without the opt-in, the local hosts; the dimensions that follow the model;
+size; the API of llama.cpp (the vectors in the order of their index, an error answer); a remote endpoint refused without the opt-in, the local hosts; the dimensions that follow the model;
 the near-duplicates by meaning, by tag, and by `difflib` for a lesson without a vector; the route with
 `mode`; and, with the extension made unavailable on purpose, the search, the cron and the housekeeping as
 they were. Where the extension `vector` is missing the tests with vectors are skipped; the CI runs on
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.1.0
+
+- The embedding service may be llama.cpp server (`texo_vector.api` = `llamacpp`, `POST /v1/embeddings`): the
+  vectors on an AMD or Intel GPU through Vulkan.
 
 ### 20.0.1.0.1
 
