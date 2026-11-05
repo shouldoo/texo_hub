@@ -138,6 +138,10 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 
 ## Changelog
 
+### 20.0.1.0.1
+
+- Without an embedding service the cron reports no work: no warning of `ir.cron` at every run.
+
 ### 20.0.1.0.0
 
 - First release in Texo.
