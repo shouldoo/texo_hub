@@ -58,10 +58,12 @@ class TexoMemoryController(http.Controller):
         return pack
 
     @http.route('/texo/v1/memory/search', readonly=True, **HUB_ROUTE)
-    def search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None):
+    def search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None, show_expired=False):
+        """The results, and how the search ran: mode (the one used), rerank (off, skipped, applied,
+        unavailable), latency_ms."""
         request.env.user._texo_check_role()
-        return {'results': request.env['memory.note']._agent_search(query, related_terms, scope, applies_to, limit,
-                                                                    mode=mode)}
+        return request.env['memory.note']._agent_search_report(query, related_terms, scope, applies_to, limit,
+                                                               mode=mode, show_expired=bool(show_expired))
 
     @http.route('/texo/v1/memory/read', readonly=True, **HUB_ROUTE)
     def read(self, note_id=None, lesson_id=None, fact_id=None, max_chars=6000, concept=None, format='json'):

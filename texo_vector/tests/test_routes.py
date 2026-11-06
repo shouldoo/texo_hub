@@ -35,5 +35,9 @@ class TestVectorRoutes(HttpCase):
         answer = self._post('search', {'query': 'resi', 'scope': 'facts', 'mode': 'lexical'})
         self.assertEqual(answer.status_code, 200)
         self.assertEqual([r['title'] for r in answer.json()['results']], ['Resi'])
+        self.assertEqual((answer.json()['mode'], answer.json()['rerank']), ('lexical', 'off'))
+        # the hybrid was asked, no embedding service answers here: the answer says the mode used
+        answer = self._post('search', {'query': 'resi', 'scope': 'facts', 'mode': 'hybrid'}).json()
+        self.assertEqual(answer['mode'], 'lexical')
         with mute_logger('odoo.http'):
             self.assertEqual(self._post('search', {'query': 'resi', 'mode': 'magic'}).status_code, 422)

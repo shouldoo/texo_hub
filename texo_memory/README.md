@@ -195,6 +195,10 @@ pack says which (`activities`).
   (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.
   They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given
   with the session note): in the vector of the episode they weigh B, above the description and the chatter.
+- **The answer says how it ran**: `results`, then `mode` (the mode used: `lexical` here, whatever was asked),
+  `rerank` (what the reranker did: `off`, `skipped`, `applied`, `unavailable`; always `off` here) and
+  `latency_ms`, so a degraded search is seen for what it is. `show_expired` gives the expired notes and lessons
+  too, each with `stale: expired`, for a review.
 - **`mode`** (`lexical`, `semantic`, `hybrid`): here the search is lexical whatever it says; the optional
   module [`texo_vector`](../texo_vector/README.md) gives it its meaning (vectors for the
   episodes, the facts, the procedures, the lessons and the documents, fused with the words; never the rules) and marks every hit with
@@ -398,6 +402,13 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.1.0
+
+- The answer of `memory/search` says how the search ran: `mode` (the one used), `rerank` (off, skipped,
+  applied, unavailable), `latency_ms`; `show_expired` gives the expired notes and lessons too, marked stale.
+- The gauges of the memory in `GET /texo/metrics`: notes by kind and state, stale rules, lessons, documents,
+  passages, episodes.
 
 ### 20.0.1.0.2
 

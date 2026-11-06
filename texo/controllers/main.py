@@ -1,5 +1,7 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+from werkzeug.exceptions import Forbidden
+
 from odoo import http
 from odoo.exceptions import UserError
 from odoo.http import request
@@ -39,6 +41,18 @@ class TexoController(http.Controller):
             'name': user.name,
             'role': role,
         }
+
+    # -- the metrics of the hub, for a scraper ------------------------------------
+    @http.route('/texo/metrics', type='http', auth='bearer', bearer_scope='texo', methods=['GET'],
+                save_session=False, readonly=True)
+    def metrics(self):
+        """The gauges of the hub in the Prometheus exposition format, for an administrator's token:
+        counts and timestamps, never a text of the memory. Scrape it every few minutes, not seconds:
+        the counts of the vectors read the scope."""
+        if request.env.user._texo_role() != 'admin':
+            raise Forbidden("Only a Texo administrator reads the metrics.")
+        return request.make_response(request.env['texo.metrics']._render(),
+                                     headers=[('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')])
 
     # -- the configuration of the organisation, for the texo CLI ----------------
     @http.route('/texo/v1/config', readonly=True, **HUB_ROUTE)

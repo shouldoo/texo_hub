@@ -15,4 +15,5 @@ from . import (
     memory_section,
     project_project,
     project_task,
+    texo_metrics,
 )

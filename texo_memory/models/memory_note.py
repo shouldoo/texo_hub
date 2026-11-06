@@ -1,6 +1,7 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import hashlib
+import time
 from datetime import timedelta
 
 from odoo import Command, api, fields, models
@@ -503,12 +504,15 @@ class MemoryNote(models.Model):
                 'sections': self.env['memory.section'].search([])._agent_summary()}
 
     @api.model
-    def _search_domain(self, kinds, today=None):
+    def _search_domain(self, kinds, today=None, show_expired=False):
         """The notes the search may give: of these kinds, live (the drafts of the rules too: a
-        proposal is found, and the pack says it does not bind), not expired."""
+        proposal is found, and the pack says it does not bind), not expired unless asked (the
+        review of what expired: the entry says stale expired)."""
         today = today or fields.Date.context_today(self)
-        return [('kind', 'in', kinds), ('state', 'in', ('draft', 'active')),
-                '|', ('expires', '=', False), ('expires', '>=', today)]
+        domain = [('kind', 'in', kinds), ('state', 'in', ('draft', 'active'))]
+        if not show_expired:
+            domain += ['|', ('expires', '=', False), ('expires', '>=', today)]
+        return domain
 
     def _search_entries(self, ranked, today=None):
         """The search results of these notes, in this order: the summary, the score and the
@@ -524,13 +528,22 @@ class MemoryNote(models.Model):
         return entries
 
     @api.model
-    def _agent_search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None):
+    def _agent_search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
+                      show_expired=False):
         """Rules, facts and procedures the user may read, documents and lessons when scope
         allows, ranked together by the full-text search: every word first, then the best
         score, whatever the kind. The scope tasks searches the episodes instead: the title,
         the description and the chatter of the tasks the user may read; they are not part
         of all, which is the memory. mode (lexical, semantic, hybrid) means something with
-        texo_vector; here the search is lexical whatever it says."""
+        texo_vector; here the search is lexical whatever it says. show_expired gives the
+        expired notes and lessons too, each saying it is stale."""
+        return self._agent_search_run(query, related_terms, scope, applies_to, limit, mode, show_expired)[0]
+
+    @api.model
+    def _agent_search_run(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
+                          show_expired=False):
+        """The search and how it ran: (entries, the mode used, the state of the reranker). Here the
+        mode is always lexical and the reranker off; texo_vector says what it did."""
         limit = max(1, min(int(limit or 5), 20))
         word_list = fulltext.words(query, related_terms)
         results = []
@@ -539,16 +552,31 @@ class MemoryNote(models.Model):
         if kinds:
             today = fields.Date.context_today(self)
             notes, ranked = fulltext.search(self, 'memory_note', 'search_tsv', word_list, limit,
-                                            self._search_domain(kinds, today))
+                                            self._search_domain(kinds, today, show_expired))
             results += notes._search_entries(ranked, today)
         if scope in ('all', 'documents'):
             results += self.env['ir.attachment']._texo_search(query, related_terms, limit)
         if scope in ('all', 'lessons'):
-            results += self.env['memory.lesson']._agent_search(query, related_terms, applies_to, limit)
+            results += self.env['memory.lesson']._agent_search(query, related_terms, applies_to, limit,
+                                                               show_expired=show_expired)
         if scope == 'tasks':
             results += self.env['project.task']._texo_search(query, related_terms, limit)
         results += self._agent_search_extra(query, related_terms, scope, limit)
-        return sorted(results, key=lambda r: (-r['score'], -r['id']))
+        return sorted(results, key=lambda r: (-r['score'], -r['id'])), 'lexical', 'off'
+
+    @api.model
+    def _agent_search_report(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
+                             show_expired=False):
+        """What a search route answers: the results and how the search ran, so a degraded answer
+        is seen for what it is: mode, the mode used (lexical when the vectors were asked and did
+        not answer); rerank, what the reranker did (off: none configured; skipped: not a hybrid
+        search, or too few results; applied; unavailable: configured and did not answer in time);
+        latency_ms, the time of the search in the hub."""
+        began = time.monotonic()
+        results, mode_used, rerank = self._agent_search_run(query, related_terms, scope, applies_to, limit, mode,
+                                                            show_expired)
+        return {'results': results, 'mode': mode_used, 'rerank': rerank,
+                'latency_ms': int((time.monotonic() - began) * 1000)}
 
     @api.model
     def _agent_search_extra(self, query, related_terms, scope, limit):

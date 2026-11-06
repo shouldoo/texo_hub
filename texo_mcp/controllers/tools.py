@@ -82,9 +82,12 @@ TOOLS = [
                    "where the vectors are); a hit says which found it (match). A document names the passage that "
                    "answered (passage: path such as «Art. 43 > comma 2», start) and up to two more to read (passages): "
                    "read the text from start with document (text, offset), the next passage when the first does not "
-                   "answer, and cite the path.",
+                   "answer, and cite the path. show_expired: the expired notes and lessons too (each says stale "
+                   "expired), for a review. The answer says how the search ran: mode (the one used: lexical when the "
+                   "vectors did not answer), rerank (off, skipped, applied, unavailable), latency_ms.",
          {'query': STRING, 'related_terms': STRINGS, 'scope': {'type': 'string', 'enum': SCOPES},
-          'applies_to': STRING, 'limit': INTEGER, 'mode': {'type': 'string', 'enum': MODES}}, ['query'],
+          'applies_to': STRING, 'limit': INTEGER, 'mode': {'type': 'string', 'enum': MODES},
+          'show_expired': {'type': 'boolean'}}, ['query'],
          route=('memory', 'search')),
     tool('read', "One note (note_id: a rule, a fact with the version to name in note_update, a procedure) or lesson in "
                  "full; or any concept of the memory by its OKF id (concept: rules/12, facts/3, procedures/8, lessons/5, "

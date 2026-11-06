@@ -113,6 +113,32 @@ class TestRerank(VectorCase):
             self.assertEqual(self.ids()[0], self.second.id)
         self.assertTrue(fake.calls)
 
+    def test_the_search_says_what_the_reranker_did(self):
+        Note = self.env['memory.note'].with_user(self.member)
+
+        def report(**kwargs):
+            answer = Note._agent_search_report('resi', scope='facts', **kwargs)
+            return answer['mode'], answer['rerank']
+
+        self.assertEqual(report(), ('hybrid', 'off'))
+        self.configure()
+        fake = FakeReranker('venerdì')
+        with patch.object(memory_rerank.requests, 'post', fake):
+            self.assertEqual(report(), ('hybrid', 'applied'))
+            self.assertEqual(report(mode='lexical'), ('lexical', 'skipped'))
+            self.assertEqual(report(mode='semantic'), ('semantic', 'skipped'))
+            self.assertIsInstance(Note._agent_search_report('resi', scope='facts')['latency_ms'], int)
+
+        def timeout(*args, **kwargs):
+            raise requests.Timeout("too slow")
+
+        with patch.object(memory_rerank.requests, 'post', timeout), \
+                self.assertLogs('odoo.addons.texo_vector.models.memory_rerank', 'WARNING'):
+            self.assertEqual(report(), ('hybrid', 'unavailable'))
+        self.configure('https://rerank.example.com')
+        with self.assertLogs('odoo.addons.texo_vector.models.memory_rerank', 'WARNING'):
+            self.assertEqual(report(), ('hybrid', 'unavailable'), "refused outside the local network")
+
     def test_the_state_of_the_search_says_it(self):
         self.assertNotIn('http', self.env['memory.vector.status'].create({}).rerank)
         self.configure()
