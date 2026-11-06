@@ -32,6 +32,8 @@ class TexoController(http.Controller):
         token never reaches this method and gets a 401.
         """
         user = request.env.user
+        # the route writes the last-seen date, nothing of the memory: a read-only token is welcome
+        request.update_context(texo_write_tool=False)
         role = user._texo_check_role()
         # sudo: users cannot write this technical field on their own record
         user.sudo()._texo_touch()

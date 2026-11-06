@@ -69,6 +69,11 @@ odoo -c <conf> -d test_cohub20 -i texo_project --test-tags /texo_project --stop-
 
 ## Changelog
 
+### 20.0.1.2.0
+
+- A note of a task that holds what looks like a credential is refused; a read-only token is refused on
+  `task_note` and `update`.
+
 ### 20.0.1.1.0
 
 - `project/task_note` is idempotent: the same text as the last internal note of the task gives that note

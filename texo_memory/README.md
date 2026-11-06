@@ -415,10 +415,15 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
 
 ## Changelog
 
-### 20.0.1.2.0
+### 20.0.1.3.0
 
 - `valid_from` on the notes and `superseded_on` set by a change of state; the search takes `as_of`: the facts and
   procedures that held on a day, superseded ones included; OKF keys `valid_from` and `valid_to`.
+
+### 20.0.1.2.0
+
+- A note, a lesson, the summary or the keywords of a document that hold what looks like a credential are
+  refused (`texo/models/secrets.py`); a read-only token is refused on every write.
 
 ### 20.0.1.1.0
 

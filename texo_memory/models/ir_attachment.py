@@ -8,6 +8,7 @@ from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 from odoo.addons.texo import okf
+from odoo.addons.texo.models.secrets import check_no_credential
 
 from . import fulltext
 
@@ -357,6 +358,7 @@ class IrAttachment(models.Model):
         role = self.env.user._texo_check_role()
         if summary and len(summary) > MAX_SUMMARY:
             raise UserError(self.env._("The summary is longer than %s characters.", MAX_SUMMARY))
+        check_no_credential(self.env, name, summary, keywords if isinstance(keywords, str) else keywords)
         if text is not None and len(text.encode()) > MAX_TEXT:
             raise UserError(self.env._("The converted text is larger than %s MB.", MAX_TEXT // (1024 * 1024)))
         if url and not url.startswith(('http://', 'https://')):

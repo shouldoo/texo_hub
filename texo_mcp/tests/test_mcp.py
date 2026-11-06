@@ -120,6 +120,23 @@ class TestMcp(HttpCase):
 
     # The 401 of a wrong token is expected: odoo.http logs every client error as a warning.
     @mute_logger('odoo.http')
+    def test_a_read_only_token_sees_the_read_tools_only(self):
+        key = self.env['res.users.apikeys'].with_user(self.lead).with_context(texo_read_only=True)._generate(
+            'texo', 'reads', datetime.now() + timedelta(days=30))
+        names = {t['name'] for t in self.rpc('tools/list', key=key).json()['result']['tools']}
+        self.assertIn('search', names)
+        self.assertNotIn('note', names)
+        self.assertNotIn('task_note', names)
+        found = self.rpc('tools/call', {'name': 'search', 'arguments': {'query': 'Italian'}}, key=key).json()['result']
+        self.assertFalse(found['isError'])
+        refused = self.rpc('tools/call', {'name': 'note', 'arguments': {
+            'name': 'x', 'body': 'y', 'kind': 'fact', 'confirm': True}}, key=key).json()['result']
+        self.assertTrue(refused['isError'])
+        self.assertIn('read-only', refused['content'][0]['text'])
+        with mute_logger('odoo.http'):
+            # the rules route reads, the write tools are the ones refused: a read-only token initialises
+            self.assertFalse(self.rpc('initialize', {'protocolVersion': '2025-06-18'}, key=key).json().get('error'))
+
     def test_the_token_and_the_role_are_checked(self):
         self.assertEqual(self.rpc('tools/list', key='not-a-key').status_code, 401)
         # a token made while the person had a role, the role taken away afterwards

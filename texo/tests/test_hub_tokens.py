@@ -77,3 +77,36 @@ class TestHubTokens(TransactionCase):
         # A plain internal user may create keys of one day at most (base group durations)
         key = self._generate(self.outsider, 1, scope='rpc')
         self.assertEqual(self.env['res.users.apikeys']._check_credentials(scope='rpc', key=key), self.outsider.id)
+
+
+@tagged('post_install', '-at_install')
+class TestReadOnlyTokensAndSecrets(TransactionCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.member = cls.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Hub Member RO', 'login': 'hub_member_ro',
+            'group_ids': [Command.link(cls.env.ref('texo.group_texo_member').id)]})
+
+    def test_a_read_only_token_is_a_flag_of_the_key(self):
+        Keys = self.env['res.users.apikeys'].with_user(self.member)
+        expiration = datetime.now() + timedelta(days=1)
+        Keys._generate('texo', 'reads and writes', expiration)
+        Keys.with_context(texo_read_only=True)._generate('texo', 'reads', expiration)
+        keys = self.env['res.users.apikeys'].sudo().search([('user_id', '=', self.member.id)], order='id')
+        self.assertEqual([(k.name, k.texo_read_only) for k in keys], [('reads and writes', False), ('reads', True)])
+        self.assertFalse(self.env['res.users.apikeys']._texo_request_read_only(), "no request: no token")
+
+    def test_what_looks_like_a_credential(self):
+        from ..models.secrets import credential_reason
+        for text, what in (("TEXO_HUB_TOKEN=4f2a9c1b8d7e6f5a", "a named key, token or password"),
+                           ("Authorization: Bearer abcdefghijklmnopqrstuvwxyz", "a bearer token"),
+                           ("use sk-ABCDEFGHIJKLMNOPQRST here", "an API key"),
+                           ("AKIAABCDEFGHIJKLMNOP", "an AWS access key"),
+                           ("-----BEGIN RSA PRIVATE KEY-----", "a private key"),
+                           ("the token expires in 90 days", None),
+                           ("password policy: twelve characters", None)):
+            found = credential_reason(text)
+            # the reason is a lazy translation: its source is the English text, str() the language of the session
+            self.assertEqual(found._source if found is not None else None, what, text)

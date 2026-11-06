@@ -87,9 +87,13 @@ an unknown redirect, a request without PKCE.
 
 ## Changelog
 
-### 20.0.1.0.2
+### 20.0.1.2.0
 
 - The tools `search` (`as_of`), `note` and `note_update` (`valid_from`).
+
+### 20.0.1.1.0
+
+- A read-only token sees the read tools only (`tools/list`) and a call to a write tool is refused.
 
 ### 20.0.1.0.1
 
