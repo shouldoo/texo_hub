@@ -6,3 +6,4 @@ from . import res_users_apikeys
 from . import res_users_apikeys_description
 from . import texo_config
 from . import texo_metrics
+from . import secrets

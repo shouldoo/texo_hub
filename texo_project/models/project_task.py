@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 from odoo.tools import html2plaintext
 
 from odoo.addons.texo import okf
+from odoo.addons.texo.models.secrets import check_no_credential
 
 MAX_DESCRIPTION = 4000
 MAX_MESSAGE = 1500
@@ -156,6 +157,7 @@ class ProjectTask(models.Model):
             raise UserError(_("The note is empty."))
         if len(body) > MAX_NOTE:
             raise UserError(_("The note is longer than %(max)s characters.", max=MAX_NOTE))
+        check_no_credential(self.env, body, keywords if isinstance(keywords, str) else " ".join(keywords or []))
         merged = self._texo_merge_keywords(keywords, self.texo_keywords)
         # idempotent: the last internal note of the task with the same text (a call retried, a session
         # that proposes it twice) is given back, with existing true, and nothing is posted

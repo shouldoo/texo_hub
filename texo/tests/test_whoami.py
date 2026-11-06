@@ -61,3 +61,29 @@ class TestWhoami(HttpCase):
         key = self._key()
         self.lead.active = False
         self.assertEqual(self._post(WHOAMI, key).status_code, 401)
+
+
+@tagged('post_install', '-at_install')
+class TestRateLimit(HttpCase):
+
+    def setUp(self):
+        super().setUp()
+        from ..models import res_users
+        res_users._requests.clear()
+        self.addCleanup(res_users._requests.clear)
+        self.lead = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Rate Lead', 'login': 'rate_lead', 'group_ids': [Command.link(self.env.ref('texo.group_texo_lead').id)]})
+        self.key = self.env['res.users.apikeys'].with_user(self.lead)._generate(
+            'texo', 'test', datetime.now() + timedelta(days=1))
+
+    def whoami(self):
+        return self.url_open('/texo/v1/whoami', data='{}', headers={
+            'Content-Type': 'application/json', 'Authorization': f'Bearer {self.key}'})
+
+    def test_too_many_requests_in_a_minute(self):
+        self.env['ir.config_parameter'].sudo().set_int('texo.rate_limit_per_minute', 2)
+        self.assertEqual([self.whoami().status_code for _ in range(2)], [200, 200])
+        with mute_logger('odoo.http'):
+            self.assertEqual(self.whoami().status_code, 429)
+        self.env['ir.config_parameter'].sudo().set_int('texo.rate_limit_per_minute', 0)
+        self.assertEqual(self.whoami().status_code, 200, "0: no limit")

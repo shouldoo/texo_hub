@@ -66,6 +66,13 @@ class TestTaskContext(TransactionCase):
         with self.assertRaises(UserError):
             task._texo_post_note('   ')
 
+    def test_a_credential_never_enters_a_note(self):
+        with self.assertRaisesRegex(UserError, "credential"):
+            self.task.with_user(self.dev)._texo_post_note('The key is api_key=9f8e7d6c5b4a3f2e1d0c, keep it')
+        with self.assertRaisesRegex(UserError, "credential"):
+            self.task.with_user(self.dev)._texo_post_note('Rotated the key', keywords=['ghp_ABCDEFGHIJKLMNOPQRSTUV'])
+        self.assertFalse(self.task.message_ids.filtered(lambda m: 'key' in (m.body or '')))
+
     def test_the_same_note_is_posted_once(self):
         task = self.task.with_user(self.dev)
         first = task._texo_post_note('Scope agreed with the customer.')

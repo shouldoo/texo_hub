@@ -11,6 +11,9 @@ and what the CLI mounts live in Odoo, and every agent route of the hub modules r
 |---|---|
 | API key scope `texo` | Added to the standard *New API Key* wizard. A key with this scope opens only routes declared with `bearer_scope='texo'`: `/json/2` and XML-RPC refuse it. |
 | Token rules | A hub token always has an expiration date, at most `texo.token_max_days` days (system parameter, default 90), administrators included. Only users with a hub role can create one. |
+| Read-only token | The wizard offers *Read Only* for the scope Texo: a token that reads the memory and never writes. Every route that is not read-only refuses it (403), the MCP server hides the write tools and refuses a call to one; `whoami`, which only touches the last-seen date, accepts it. For an assistant that only consults, or a scraper of the metrics. |
+| Rate limit | At most `texo.rate_limit_per_minute` requests per minute per person (default 240; 0 disables), counted in each Odoo process: past it a route answers 429 until the minute passes. A brake on a runaway agent, not a quota. |
+| Credentials | What an agent writes in the memory (a note, a lesson, a note of a task, the summary and keywords of a document) is refused (422) when it holds what looks like a credential: a named key, token or password, a bearer token, an API key with a known prefix, an AWS key, a JWT, a private key, a long hexadecimal secret (`models/secrets.py`). The converted text of a document is not filtered: a document is a source. |
 | Privilege *Texo* | Groups Member, Lead and Administrator (each implies the previous one). The highest one is the hub role. |
 | `POST /texo/v1/whoami` | Called by the agent's client with the user's token as bearer. Odoo checks scope, expiry and active user, then returns `uid`, `login`, `name` and `role`. Returns 401 for an invalid token and 403 for a user without a hub role. |
 | Last seen | `res.users.texo_last_seen` is updated by `whoami`, with a resolution of one minute. |
@@ -88,6 +91,12 @@ odoo -c <conf> -d test_cohub20 -i texo --test-tags /texo --stop-after-init --htt
 ```
 
 ## Changelog
+
+### 20.0.1.3.0
+
+- Read-only hub tokens: a choice of the key wizard; every write refuses them, the MCP server hides the write tools.
+- A limit of requests per minute per person (`texo.rate_limit_per_minute`), 429 past it.
+- The credential filter the writes of the memory share (`models/secrets.py`).
 
 ### 20.0.1.2.0
 

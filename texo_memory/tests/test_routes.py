@@ -130,3 +130,25 @@ class TestMemoryRoutes(HttpCase):
         self.assertIn('# TYPE texo_memory_notes gauge', lines)
         self.assertTrue(any(line.startswith('texo_memory_notes{kind="fact",state="active"} ') for line in lines), lines)
         self.assertTrue(any(line.startswith('texo_memory_episodes ') for line in lines))
+
+    @mute_logger('odoo.http')
+    def test_a_read_only_token_reads_and_never_writes_and_no_credential_enters(self):
+        key = self.env['res.users.apikeys'].with_user(self.lead).with_context(texo_read_only=True)._generate(
+            'texo', 'reads', datetime.now() + timedelta(days=1))
+
+        def post(route, payload):
+            return self.url_open(f'/texo/v1/memory/{route}', data=json.dumps(payload), headers={
+                'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'})
+
+        self.assertEqual(post('search', {'query': 'anything'}).status_code, 200)
+        self.assertEqual(post('context', {'task_id': self.task.id}).status_code, 200)
+        refused = post('note', {'name': 'Tariff', 'body': 'The tariff is flat.', 'kind': 'fact', 'project_id': self.project.id})
+        self.assertEqual(refused.status_code, 403)
+        self.assertIn('read-only', refused.json()['message'])
+        # a credential never enters the memory, whoever writes
+        leak = self._post('fact', self.lead, {'name': 'Access', 'body': 'TEXO_HUB_TOKEN=4f2a9c1b8d7e6f5a of the stage',
+                                             'project_id': self.project.id})
+        self.assertEqual(leak.status_code, 422)
+        self.assertIn('credential', leak.json()['message'])
+        self.assertEqual(self._post('fact', self.lead, {'name': 'Access', 'body': 'The stage asks a password at login.',
+                                                        'project_id': self.project.id}).status_code, 200)

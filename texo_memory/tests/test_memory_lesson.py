@@ -33,6 +33,13 @@ class TestMemoryLesson(MemoryCase):
         other = Lesson._agent_lesson(CLEAN_FINDING, CLEAN_SOLUTION + " Then run the tests.")
         self.assertNotEqual(other['id'], first['id'])
 
+    def test_a_lesson_never_holds_a_credential(self):
+        with self.assertRaisesRegex(UserError, "credential"):
+            self.lesson(self.lead, solution=CLEAN_SOLUTION + " Set password=S3cr3tPass! in the config.")
+        with self.assertRaisesRegex(UserError, "credential"):
+            self.env['memory.lesson'].with_user(self.lead)._agent_lesson(
+                CLEAN_FINDING, CLEAN_SOLUTION, keywords=['sk-ABCDEFGHIJKLMNOPQRST'])
+
     def test_a_lesson_never_names_a_customer(self):
         with self.assertRaises(UserError):
             self.lesson(self.lead, finding=CLEAN_FINDING + " Seen at Rossi Meccanica.")
