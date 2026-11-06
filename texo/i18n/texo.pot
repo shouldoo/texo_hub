@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 23:23+0000\n"
-"PO-Revision-Date: 2026-11-06 23:23+0000\n"
+"POT-Creation-Date: 2026-11-06 23:26+0000\n"
+"PO-Revision-Date: 2026-11-06 23:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -709,6 +709,48 @@ msgstr ""
 #. odoo-python
 #: code:addons/texo/models/res_users.py:0
 msgid "You have no Texo role."
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a JWT"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a bearer token"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a long hexadecimal secret"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a named key, token or password"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a private key"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "an API key"
+msgstr ""
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "an AWS access key"
 msgstr ""
 
 #. module: texo
