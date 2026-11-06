@@ -69,6 +69,10 @@ odoo -c <conf> -d test_cohub20 -i texo_project --test-tags /texo_project --stop-
 
 ## Changelog
 
+### 20.0.1.0.1
+
+- `project/my_work` leaves out the tasks of the project templates and the task templates.
+
 ### 20.0.1.0.0
 
 - First release in Texo.

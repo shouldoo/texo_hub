@@ -398,6 +398,10 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
 
 ## Changelog
 
+### 20.0.1.0.1
+
+- The seed creates the tasks of a project template without assignees.
+
 ### 20.0.1.0.0
 
 - First release in Texo.

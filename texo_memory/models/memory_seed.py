@@ -180,9 +180,10 @@ class MemorySeed(models.AbstractModel):
                 record.with_context(active_test=False).task_ids.unlink()
             else:
                 vals.update({'is_template': True, 'company_id': company.id})
+            # no assignee: a task of a template is nobody's work until a project is made from it
             vals['task_ids'] = [Command.create({'name': (task.get('name') or '').strip(),
                                                 'description': task.get('description') or False,
-                                                'sequence': sequence})
+                                                'sequence': sequence, 'user_ids': [Command.clear()]})
                                 for sequence, task in enumerate(item.get('tasks') or [], start=1)]
         if record:
             record.write(vals)

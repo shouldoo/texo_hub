@@ -47,9 +47,12 @@ class ProjectTask(models.Model):
 
     @api.model
     def _texo_my_work(self, limit=50):
+        # sudo: which projects are templates is configuration, read whatever the rules on the projects say
+        templates = self.env['project.project'].sudo()._search([('is_template', '=', True)])
         tasks = self.search(
-            # Project tasks only: tasks without a project are personal to-dos.
-            [('user_ids', 'in', self.env.uid), ('is_closed', '=', False), ('project_id', '!=', False)],
+            # Project tasks only: tasks without a project are personal to-dos, the tasks of a template are no one's work.
+            [('user_ids', 'in', self.env.uid), ('is_closed', '=', False), ('project_id', '!=', False),
+             ('project_id', 'not in', templates), ('is_template', '=', False)],
             order='priority desc, date_deadline asc, id desc',
             limit=max(1, min(int(limit or 50), 200)),
         )

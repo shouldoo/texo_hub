@@ -111,6 +111,7 @@ class TestSeed(MemoryCase):
         template = self.env['project.project'].search([('seed_key', '=', 'bakery/project_template/new_shop')])
         self.assertEqual(template.task_ids.sorted('sequence').mapped('name'),
                          ['Find the premises', 'Hygiene plan', 'Opening day'])
+        self.assertFalse(template.task_ids.user_ids, "a task of a template is nobody's work")
 
     def test_a_code_written_by_hand_is_left_alone(self):
         result = self.seed(apply=True, **industry_seed(
