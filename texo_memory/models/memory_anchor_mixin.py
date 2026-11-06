@@ -31,6 +31,10 @@ class MemoryAnchorMixin(models.AbstractModel):
     customer_id = fields.Many2one('res.partner', string="Customer Company", compute='_compute_customer_id',
                                   store=True, index=True,
                                   help="The customer the record belongs to, whatever its anchor; used by the opt-out.")
+    superseded_on = fields.Date(
+        readonly=True, copy=False,
+        help="The day the record stopped holding: when it was superseded or archived. With valid_from and expires, "
+             "what the memory knew on a given day (as_of of the search).")
     # Provenance and trust, named as Open Knowledge Format renders them (texo/okf.py):
     # who wrote the content (generated), the document it was taken from (sources).
     origin = fields.Selection([('agent', "Agent"), ('person', "Person")], required=True, default='person')
@@ -198,7 +202,10 @@ class MemoryAnchorMixin(models.AbstractModel):
             raise UserError(self.env._("A record becomes active, superseded or archived."))
         vals = {'state': state}
         if state == 'active':
-            vals.update({'verified': fields.Date.context_today(self), 'verified_by_id': self.env.uid})
+            vals.update({'verified': fields.Date.context_today(self), 'verified_by_id': self.env.uid,
+                         'superseded_on': False})
+        else:
+            vals['superseded_on'] = fields.Date.context_today(self)
         if state == 'superseded':
             later = self.browse(int(superseded_by_id or 0)).exists()
             if not later or not later.has_access('read'):

@@ -87,6 +87,10 @@ an unknown redirect, a request without PKCE.
 
 ## Changelog
 
+### 20.0.1.0.2
+
+- The tools `search` (`as_of`), `note` and `note_update` (`valid_from`).
+
 ### 20.0.1.0.1
 
 - The tool `search` takes `show_expired` and its answer says how the search ran (`mode`, `rerank`,

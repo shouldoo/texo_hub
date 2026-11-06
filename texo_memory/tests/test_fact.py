@@ -2,6 +2,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import json
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -39,6 +40,32 @@ class TestFact(MemoryCase):
         self.assertTrue(read['version'])
         with self.assertRaises(UserError):
             self.fact_as(self.outsider)
+
+    def test_what_held_on_a_day(self):
+        """A fact superseded by another: today the search gives the new one; asked as of a day before the
+        change, the old one; a fact that starts in the future is found from its first day only."""
+        Note = self.env['memory.note']
+        old = Note.browse(self.fact_as(self.lead, name='Tariff', body='The tariff is 40 an hour.')['id'])
+        self.env.cr.execute("UPDATE memory_note SET create_date = '2026-01-10 10:00:00' WHERE id = %s", (old.id,))
+        old.invalidate_recordset()
+        new = Note.browse(self.fact_as(self.lead, name='Tariff 2026', body='The tariff is 45 an hour.',
+                                       valid_from='2026-03-01')['id'])
+        with patch.object(fields.Date, 'context_today', return_value=fields.Date.to_date('2026-03-01')):
+            old.with_user(self.lead)._agent_set_state('superseded', superseded_by_id=new.id)
+        self.assertEqual(fields.Date.to_string(old.superseded_on), '2026-03-01')
+
+        def ids(**kwargs):
+            return [r['id'] for r in Note.with_user(self.member)._agent_search('tariff hour', scope='facts', **kwargs)]
+
+        self.assertEqual(ids(), [new.id], "today: the new fact only")
+        self.assertEqual(ids(as_of='2026-02-15'), [old.id], "in February the old one held")
+        self.assertEqual(ids(as_of='2026-03-01'), [new.id], "the day of the change: the new one")
+        self.assertEqual(ids(as_of='2026-01-01'), [], "before either was written")
+        found = Note.with_user(self.member)._agent_search('tariff hour', scope='facts', as_of='2026-02-15')
+        self.assertEqual((found[0]['state'], found[0]['superseded_on']), ('superseded', '2026-03-01'))
+        meta = new.with_user(self.member)._okf_concept()
+        self.assertIn('valid_from: "2026-03-01T00:00:00Z"', meta)
+        self.assertIn('valid_to: "2026-03-01T00:00:00Z"', old.with_user(self.member)._okf_concept())
 
     def test_the_same_text_on_the_same_record_is_written_once(self):
         """A session that proposes a note twice, a call retried: the existing note comes back, with

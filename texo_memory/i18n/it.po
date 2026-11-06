@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 21:40+0000\n"
-"PO-Revision-Date: 2026-11-06 21:40+0000\n"
+"POT-Creation-Date: 2026-11-06 23:36+0000\n"
+"PO-Revision-Date: 2026-11-06 23:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -47,7 +47,9 @@ msgid ""
 "company (`texo_project`) stays, for the internal work: its tasks and updates.\n"
 "\n"
 "Every note and lesson carries its state, `draft`, `active`, `superseded` or `archived`, with\n"
-"`supersedes` / `superseded_by` and `expires`; a note also `verified` and `verified_by_id` (for a rule, the\n"
+"`supersedes` / `superseded_by`, `expires`, `valid_from` (the first day a fact or a procedure holds, when it is\n"
+"not the day it is written) and `superseded_on` (the day it was superseded or archived: with the two others,\n"
+"what the memory knew on a given day); a note also `verified` and `verified_by_id` (for a rule, the\n"
 "confirmation of a lead), a lesson `verified` as free text and `applies_to`. Only an active rule binds the\n"
 "agent. Nothing is deleted: a newer one supersedes the older.\n"
 "\n"
@@ -221,6 +223,9 @@ msgid ""
 "  (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.\n"
 "  They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given\n"
 "  with the session note): in the vector of the episode they weigh B, above the description and the chatter.\n"
+"- **`as_of`** (`YYYY-MM-DD`): the facts and procedures that held on that day, superseded and archived ones\n"
+"  included: started by then (`valid_from`, else the day they were written), not yet expired, not yet superseded\n"
+"  (`superseded_on`); a draft never held. «What was the tariff in February?» is asked this way.\n"
 "- **The answer says how it ran**: `results`, then `mode` (the mode used: `lexical` here, whatever was asked),\n"
 "  `rerank` (what the reranker did: `off`, `skipped`, `applied`, `unavailable`; always `off` here) and\n"
 "  `latency_ms`, so a degraded search is seen for what it is. `show_expired` gives the expired notes and lessons\n"
@@ -336,6 +341,7 @@ msgid ""
 "| `generated` (`by`, `at`) | `origin` and `generated_by`: a person as `human:<login>`, an agent as the `<producer>/<version>` it gave, else the hub tool it called (`texo_memory/<version>`); Odoo itself (the superuser: data files, migrations) as `process:odoo`, never as a person; `at` the last write. A lesson names no one: its person is `human:anonymous`, its time the day only |\n"
 "| `verified` (`by`, `at`) | a note: `verified` and `verified_by_id` (for a rule, the confirmation of a lead); by the superuser it is `process:odoo`: machine-confirmed, not human-reviewed |\n"
 "| `stale_after` | the earliest of the day after `expires`, 180 days after the check and the change of the cited document; `stale` gives the reason (`expired`, `unconfirmed`, `unverified`, `source_changed`) |\n"
+"| `valid_from`, `valid_to` | keys of the hub: the first day a fact or a procedure holds, and the earliest of its expiry and the day it was superseded or archived |\n"
 "| `sources` | the cited document (`document_id`, with its `last_modified`) and `source_ref`, for every note |\n"
 "| `tags` | the activities of a rule, the project tags of a lesson |\n"
 "| `index.md` | the context pack: every level of the chain with its rules, facts, procedures and documents by title and one line (the organisation by section), the lessons, the pending items, the warnings, the activities of a rule, the expiry of a fact, a document whose original changed; the rules that bind (`never`, `must`) come in full, in a file of their own unless their line already carries their whole text |\n"
@@ -355,9 +361,9 @@ msgid ""
 "| `context` | `task_id` or `project_id` (neither: the company, or `company_id`), `messages` (default 5), `activity` (optional), `format` (`json`, `okf`) | the context pack; in OKF, the files of the bundle (`index.md`, the task and the project, the binding rules, `log.md`) |\n"
 "| `search` | `query`, `related_terms`, `scope` (`all`, `rules` or `notes`, `facts`, `procedures`, `documents`, `lessons`; `tasks` for the episodes), `applies_to` (lessons), `limit` (max 20) | rules the user may read (first), then documents and lessons by score, with a snippet; with `tasks`, the tasks the user may read ranked by title, description and chatter |\n"
 "| `read` | `note_id` (`fact_id` as a synonym) or `lesson_id`, or `concept` (`rules/12`, `facts/3`, `procedures/8`, `lessons/5`, `documents/9`, `projects/2`, `tasks/7`; a concept whose kind is not the record's is refused), `max_chars` (200 to 20000), `format` (`json`, `okf`) | one note (with its `version`, unless cut) or lesson; a concept of another kind as its own route gives it |\n"
-"| `note` | `name`, `body`, `kind` (`rule`, the default, `fact`, `procedure`), one anchor among `task_id` (not a rule), `project_id`, `partner_id` (none: the organisation, the company or `company_id`), `section` (a code), `keywords`, `applies_to`, `expires`, `document_id` (the document of the memory it comes from), `source_ref`, `generated_by` (the agent, `<producer>/<version>`); for a rule `state` (`draft` or, for a lead, `active`), `severity` (`never`, `must`, `prefer`; default `must`), `activities` (codes, a list or comma-separated; none: every activity) | a rule: its summary; a fact or a procedure: the note, active, verified by the person |\n"
+"| `note` | `name`, `body`, `kind` (`rule`, the default, `fact`, `procedure`), one anchor among `task_id` (not a rule), `project_id`, `partner_id` (none: the organisation, the company or `company_id`), `section` (a code), `keywords`, `applies_to`, `expires`, `valid_from`, `document_id` (the document of the memory it comes from), `source_ref`, `generated_by` (the agent, `<producer>/<version>`); for a rule `state` (`draft` or, for a lead, `active`), `severity` (`never`, `must`, `prefer`; default `must`), `activities` (codes, a list or comma-separated; none: every activity) | a rule: its summary; a fact or a procedure: the note, active, verified by the person |\n"
 "| `note_append` | `note_id`, `text`, `keywords` | a fact or a procedure, with a dated and signed paragraph more |\n"
-"| `note_update` | `note_id`, `body` with `expected_version`, `name`, `section`, `keywords`, `applies_to`, `expires`, `verified` (a rule only by a lead) | the note |\n"
+"| `note_update` | `note_id`, `body` with `expected_version`, `name`, `section`, `keywords`, `applies_to`, `expires`, `valid_from`, `verified` (a rule only by a lead) | the note |\n"
 "| `fact`, `fact_append`, `fact_update` | as `note` with `kind` `fact`, `note_append`, `note_update` (`fact_id` for `note_id`) | kept for the clients that call them |\n"
 "| `lesson` | `finding`, `solution`, `tags` (names, a list or comma-separated), `activities` (codes), `keywords`, `title`, `applies_to`, `verified`, `state` (`draft` or, for a lead, `active`), `source_ref` (for the leak filter only), `generated_by` | the finding written |\n"
 "| `state` | `note_id` (`fact_id`) or `lesson_id`, `state` (`active`, `superseded`, `archived`), `superseded_by_id` | a rule or a lesson: lead only; a fact or a procedure: its author or a lead |\n"
@@ -429,6 +435,11 @@ msgid ""
 "\n"
 "## Changelog\n"
 "\n"
+"### 20.0.1.2.0\n"
+"\n"
+"- `valid_from` on the notes and `superseded_on` set by a change of state; the search takes `as_of`: the facts and\n"
+"  procedures that held on a day, superseded ones included; OKF keys `valid_from` and `valid_to`.\n"
+"\n"
 "### 20.0.1.1.0\n"
 "\n"
 "- The answer of `memory/search` says how the search ran: `mode` (the one used), `rerank` (off, skipped,\n"
@@ -437,6 +448,7 @@ msgid ""
 "  the existing record back with `existing: true`, nothing is written (`content_hash` on notes and lessons).\n"
 "- The access rules are in the full-text query (`fulltext.readable_ids`): the candidates are readable records,\n"
 "  however many stronger matches of other customers there are; the ORM pass is the second check.\n"
+"- The tasks of a project template and the task templates are not episodes: out of the search and of the vectors.\n"
 "- The gauges of the memory in `GET /texo/metrics`: notes by kind and state, stale rules, lessons, documents,\n"
 "  passages, episodes.\n"
 "\n"
@@ -552,8 +564,8 @@ msgid ""
 "A fingerprint of finding and solution: the same text written again gives the"
 " existing lesson, nothing is written twice."
 msgstr ""
-"Un'impronta di riscontro e soluzione: lo stesso testo scritto di nuovo dà la "
-"lezione esistente, nulla si scrive due volte."
+"Un'impronta di riscontro e soluzione: lo stesso testo scritto di nuovo dà la"
+" lezione esistente, nulla si scrive due volte."
 
 #. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_note__content_hash
@@ -2308,6 +2320,12 @@ msgid "Superseded By"
 msgstr "Superata da"
 
 #. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__superseded_on
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__superseded_on
+msgid "Superseded On"
+msgstr "Superata il"
+
+#. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__supersedes_id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note__supersedes_id
 msgid "Supersedes"
@@ -2479,6 +2497,18 @@ msgstr ""
 "dall'opt-out."
 
 #. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__superseded_on
+#: model:ir.model.fields,help:texo_memory.field_memory_note__superseded_on
+msgid ""
+"The day the record stopped holding: when it was superseded or archived. With"
+" valid_from and expires, what the memory knew on a given day (as_of of the "
+"search)."
+msgstr ""
+"Il giorno in cui il record ha smesso di valere: quando è stato superato o "
+"archiviato. Con valid_from e la scadenza, ciò che la memoria sapeva in un "
+"dato giorno (as_of della ricerca)."
+
+#. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_anchor_mixin__document_id
 #: model:ir.model.fields,help:texo_memory.field_memory_note__document_id
 msgid "The document of the memory the record was taken from."
@@ -2489,6 +2519,16 @@ msgstr "Il documento della memoria da cui è tratta la regola."
 #: code:addons/texo_memory/models/ir_attachment.py:0
 msgid "The file is larger than %s MB."
 msgstr "Il file supera i %s MB."
+
+#. module: texo_memory
+#: model:ir.model.fields,help:texo_memory.field_memory_note__valid_from
+msgid ""
+"The first day the record holds; empty, since it was written. With expires "
+"and the day it was superseded, what the memory knew on a given day (as_of)."
+msgstr ""
+"Il primo giorno in cui il record vale; vuoto, da quando è stato scritto. Con "
+"la scadenza e il giorno in cui è stato superato, ciò che la memoria sapeva "
+"in un dato giorno (as_of)."
 
 #. module: texo_memory
 #: model:ir.model.fields,help:texo_memory.field_memory_optout_wizard__task_id
@@ -2809,6 +2849,11 @@ msgstr ""
 "        !!! per impostare la priorità su urgente\n"
 "\n"
 "        Assicurati di utilizzare il formato e l'ordine corretti, ad es. Migliorare la schermata di configurazione 5h #feature #v16 @Mitchell!"
+
+#. module: texo_memory
+#: model:ir.model.fields,field_description:texo_memory.field_memory_note__valid_from
+msgid "Valid From"
+msgstr "Valido dal"
 
 #. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_search__vectors

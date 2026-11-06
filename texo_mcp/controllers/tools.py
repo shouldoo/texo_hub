@@ -88,7 +88,10 @@ TOOLS = [
                    "vectors did not answer), rerank (off, skipped, applied, unavailable), latency_ms.",
          {'query': STRING, 'related_terms': STRINGS, 'scope': {'type': 'string', 'enum': SCOPES},
           'applies_to': STRING, 'limit': INTEGER, 'mode': {'type': 'string', 'enum': MODES},
-          'show_expired': {'type': 'boolean'}}, ['query'],
+          'show_expired': {'type': 'boolean'},
+          'as_of': {'type': 'string', 'description': "YYYY-MM-DD: the facts and procedures that held on that day "
+                                                     "(started, not yet expired, not yet superseded), superseded "
+                                                     "ones included"}}, ['query'],
          route=('memory', 'search')),
     tool('read', "One note (note_id: a rule, a fact with the version to name in note_update, a procedure) or lesson in "
                  "full; or any concept of the memory by its OKF id (concept: rules/12, facts/3, procedures/8, lessons/5, "
@@ -106,10 +109,12 @@ TOOLS = [
                  "an operation is done, step by step; what in it binds is a rule. A fact or a procedure is active at "
                  "once. A note taken from a document of the memory cites it with document_id: when the original changes, "
                  "the note is marked source_changed. The same title and text already on the record give that note back "
-                 "(existing true), nothing is written.",
+                 "(existing true), nothing is written. valid_from (YYYY-MM-DD): the first day a fact or a procedure "
+                 "holds, when it is not the day it is written (a tariff from January, a procedure from the new year).",
          {'name': STRING, 'body': STRING, 'kind': {'type': 'string', 'enum': KINDS}, 'section': SECTION,
           'task_id': INTEGER, 'project_id': INTEGER, 'partner_id': INTEGER, 'company_id': INTEGER,
-          'state': {'type': 'string', 'enum': ['draft', 'active']}, 'expires': STRING, 'source_ref': STRING,
+          'state': {'type': 'string', 'enum': ['draft', 'active']}, 'expires': STRING, 'valid_from': STRING,
+          'source_ref': STRING,
           'document_id': INTEGER, 'severity': {'type': 'string', 'enum': SEVERITIES}, 'activities': STRINGS,
           'keywords': STRINGS, 'applies_to': STRING, 'generated_by': GENERATED_BY},
          ['name', 'body'], route=('memory', 'note'), write=True),
@@ -121,7 +126,8 @@ TOOLS = [
                         "refused if it changed since), or its title, section, keywords, applies_to, expires; verified "
                         "true marks it checked today (a rule only by a lead).",
          {'note_id': INTEGER, 'expected_version': STRING, 'body': STRING, 'name': STRING, 'section': SECTION,
-          'keywords': STRINGS, 'applies_to': STRING, 'expires': STRING, 'verified': {'type': 'boolean'}},
+          'keywords': STRINGS, 'applies_to': STRING, 'expires': STRING, 'valid_from': STRING,
+          'verified': {'type': 'boolean'}},
          ['note_id'], route=('memory', 'note_update'), write=True),
     tool('fact', "The note tool with kind fact, kept for the clients that call it: what a customer, a project or a "
                  "task is.",

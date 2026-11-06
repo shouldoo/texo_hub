@@ -90,6 +90,8 @@ class MemoryNote(models.Model):
                                 "it is to re-check." % STALE_DAYS)
     verified_by_id = fields.Many2one('res.users', string="Verified By", ondelete='set null',
                                      help="Who last checked the content: the verified of its OKF rendering.")
+    valid_from = fields.Date(help="The first day the record holds; empty, since it was written. With expires and "
+                                  "the day it was superseded, what the memory knew on a given day (as_of).")
     expires = fields.Date(help="After this day the record no longer holds on its own.")
     supersedes_id = fields.Many2one('memory.note', string="Supersedes", ondelete='set null')
     superseded_by_id = fields.Many2one('memory.note', string="Superseded By", ondelete='set null')
@@ -240,7 +242,7 @@ class MemoryNote(models.Model):
                 entry['section'] = note.section_id.code
             if note.rule_activity_ids:
                 entry['activities'] = note.rule_activity_ids.mapped('code')
-            for key in ('verified', 'expires'):
+            for key in ('verified', 'valid_from', 'expires', 'superseded_on'):
                 if note[key]:
                     entry[key] = fields.Date.to_string(note[key])
             if note.applies_to:
@@ -290,6 +292,9 @@ class MemoryNote(models.Model):
             'severity': self.severity if self.kind == 'rule' else None,
             'section': self.section_id.code or None,
             'keywords': self.keywords or None, 'applies_to': self.applies_to or None,
+            'valid_from': okf.timestamp(self.valid_from) if self.valid_from else None,
+            'valid_to': okf.timestamp(min(d for d in (self.expires, self.superseded_on) if d))
+            if self.expires or self.superseded_on else None,
             'version': self._version(),
             'supersedes': okf.link(self.supersedes_id) if self.supersedes_id else None,
             'superseded_by': okf.link(self.superseded_by_id) if self.superseded_by_id else None,
@@ -517,11 +522,20 @@ class MemoryNote(models.Model):
                 'sections': self.env['memory.section'].search([])._agent_summary()}
 
     @api.model
-    def _search_domain(self, kinds, today=None, show_expired=False):
+    def _search_domain(self, kinds, today=None, show_expired=False, as_of=None):
         """The notes the search may give: of these kinds, live (the drafts of the rules too: a
         proposal is found, and the pack says it does not bind), not expired unless asked (the
-        review of what expired: the entry says stale expired)."""
+        review of what expired: the entry says stale expired). With as_of, what held on that day:
+        the facts and procedures that had started (valid_from, else the day they were written),
+        not yet expired and not yet superseded or archived then; a draft never held."""
         today = today or fields.Date.context_today(self)
+        if as_of:
+            as_of = fields.Date.to_date(as_of)
+            return [('kind', 'in', kinds), ('state', 'in', ('active', 'superseded', 'archived')),
+                    '|', ('valid_from', '<=', as_of),
+                    '&', ('valid_from', '=', False), ('create_date', '<', fields.Datetime.to_datetime(as_of) + timedelta(days=1)),
+                    '|', ('expires', '=', False), ('expires', '>=', as_of),
+                    '|', ('superseded_on', '=', False), ('superseded_on', '>', as_of)]
         domain = [('kind', 'in', kinds), ('state', 'in', ('draft', 'active'))]
         if not show_expired:
             domain += ['|', ('expires', '=', False), ('expires', '>=', today)]
@@ -542,7 +556,7 @@ class MemoryNote(models.Model):
 
     @api.model
     def _agent_search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
-                      show_expired=False):
+                      show_expired=False, as_of=None):
         """Rules, facts and procedures the user may read, documents and lessons when scope
         allows, ranked together by the full-text search: every word first, then the best
         score, whatever the kind. The scope tasks searches the episodes instead: the title,
@@ -550,11 +564,11 @@ class MemoryNote(models.Model):
         of all, which is the memory. mode (lexical, semantic, hybrid) means something with
         texo_vector; here the search is lexical whatever it says. show_expired gives the
         expired notes and lessons too, each saying it is stale."""
-        return self._agent_search_run(query, related_terms, scope, applies_to, limit, mode, show_expired)[0]
+        return self._agent_search_run(query, related_terms, scope, applies_to, limit, mode, show_expired, as_of)[0]
 
     @api.model
     def _agent_search_run(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
-                          show_expired=False):
+                          show_expired=False, as_of=None):
         """The search and how it ran: (entries, the mode used, the state of the reranker). Here the
         mode is always lexical and the reranker off; texo_vector says what it did."""
         limit = max(1, min(int(limit or 5), 20))
@@ -565,7 +579,7 @@ class MemoryNote(models.Model):
         if kinds:
             today = fields.Date.context_today(self)
             notes, ranked = fulltext.search(self, 'memory_note', 'search_tsv', word_list, limit,
-                                            self._search_domain(kinds, today, show_expired))
+                                            self._search_domain(kinds, today, show_expired, as_of))
             results += notes._search_entries(ranked, today)
         if scope in ('all', 'documents'):
             results += self.env['ir.attachment']._texo_search(query, related_terms, limit)
@@ -579,7 +593,7 @@ class MemoryNote(models.Model):
 
     @api.model
     def _agent_search_report(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
-                             show_expired=False):
+                             show_expired=False, as_of=None):
         """What a search route answers: the results and how the search ran, so a degraded answer
         is seen for what it is: mode, the mode used (lexical when the vectors were asked and did
         not answer); rerank, what the reranker did (off: none configured; skipped: not a hybrid
@@ -587,7 +601,7 @@ class MemoryNote(models.Model):
         latency_ms, the time of the search in the hub."""
         began = time.monotonic()
         results, mode_used, rerank = self._agent_search_run(query, related_terms, scope, applies_to, limit, mode,
-                                                            show_expired)
+                                                            show_expired, as_of)
         return {'results': results, 'mode': mode_used, 'rerank': rerank,
                 'latency_ms': int((time.monotonic() - began) * 1000)}
 
@@ -616,7 +630,7 @@ class MemoryNote(models.Model):
     @api.model
     def _agent_note(self, name, body, project_id=None, partner_id=None, state=None, expires=None,
                     source_ref=None, document_id=None, company_id=None, kind='rule', task_id=None, severity=None,
-                    activities=None, generated_by=None, section=None, keywords=None, applies_to=None):
+                    activities=None, generated_by=None, section=None, keywords=None, applies_to=None, valid_from=None):
         """Write a rule, a fact or a procedure as the user, on a task (not a rule), a project,
         a customer or, with none, the organisation itself (the company).
 
@@ -639,7 +653,8 @@ class MemoryNote(models.Model):
             raise UserError(self.env._("A note needs a title."))
         vals = self._anchor_vals(task_id, project_id, partner_id, company_id)
         vals.update({'kind': kind, 'name': name.strip()[:200], 'body': self._agent_body(body),
-                     'expires': expires or False, 'keywords': self._agent_keywords(keywords),
+                     'expires': expires or False, 'valid_from': valid_from or False,
+                     'keywords': self._agent_keywords(keywords),
                      'applies_to': applies_to or False,
                      'section_id': self.env['memory.section']._from_code(section).id or False,
                      'rule_activity_ids': [Command.set(self.env['memory.note.activity']._from_codes(activities).ids)]})
@@ -703,7 +718,7 @@ class MemoryNote(models.Model):
         return self._agent_read()
 
     def _agent_update(self, expected_version=None, body=None, name=None, keywords=None, applies_to=None,
-                      expires=None, verified=False, section=None):
+                      expires=None, verified=False, section=None, valid_from=None):
         """Replace the text (with the version that was read), the title, the keywords, the
         section or the dates of a note; verified marks it checked today. A rule is changed by
         a lead or, while a draft, by its author."""
@@ -722,7 +737,7 @@ class MemoryNote(models.Model):
             vals['keywords'] = self._agent_keywords(keywords)
         if section is not None:
             vals['section_id'] = self.env['memory.section']._from_code(section).id or False
-        for key, value in (('applies_to', applies_to), ('expires', expires)):
+        for key, value in (('applies_to', applies_to), ('expires', expires), ('valid_from', valid_from)):
             if value is not None:
                 vals[key] = value or False
         if verified or (body is not None and self.kind != 'rule'):
@@ -850,7 +865,7 @@ class MemoryNote(models.Model):
             raise AccessError(self.env._("Only the author of a note or a lead supersedes or archives it."))
         if state not in ('superseded', 'archived', 'active'):
             raise UserError(self.env._("A note becomes active, superseded or archived."))
-        vals = {'state': state}
+        vals = {'state': state, 'superseded_on': fields.Date.context_today(self) if state != 'active' else False}
         if state == 'superseded':
             later = self.browse(int(superseded_by_id or 0)).exists()
             if not later or not later.has_access('read'):
