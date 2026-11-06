@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 12:27+0000\n"
-"PO-Revision-Date: 2026-11-02 12:27+0000\n"
+"POT-Creation-Date: 2026-11-06 07:11+0000\n"
+"PO-Revision-Date: 2026-11-06 07:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -141,7 +141,7 @@ msgstr "Consenti"
 #: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__client_id
 #: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__client_id
 msgid "Client"
-msgstr "Client"
+msgstr ""
 
 #. module: texo_mcp
 #: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_client__client_id
@@ -205,7 +205,7 @@ msgstr "Autorizzazioni"
 #: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_code__id
 #: model:ir.model.fields,field_description:texo_mcp.field_texo_oauth_grant__id
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #. module: texo_mcp
 #: model_terms:ir.ui.view,arch_db:texo_mcp.view_oauth_grant_search
@@ -280,7 +280,7 @@ msgstr "Revocata"
 #. module: texo_mcp
 #: model:ir.module.module,shortdesc:base.module_texo_mcp
 msgid "Texo - MCP"
-msgstr "Texo - MCP"
+msgstr ""
 
 #. module: texo_mcp
 #: model:ir.model,name:texo_mcp.model_texo_oauth_client
