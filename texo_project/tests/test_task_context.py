@@ -66,6 +66,17 @@ class TestTaskContext(TransactionCase):
         with self.assertRaises(UserError):
             task._texo_post_note('   ')
 
+    def test_the_same_note_is_posted_once(self):
+        task = self.task.with_user(self.dev)
+        first = task._texo_post_note('Scope agreed with the customer.')
+        again = task._texo_post_note('  Scope agreed  with the customer. ', keywords=['scope'])
+        self.assertEqual((again['message_id'], again['existing'], again['keywords']), (first['message_id'], True, 'scope'))
+        self.assertNotIn('existing', first)
+        other = task._texo_post_note('Scope changed.')
+        self.assertNotEqual(other['message_id'], first['message_id'])
+        self.assertNotIn('existing', task._texo_post_note('Scope agreed with the customer.'),
+                         "the same text again, but no longer the last note: posted as the person asked")
+
     def test_post_note_merges_the_search_keywords(self):
         task = self.task.with_user(self.dev)
         self.assertEqual(task._texo_post_note('Nothing to add')['keywords'], None)

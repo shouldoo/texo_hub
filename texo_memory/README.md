@@ -57,7 +57,11 @@ behaviour:
 
 Two sessions never overwrite each other: `memory/note_append` adds a dated, signed paragraph to a fact or
 a procedure with the row locked; `memory/note_update` replaces the text only with the `version` returned
-by `memory/read` (a fingerprint of the text: any change since the reading refuses the replacement). The
+by `memory/read` (a fingerprint of the text: any change since the reading refuses the replacement). A
+write is idempotent: the same title and text of the same kind already live on the same record (a session
+that proposes a note twice, a call retried) give that note back with `existing: true`, nothing is written
+(`content_hash`, whitespace folded); the same for a finding (`memory/lesson`, finding and solution) and for
+the last internal note of a task (`project/task_note`). The
 context pack gives the live facts and procedures of every level of the chain, the task included, by
 their title, section, the day they were verified and `stale` (`unverified` after 180 days, `expired`,
 `source_changed`); the text comes with `memory/read`. An expired one leaves the pack and the search.
@@ -407,6 +411,8 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
 
 - The answer of `memory/search` says how the search ran: `mode` (the one used), `rerank` (off, skipped,
   applied, unavailable), `latency_ms`; `show_expired` gives the expired notes and lessons too, marked stale.
+- Idempotent writes: the same note (title and text) already live on the same record, or the same finding, gives
+  the existing record back with `existing: true`, nothing is written (`content_hash` on notes and lessons).
 - The gauges of the memory in `GET /texo/metrics`: notes by kind and state, stale rules, lessons, documents,
   passages, episodes.
 

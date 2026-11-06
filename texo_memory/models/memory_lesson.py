@@ -76,6 +76,14 @@ class MemoryLesson(models.Model):
         string="Written By (Agent)",
         help="The agent that wrote the finding, as <producer>/<version>; empty, the tool of the hub it called.")
     merged_count = fields.Integer(default=1, help="How many findings this one gathers.")
+    content_hash = fields.Char(compute='_compute_content_hash', store=True, index=True,
+                               help="A fingerprint of finding and solution: the same text written again gives the "
+                                    "existing lesson, nothing is written twice.")
+
+    @api.depends('finding', 'solution')
+    def _compute_content_hash(self):
+        for lesson in self:
+            lesson.content_hash = self.env['memory.note']._text_hash(f"{lesson.finding}\n{lesson.solution}")
 
     def init(self):
         self.env.cr.execute(
@@ -238,7 +246,8 @@ class MemoryLesson(models.Model):
         """Write a finding as the user: something learned on a project, without
         the project. A member's is a draft for the leads; a lead's may be active at once.
         source_ref (the task it comes from) only feeds the leak filter: nothing in the
-        lesson points back to the work."""
+        lesson points back to the work. Idempotent: the same finding and solution already
+        live give that lesson, with existing true, and nothing is written."""
         role = self.env.user._texo_check_role()
         if state not in ('draft', 'active'):
             raise UserError(self.env._("A new lesson is a draft or active."))
@@ -250,12 +259,14 @@ class MemoryLesson(models.Model):
                   'applies_to': applies_to, 'verified': verified, 'activities': activities,
                   'keywords': ", ".join(keywords) if isinstance(keywords, (list, tuple)) else keywords,
                   'generated_by': okf.actor(generated_by)}
-        return self._publish_finding(shared, state, source_ref)._agent_summary()
+        lesson, created = self._publish_finding(shared, state, source_ref)
+        return lesson._agent_summary() if created else dict(lesson._agent_summary(), existing=True)
 
     @api.model
     def _publish_finding(self, shared, state, source_ref=None):
-        """Create a finding that belongs to no customer. Raises when the text would
-        leak: nothing is stored in that case."""
+        """Create a finding that belongs to no customer: (the lesson, whether it was created now).
+        Raises when the text would leak: nothing is stored in that case. The same finding and
+        solution already live, once the filter passed, are given back and nothing is written."""
         names = forbidden_names(self.env)
         for key in ('finding', 'solution', 'keywords'):
             if key == 'keywords' and not shared.get(key):
@@ -270,6 +281,13 @@ class MemoryLesson(models.Model):
             reason = leak_reason(self.env, name, source_ref, names, check_length=False)
             if reason:
                 raise UserError(self.env._("The tag %(tag)s cannot be stored: %(reason)s.", tag=name, reason=reason))
+        # the filter passed: the same finding and solution already live are given back, nothing is written
+        existing = self.search([('state', 'in', ('draft', 'active')),
+                                ('content_hash', '=', self.env['memory.note']._text_hash(
+                                    f"{shared['finding'].strip()}\n{shared['solution'].strip()}"))],
+                               order='id', limit=1)
+        if existing:
+            return existing, False
         tags = self._tags_from_names(tag_names)
         activities = self.env['memory.note.activity']._from_codes(shared.get('activities'))
         title = (shared.get('title') or shared['finding']).strip()[:120]
@@ -288,7 +306,7 @@ class MemoryLesson(models.Model):
             "UPDATE memory_lesson SET create_date = date_trunc('day', create_date), "
             "write_date = date_trunc('day', write_date) WHERE id = %s", [lesson.id])
         lesson.invalidate_recordset(['create_date', 'write_date'])
-        return lesson
+        return lesson, True
 
     def _leads(self):
         return self.env.ref('texo.group_texo_lead').sudo().all_user_ids.filtered('active')

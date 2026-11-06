@@ -97,12 +97,25 @@ class MemoryNote(models.Model):
     stale = fields.Boolean(string="To Check", compute='_compute_stale', search='_search_stale',
                            help="Active, and expired, not verified for %s days, or its source document changed."
                                 % STALE_DAYS)
+    content_hash = fields.Char(compute='_compute_content_hash', store=True, index=True,
+                               help="A fingerprint of the title and the text: the same note written again on the "
+                                    "same record gives the existing one, nothing is written twice.")
 
     def init(self):
         self.env.cr.execute(
             "ALTER TABLE memory_note ADD COLUMN IF NOT EXISTS search_tsv tsvector "
             f"GENERATED ALWAYS AS ({SEARCH_TSV}) STORED")
         self.env.cr.execute("CREATE INDEX IF NOT EXISTS memory_note_search_tsv_idx ON memory_note USING gin (search_tsv)")
+
+    @staticmethod
+    def _text_hash(text):
+        """The fingerprint of a text as the idempotent writes compare it: whitespace folded."""
+        return hashlib.sha256(" ".join((text or '').split()).encode()).hexdigest()
+
+    @api.depends('name', 'body')
+    def _compute_content_hash(self):
+        for note in self:
+            note.content_hash = self._text_hash(f"{(note.name or '').lower()}\n{note.body}")
 
     @api.constrains('task_id', 'kind')
     def _check_rule_anchor(self):
@@ -611,7 +624,11 @@ class MemoryNote(models.Model):
         organisation it binds every session; severity and activities say how and where.
         A fact or a procedure: active and verified today by the person who said yes.
         A record taken from a document of the memory cites it: when the original changes,
-        it is marked to re-check until it is verified again."""
+        it is marked to re-check until it is verified again.
+
+        Idempotent: the same title and text of the same kind already live on the same record
+        (a session that proposes a note twice, a call retried) give that note, with existing
+        true, and nothing is written."""
         role = self.env.user._texo_check_role()
         kind = kind or 'rule'
         if kind not in dict(KINDS):
@@ -646,6 +663,13 @@ class MemoryNote(models.Model):
             anchor = self.new(vals)._anchor()
             if not anchor.has_access('read'):
                 raise UserError(self.env._("The record does not exist or is not visible to you."))
+        existing = self.search([(field, '=', vals[field] or False) for field in ('task_id', 'project_id', 'partner_id',
+                                                                                 'company_id')]
+                               + [('kind', '=', kind), ('state', 'in', ('draft', 'active')),
+                                  ('content_hash', '=', self._text_hash(f"{vals['name'].lower()}\n{vals['body']}"))],
+                               order='id', limit=1)
+        if existing:
+            return dict(existing._agent_summary()[0] if kind == 'rule' else existing._agent_read(), existing=True)
         vals.update(self._source_vals(document_id, source_ref, generated_by))
         note = self.create(vals)
         if kind == 'rule' and note.state == 'draft' and role == 'member':

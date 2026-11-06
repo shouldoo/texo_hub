@@ -24,6 +24,15 @@ class TestMemoryLesson(MemoryCase):
         lesson.with_user(self.lead)._agent_set_state('active')
         self.assertEqual(lesson.with_user(self.member)._agent_read()['state'], 'active')
 
+    def test_the_same_finding_is_written_once(self):
+        Lesson = self.env['memory.lesson'].with_user(self.member)
+        first = Lesson._agent_lesson(CLEAN_FINDING, CLEAN_SOLUTION, tags=['purchase'])
+        again = Lesson._agent_lesson(f"  {CLEAN_FINDING}  ", CLEAN_SOLUTION, title='Another title')
+        self.assertEqual((again['id'], again['existing']), (first['id'], True))
+        self.assertNotIn('existing', first)
+        other = Lesson._agent_lesson(CLEAN_FINDING, CLEAN_SOLUTION + " Then run the tests.")
+        self.assertNotEqual(other['id'], first['id'])
+
     def test_a_lesson_never_names_a_customer(self):
         with self.assertRaises(UserError):
             self.lesson(self.lead, finding=CLEAN_FINDING + " Seen at Rossi Meccanica.")

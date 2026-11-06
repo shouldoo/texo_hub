@@ -90,7 +90,8 @@ an unknown redirect, a request without PKCE.
 ### 20.0.1.0.1
 
 - The tool `search` takes `show_expired` and its answer says how the search ran (`mode`, `rerank`,
-  `latency_ms`).
+  `latency_ms`); `note`, `lesson` and `task_note` give the existing record back (`existing`) instead of writing
+  the same text twice.
 
 ### 20.0.1.0.0
 
