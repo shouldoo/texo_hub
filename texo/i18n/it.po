@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 23:23+0000\n"
-"PO-Revision-Date: 2026-11-06 23:23+0000\n"
+"POT-Creation-Date: 2026-11-06 23:26+0000\n"
+"PO-Revision-Date: 2026-11-06 23:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -168,9 +168,6 @@ msgid ""
 "refuses it, the MCP server hides the write tools. For an assistant that only"
 " consults, or a scraper."
 msgstr ""
-"Un token Texo che legge la memoria e non scrive mai: ogni route che scrive "
-"lo rifiuta, il server MCP nasconde gli strumenti di scrittura. Per un "
-"assistente che consulta soltanto, o per uno scraper."
 
 #. module: texo
 #: model:ir.model.fields,help:texo.field_res_users_apikeys_description__texo_read_only
@@ -178,8 +175,6 @@ msgid ""
 "A Texo token that reads the memory and never writes: for an assistant that "
 "only consults, or a scraper of the metrics."
 msgstr ""
-"Un token Texo che legge la memoria e non scrive mai: per un assistente che "
-"consulta soltanto, o per uno scraper delle metriche."
 
 #. module: texo
 #. odoo-python
@@ -477,7 +472,7 @@ msgstr "Pubblica"
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys__texo_read_only
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__texo_read_only
 msgid "Read Only"
-msgstr "Sola lettura"
+msgstr ""
 
 #. module: texo
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__scope
@@ -745,6 +740,48 @@ msgstr "Scritture"
 #: code:addons/texo/models/res_users.py:0
 msgid "You have no Texo role."
 msgstr "Non hai un ruolo nel Texo."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a JWT"
+msgstr "un JWT"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a bearer token"
+msgstr "un token bearer"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a long hexadecimal secret"
+msgstr "un segreto esadecimale lungo"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a named key, token or password"
+msgstr "una chiave, un token o una password con il loro nome"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "a private key"
+msgstr "una chiave privata"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "an API key"
+msgstr "una chiave API"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid "an AWS access key"
+msgstr "una chiave di accesso AWS"
 
 #. module: texo
 #: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__cli

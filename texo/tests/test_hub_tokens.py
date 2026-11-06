@@ -107,4 +107,5 @@ class TestReadOnlyTokensAndSecrets(TransactionCase):
                            ("-----BEGIN RSA PRIVATE KEY-----", "a private key"),
                            ("the token expires in 90 days", None),
                            ("password policy: twelve characters", None)):
-            self.assertEqual(credential_reason(text), what, text)
+            found = credential_reason(text)
+            self.assertEqual(str(found) if found is not None else None, what, text)
