@@ -7,9 +7,14 @@ one vector each), the active facts and procedures, the live lessons, the documen
 summary and keywords, then each piece of the converted text, when the document keeps it). Never
 the rules: the context pack gives them by chain, a rule is not something to find by meaning.
 
-The vectors are derived data: a cron computes those missing or whose text changed (a hash of
-the text) and drops those of records that left the scope, so nothing else in the hub has to
-know about them. The embedding service is Text Embeddings Inference (or any service with its
+The vectors are derived data. A write on a record of the scope (a task, a message of its
+chatter, a fact, a lesson, a document) marks the record pending (memory.embedding.pending);
+a cron, every fifteen minutes, reads the texts of the pending records only, computes the
+vectors missing or whose text changed (a hash of the text) and drops those of the chunks gone,
+so nothing else in the hub has to know about them and a run costs what changed, not the whole
+memory. Where the OCA module queue_job is installed a write also enqueues one job (one at a
+time, by identity key) that does the same at once. A weekly reconciliation walks the whole
+scope and marks pending what the writes may have missed. The embedding service is Text Embeddings Inference (or any service with its
 POST /embed) or llama.cpp server started with --embedding (POST /v1/embeddings, for the AMD and Intel GPUs that
 TEI does not support, through Vulkan), reached at a configured endpoint; a host outside the local network is refused
 unless the administrator opts in: the texts of the memory never leave the machine by default.
@@ -64,6 +69,9 @@ CRON_BATCH = 8
 CRON_MARGIN = 30
 # seconds a search waits for the vector of its query, seconds the cron waits for a batch
 TIMEOUTS = {'query': 10, 'passage': 300}
+# the identity key of the job that works off the pending records where queue_job is installed:
+# one such job waits at a time, however many writes enqueue it
+JOB_IDENTITY = 'texo_vector.embed_pending'
 # the nearest chunks read per search: the HNSW index gives at most ef_search rows; the documents
 # read more, since the passages of one long act may fill the window (structure.py cuts them)
 CANDIDATES = 60
@@ -75,6 +83,56 @@ LOCAL_SUFFIXES = ('.localhost', '.local', '.internal', '.lan')
 
 def text_hash(text):
     return hashlib.sha256(text.encode()).hexdigest()
+
+
+class MemoryEmbeddingPending(models.Model):
+    """A record of the scope whose texts changed since its vectors were computed, or that
+    entered or left the scope: the cron of the vectors reads these records and no other.
+    Written by the hooks of the models of the scope (_touch) and by the reconciliation."""
+    _name = 'memory.embedding.pending'
+    _description = "Memory Embedding: Pending Record"
+    _log_access = False
+
+    res_model = fields.Char(string="Model", required=True, index=True)
+    res_id = fields.Integer(string="Record", required=True)
+
+    _unique_record = models.Constraint('UNIQUE(res_model, res_id)', "A record is pending once.")
+
+    @api.model
+    def _touch(self, res_model, res_ids):
+        """Mark these records pending (once each; a record already pending stays so), then ask
+        the queue to work them off now where queue_job is installed."""
+        res_ids = [int(res_id) for res_id in res_ids if res_id]
+        if not res_ids:
+            return
+        self.flush_model()
+        # raw SQL: an insert that ignores the records already pending, in one statement
+        self.env.cr.execute(SQL(
+            "INSERT INTO memory_embedding_pending (res_model, res_id) VALUES %s ON CONFLICT DO NOTHING",
+            SQL(", ").join(SQL("(%s, %s)", res_model, res_id) for res_id in res_ids)))
+        self.invalidate_model()
+        self.env['memory.embedding']._schedule_now()
+
+    @api.model
+    def _grouped(self):
+        """{res_model: [res_id]} of the pending records."""
+        groups = {}
+        for row in self.sudo().search_fetch([], ['res_model', 'res_id'], order='id'):
+            groups.setdefault(row.res_model, []).append(row.res_id)
+        return groups
+
+    @api.model
+    def _clear(self, keys):
+        """The records (res_model, res_id) are up to date: no longer pending."""
+        for res_model, res_ids in self._group_keys(keys).items():
+            self.sudo().search([('res_model', '=', res_model), ('res_id', 'in', res_ids)]).unlink()
+
+    @staticmethod
+    def _group_keys(keys):
+        groups = {}
+        for res_model, res_id in keys:
+            groups.setdefault(res_model, []).append(res_id)
+        return groups
 
 
 class MemoryEmbedding(models.Model):
@@ -98,7 +156,9 @@ class MemoryEmbedding(models.Model):
 
     # -- the schema -----------------------------------------------------------
     def init(self):
-        self._ensure_schema()
+        if self._ensure_schema() and not self.search_count([]) and not self.env['memory.embedding.pending'].search_count([]):
+            # a database without vectors yet (the install, or a column dropped): every record of the scope waits
+            self._mark_all()
 
     @api.model
     def _param(self, key, type_='str', default=None):
@@ -159,16 +219,20 @@ class MemoryEmbedding(models.Model):
                 return False
         wanted = f"vector({self._dimensions()})"
         current = self._column_type()
+        dropped = False
         if current and current != wanted:
             _logger.info("The vectors of the memory change from %s to %s: every vector is computed again.", current, wanted)
+            self.invalidate_model()
             cr.execute("DELETE FROM memory_embedding")
             cr.execute("ALTER TABLE memory_embedding DROP COLUMN embedding")
-            current = None
+            current, dropped = None, True
         if not current:
             # the dimensions are an integer of this module, never user input
             cr.execute(f"ALTER TABLE memory_embedding ADD COLUMN embedding {wanted}")
         cr.execute("CREATE INDEX IF NOT EXISTS memory_embedding_hnsw_idx ON memory_embedding "
                    "USING hnsw (embedding vector_cosine_ops)")
+        if dropped and self.env.registry.ready:
+            self._mark_all()
         return True
 
     # -- the service ----------------------------------------------------------
@@ -255,15 +319,21 @@ class MemoryEmbedding(models.Model):
     @api.model
     def _sources(self):
         """{res_model: method} of what gets vectors; each method gives
-        [(res_model, res_id, chunk, text)]."""
+        [(res_model, res_id, chunk, text)], of the records of the ids given, else of every record
+        of the scope; a record out of the scope (archived, superseded, without a project) gives
+        nothing, whichever way it is asked."""
         return {'project.task': self._texts_of_tasks, 'memory.note': self._texts_of_facts,
                 'memory.lesson': self._texts_of_lessons, 'ir.attachment': self._texts_of_documents}
 
+    @staticmethod
+    def _of(ids):
+        return [('id', 'in', list(ids))] if ids is not None else []
+
     @api.model
-    def _texts_of_tasks(self):
+    def _texts_of_tasks(self, ids=None):
         """The episodes: the title, search keywords and description of every task of a project (a task without
         one is a personal to-do), then each human message of its chatter."""
-        tasks = self.env['project.task'].sudo().search([('project_id', '!=', False)])
+        tasks = self.env['project.task'].sudo().search([('project_id', '!=', False)] + self._of(ids))
         rows = [('project.task', task.id, 0,
                  f"{task.name}\n{task.texo_keywords or ''}\n{html2plaintext(task.description or '')}")
                 for task in tasks]
@@ -274,26 +344,27 @@ class MemoryEmbedding(models.Model):
         return rows
 
     @api.model
-    def _texts_of_facts(self):
+    def _texts_of_facts(self, ids=None):
         """The active facts and procedures: title, keywords, text."""
-        notes = self.env['memory.note'].sudo().search([('kind', 'in', ('fact', 'procedure')), ('state', '=', 'active')])
+        notes = self.env['memory.note'].sudo().search(
+            [('kind', 'in', ('fact', 'procedure')), ('state', '=', 'active')] + self._of(ids))
         return [('memory.note', note.id, 0, f"{note.name}\n{note.keywords or ''}\n{note.body}") for note in notes]
 
     @api.model
-    def _texts_of_lessons(self):
+    def _texts_of_lessons(self, ids=None):
         # the drafts too: the housekeeping looks for the near-duplicates among the drafts and
         # the active ones; the search keeps to the live ones through its domain
-        lessons = self.env['memory.lesson'].sudo().search([('state', 'in', ('draft', 'active'))])
+        lessons = self.env['memory.lesson'].sudo().search([('state', 'in', ('draft', 'active'))] + self._of(ids))
         return [('memory.lesson', lesson.id, 0, f"{lesson.name}\n{lesson.keywords or ''}\n{lesson.finding}\n{lesson.solution}")
                 for lesson in lessons]
 
     @api.model
-    def _texts_of_documents(self):
+    def _texts_of_documents(self, ids=None):
         """The documents of the memory: the title, the summary and the keywords (chunk 0), then
         each passage of the converted text cut by its structure (chunk = the sequence of the
         passage), with the title of the document and the path of the passage before it; a
         sensitive document has no passages and gets its summary only."""
-        documents = self.env['ir.attachment'].sudo().search([('texo_document', '=', True)])
+        documents = self.env['ir.attachment'].sudo().search([('texo_document', '=', True)] + self._of(ids))
         rows = [('ir.attachment', document.id, 0,
                  f"{document.name}\n{document.description or ''}\n{document.texo_keywords or ''}")
                 for document in documents]
@@ -303,12 +374,15 @@ class MemoryEmbedding(models.Model):
         return rows
 
     @api.model
-    def _texts(self):
+    def _texts(self, groups=None):
         """{(res_model, res_id, chunk): text} of everything that gets a vector now, whitespace
-        folded, the empty ones left out."""
+        folded, the empty ones left out; of the records of groups ({res_model: [res_id]}) only,
+        when given."""
         texts = {}
-        for method in self._sources().values():
-            for res_model, res_id, chunk, text in method():
+        for res_model, method in self._sources().items():
+            if groups is not None and not groups.get(res_model):
+                continue
+            for res_model, res_id, chunk, text in method(groups.get(res_model) if groups is not None else None):
                 text = " ".join((text or '').split())
                 if text:
                     texts[(res_model, res_id, chunk)] = text
@@ -316,61 +390,128 @@ class MemoryEmbedding(models.Model):
 
     @api.model
     def _counts(self):
-        """{res_model: (texts, with a current vector)} of what gets a vector now, compared as the cron
-        compares it: same model, same text."""
-        Embedding = self.sudo()
-        model_name = Embedding._model_name()
-        rows = Embedding.search_fetch([('model_name', '=', model_name)], ['res_model', 'res_id', 'chunk', 'text_hash'])
-        hashes = {(row.res_model, row.res_id, row.chunk): row.text_hash for row in rows}
+        """{res_model: (chunks with a vector of the current model, records waiting)} of the vectors
+        of the memory, from the rows: what a scrape or the state page may ask often."""
+        model_name = self._model_name()
         counts = {}
-        for key, text in Embedding._texts().items():
-            texts, stored = counts.get(key[0], (0, 0))
-            counts[key[0]] = (texts + 1, stored + (hashes.get(key) == text_hash(text)))
+        for res_model, count in self.sudo()._read_group([('model_name', '=', model_name)], ['res_model'], ['__count']):
+            counts[res_model] = (count, 0)
+        for res_model, count in self.env['memory.embedding.pending'].sudo()._read_group([], ['res_model'], ['__count']):
+            stored, _pending = counts.get(res_model, (0, 0))
+            counts[res_model] = (stored, count)
         return counts
 
     @api.model
     def _pending(self):
-        """{available, model, texts, stored, pending} of the vectors of the memory."""
+        """{available, model, stored, pending} of the vectors of the memory: the chunks with a vector
+        of the current model, the records waiting for the cron (changed, new, or gone)."""
         result = {'available': self._available(), 'model': self._model_name()}
         if not result['available']:
-            return dict(result, texts=0, stored=0, pending=0)
+            return dict(result, stored=0, pending=0)
         counts = self._counts().values()
-        texts, stored = sum(c[0] for c in counts), sum(c[1] for c in counts)
-        return dict(result, texts=texts, stored=stored, pending=texts - stored)
+        return dict(result, stored=sum(c[0] for c in counts), pending=sum(c[1] for c in counts))
+
+    @api.model
+    def _mark_all(self):
+        """Every record of the scope pending: the install, a change of model or of dimensions, the
+        reconciliation when it finds the rows and the scope apart."""
+        Pending = self.env['memory.embedding.pending']
+        for res_model, method in self._sources().items():
+            Pending._touch(res_model, {res_id for _model, res_id, _chunk, _text in method()})
+
+    @api.model
+    def _cron_reconcile(self):
+        """Weekly: walk the whole scope and mark pending the records whose rows and texts are apart
+        (a chunk missing, a text changed, a row of a record gone or out of the scope): what a
+        write did not mark, for whatever reason. Nothing is computed here."""
+        if not self._available():
+            return {'skipped': 'extension'}
+        wanted = self._texts()
+        model_name = self._model_name()
+        rows = self.sudo().search_fetch([], ['res_model', 'res_id', 'chunk', 'model_name', 'text_hash'])
+        have = {(row.res_model, row.res_id, row.chunk): row for row in rows}
+        apart = {key[:2] for key in have if key not in wanted}
+        apart |= {key[:2] for key, text in wanted.items()
+                  if key not in have or have[key].model_name != model_name or have[key].text_hash != text_hash(text)}
+        Pending = self.env['memory.embedding.pending']
+        for res_model, res_ids in Pending._group_keys(apart).items():
+            Pending._touch(res_model, res_ids)
+        return {'marked': len(apart)}
+
+    @api.model
+    def _queue_available(self):
+        """Whether the OCA module queue_job is installed here: a write may then enqueue the computation."""
+        return 'queue.job' in self.env and hasattr(self, 'with_delay')
+
+    @api.model
+    def _schedule_now(self):
+        """Ask queue_job, where installed, for one job that works off the pending records now: the
+        identity key keeps one such job waiting at a time, however many writes ask. Never raises:
+        the cron does the same within fifteen minutes."""
+        if not self._queue_available():
+            return False
+        try:
+            self.sudo().with_delay(identity_key=JOB_IDENTITY, description="Memory: vectors of the records changed")\
+                ._job_embed()
+        except Exception as error:  # noqa: BLE001 - a queue that refuses never fails the write
+            _logger.warning("The job of the vectors could not be enqueued (%s): the cron will compute them.", error)
+            return False
+        return True
+
+    def _job_embed(self):
+        """The computation as a job of queue_job: the pending records, in one transaction."""
+        return self._cron_embed()
 
     @api.model
     def _cron_embed(self, limit=EMBED_LIMIT):
-        """Compute the vectors missing, of a changed text or of another model, at most limit per
-        run; drop those of the chunks that left the scope (a superseded fact, an archived
-        lesson or task, a deleted message). {'embedded', 'deleted', 'pending'}; 'skipped' when
-        the vectors cannot be stored here.
+        """Compute the vectors of the pending records: those missing, of a changed text or of
+        another model, at most limit chunks per run; drop those of the chunks that left the
+        scope (a superseded fact, an archived lesson or task, a deleted message). A record
+        whose chunks are all stored is no longer pending. {'embedded', 'deleted', 'pending'};
+        'skipped' when the vectors cannot be stored here.
 
         Inside the cron the texts go to the service CRON_BATCH at a time, each batch is
         committed with ir.cron._commit_progress, and a batch is sent only when the time left
         (_cron_time_left) is more than CRON_MARGIN and twice the slowest batch of the run: a
         backlog of hundreds of document pieces (minutes on a CPU) is worked off over several
         runs, and no call is still running when the real-time limit of the cron thread makes
-        the server reload. Outside the cron (a shell, a test) the texts go BATCH at a time and
-        nothing is committed here."""
+        the server reload. Outside the cron (a shell, a test, a job) the texts go BATCH at a time
+        and nothing is committed here."""
         if not self._ensure_schema():
             return {'skipped': 'extension'}
         self.env['mail.message'].flush_model()
+        model_name = self._model_name()
+        if self.sudo().search_count([('model_name', '!=', model_name)], limit=1):
+            # another model: every vector is computed again
+            self._mark_all()
+        Pending = self.env['memory.embedding.pending']
+        groups = Pending._grouped()
+        if not groups:
+            return {'embedded': 0, 'deleted': 0, 'pending': 0}
         # sudo throughout: the vectors are the module's own rows, of every record of the scope
         # (the search then keeps to what the user may read); the cron runs as root anyway
-        wanted = self._texts()
-        model_name = self._model_name()
-        rows = self.sudo().search_fetch([], ['res_model', 'res_id', 'chunk', 'model_name', 'text_hash'])
+        wanted = self._texts(groups)
+        parts = [['&', ('res_model', '=', res_model), ('res_id', 'in', res_ids)] for res_model, res_ids in groups.items()]
+        domain = ['|'] * (len(parts) - 1) + [leaf for part in parts for leaf in part]
+        rows = self.sudo().search_fetch(domain, ['res_model', 'res_id', 'chunk', 'model_name', 'text_hash'])
         have = {(row.res_model, row.res_id, row.chunk): row for row in rows}
         gone = self.browse([row.id for key, row in have.items() if key not in wanted])
         gone.sudo().unlink()
-        todo = [key for key, text in wanted.items()
-                if key not in have or have[key].model_name != model_name or have[key].text_hash != text_hash(text)]
-        pending = len(todo) - min(len(todo), limit)
-        todo = todo[:limit]
+        todo = sorted(key for key, text in wanted.items()
+                      if key not in have or have[key].model_name != model_name or have[key].text_hash != text_hash(text))
+        # the records with nothing to compute are up to date now; a record whose chunks go beyond the
+        # limit of this run stays pending for the next one
+        records = {(res_model, res_id) for res_model, res_ids in groups.items() for res_id in res_ids}
+        deferred = {key[:2] for key in todo[limit:]}
+        todo, chunks_pending = todo[:limit], len(todo) - min(len(todo), limit)
+        left_of = {}
+        for key in todo:
+            left_of[key[:2]] = left_of.get(key[:2], 0) + 1
+        Pending._clear(records - set(left_of) - deferred)
         if todo and not self._endpoint():
             # no service: nothing can be computed, and a cron that reports work it never does
             # is logged as a warning at every run; the search stays lexical until one is named
-            return {'embedded': 0, 'deleted': len(gone), 'pending': len(todo) + pending, 'skipped': 'endpoint'}
+            return {'embedded': 0, 'deleted': len(gone), 'pending': len(todo) + chunks_pending, 'skipped': 'endpoint'}
         in_cron = bool(self.env.context.get('cron_id'))
         Cron = self.env['ir.cron']
         left = Cron._commit_progress(remaining=len(todo)) if in_cron else float('inf')
@@ -391,9 +532,15 @@ class MemoryEmbedding(models.Model):
             slowest = max(slowest, time.monotonic() - began)
             self._store(part, vectors, wanted, have, model_name)
             embedded += len(part)
+            done = set()
+            for key in part:
+                left_of[key[:2]] -= 1
+                if left_of[key[:2]] == 0 and key[:2] not in deferred:
+                    done.add(key[:2])
+            Pending._clear(done)
             if in_cron:
                 left = Cron._commit_progress(len(part))
-        return {'embedded': embedded, 'deleted': len(gone), 'pending': len(todo) - embedded + pending}
+        return {'embedded': embedded, 'deleted': len(gone), 'pending': len(todo) - embedded + chunks_pending}
 
     @api.model
     def _cron_time_left(self, job_left):

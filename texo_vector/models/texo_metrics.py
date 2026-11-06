@@ -26,12 +26,12 @@ class TexoMetrics(models.AbstractModel):
                                     {'model': Embedding._model_name(), 'mode': Embedding._mode(),
                                      'endpoint': 'set' if Embedding._param(PARAM_ENDPOINT, 'str', '') else 'none'}))
         if available:
-            for res_model, (texts, stored) in sorted(Embedding._counts().items()):
+            for res_model, (stored, pending) in sorted(Embedding._counts().items()):
                 labels = {'model': res_model}
-                metrics.append(self._metric('texo_vector_texts', "Texts of the scope, by kind.", texts, labels))
-                metrics.append(self._metric('texo_vector_stored', "Texts with a current vector, by kind.", stored, labels))
-                metrics.append(self._metric('texo_vector_pending', "Texts waiting for their vector, by kind.",
-                                            texts - stored, labels))
+                metrics.append(self._metric('texo_vector_stored', "Chunks with a vector of the current model, by kind.",
+                                            stored, labels))
+                metrics.append(self._metric('texo_vector_pending', "Records waiting for the cron of the vectors "
+                                                                   "(changed, new or gone), by kind.", pending, labels))
         cron = self.env.ref('texo_vector.ir_cron_memory_vectors', raise_if_not_found=False)
         if cron:
             cron = cron.sudo()

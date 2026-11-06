@@ -12,5 +12,14 @@
             <field name="interval_number">15</field>
             <field name="interval_type">minutes</field>
         </record>
+        <record id="ir_cron_memory_vectors_reconcile" model="ir.cron">
+            <field name="name">Memory: reconciliation of the vectors with the memory</field>
+            <field name="model_id" ref="model_memory_embedding"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_reconcile()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+        </record>
     </data>
 </odoo>
