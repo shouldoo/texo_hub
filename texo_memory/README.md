@@ -192,9 +192,11 @@ pack says which (`activities`).
   word come first; only to fill the limit, those that hold some, above a minimum rank (0.01). The words
   are reduced to letters, digits and underscores before they reach `to_tsquery`; a hit says which it is
   (`words`: `all` or `some`). The ORM has no
-  full-text operator, so the ids come from SQL and the records then go through the ORM, so the access
-  rules apply; when the best candidates are records the person may not read (the facts of other
-  customers), the window grows until the limit is filled with readable ones. `applies_to` filters the lessons, expired ones stay out.
+  full-text operator, so the ids come from SQL; the access rules are in that query (the sub-query of the
+  ids the person may read, given by the ORM with its record rules: `fulltext.readable_ids`), so the
+  candidates are readable records and not the best matches of everyone, and the records then go through
+  the ORM as the person, the second check. A failure of the access check raises: the search never answers
+  nothing for a permission it could not read. `applies_to` filters the lessons, expired ones stay out.
 - **Keywords**: the writer of a lesson or a document gives synonyms, translations and other names
   (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.
   They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given
@@ -413,6 +415,8 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
   applied, unavailable), `latency_ms`; `show_expired` gives the expired notes and lessons too, marked stale.
 - Idempotent writes: the same note (title and text) already live on the same record, or the same finding, gives
   the existing record back with `existing: true`, nothing is written (`content_hash` on notes and lessons).
+- The access rules are in the full-text query (`fulltext.readable_ids`): the candidates are readable records,
+  however many stronger matches of other customers there are; the ORM pass is the second check.
 - The gauges of the memory in `GET /texo/metrics`: notes by kind and state, stale rules, lessons, documents,
   passages, episodes.
 

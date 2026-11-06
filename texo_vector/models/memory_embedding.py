@@ -32,8 +32,9 @@ import requests
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import config, html2plaintext, str2bool
+from odoo.tools import SQL, config, html2plaintext, str2bool
 
+from odoo.addons.texo_memory.models import fulltext
 from odoo.addons.texo_memory.models.memory_document_passage import PASSAGES_PER_HIT  # noqa: F401
 from odoo.addons.texo_memory.models.project_task import EPISODE_MESSAGE_TYPES
 
@@ -427,20 +428,40 @@ class MemoryEmbedding(models.Model):
 
     # -- the search -----------------------------------------------------------
     @api.model
-    def _nearest_chunks(self, vector, res_model, limit=CANDIDATES):
+    def _iterative_scan(self):
+        """Ask the HNSW index to keep scanning until the limit is met past the filters (pgvector 0.8:
+        hnsw.iterative_scan), so the filter on the model and on the readable records does not leave
+        the query with fewer candidates than asked. Silently nothing on an older pgvector."""
+        try:
+            with self.env.cr.savepoint():
+                self.env.cr.execute("SET LOCAL hnsw.iterative_scan = relaxed_order")
+        except psycopg2.Error:
+            pass
+
+    @api.model
+    def _nearest_chunks(self, vector, res_model, limit=CANDIDATES, readable=None):
         """{res_id: (similarity, chunk)} of the records of res_model nearest to the vector, the
-        best chunk of each, the nearest first; without the access rules, the caller applies them."""
+        best chunk of each, the nearest first; among the records of readable (the sub-query of
+        the ids the user may read, fulltext.readable_ids) when given, else without the access
+        rules, which the caller applies."""
         self.flush_model()
         cr = self.env.cr
         literal = json.dumps(vector)
         cr.execute("SET LOCAL hnsw.ef_search = %s", (max(int(limit), 1),))
-        cr.execute("SELECT res_id, chunk, 1 - (embedding <=> %s::vector) FROM memory_embedding "
-                   "WHERE res_model = %s AND embedding IS NOT NULL ORDER BY embedding <=> %s::vector LIMIT %s",
-                   (literal, res_model, literal, int(limit)))
+        self._iterative_scan()
+        conditions = [SQL("res_model = %s AND embedding IS NOT NULL", res_model)]
+        if readable is not None:
+            conditions.append(SQL("res_id IN %s", readable))
+        cr.execute(SQL("SELECT res_id, chunk, 1 - (embedding <=> %s::vector) FROM memory_embedding WHERE %s "
+                       "ORDER BY embedding <=> %s::vector LIMIT %s",
+                       literal, SQL(" AND ").join(conditions), literal, int(limit)))
         best = {}
         for res_id, chunk, similarity in cr.fetchall():
-            best.setdefault(res_id, (round(float(similarity), 4), chunk))
-        return best
+            similarity = round(float(similarity), 4)
+            # the relaxed order of the iterative scan may give a worse chunk of a record first
+            if res_id not in best or similarity > best[res_id][0]:
+                best[res_id] = (similarity, chunk)
+        return dict(sorted(best.items(), key=lambda item: -item[1][0]))
 
     @api.model
     def _nearest_in(self, vector, res_model, res_id, limit=PASSAGES_PER_HIT):
@@ -466,9 +487,15 @@ class MemoryEmbedding(models.Model):
     @api.model
     def _readable_chunks(self, vector, res_model, domain, limit, candidates=CANDIDATES):
         """The records of res_model nearest to the vector that the user may read and that match
-        the domain, the nearest first, at most limit, with {id: (similarity, best chunk)}."""
-        nearest = self._nearest_chunks(vector, res_model, candidates)
+        the domain, the nearest first, at most limit, with {id: (similarity, best chunk)}. The
+        access rules and the domain are in the query (fulltext.readable_ids): the candidates
+        are readable records, not the nearest of everyone's; the ORM then reads them as the
+        user, the second check."""
         Model = self.env[res_model]
+        readable_query = fulltext.readable_ids(Model, domain)
+        if readable_query is None:
+            return Model.browse(), {}
+        nearest = self._nearest_chunks(vector, res_model, candidates, readable_query)
         if not nearest:
             return Model.browse(), nearest
         readable = set(Model.search([('id', 'in', list(nearest))] + list(domain)).ids)

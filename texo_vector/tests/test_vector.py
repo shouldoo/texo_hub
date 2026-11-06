@@ -291,6 +291,15 @@ class TestVector(VectorCase):
         self.assertEqual([r['id'] for r in self.search(self.member, 'restituzioni', scope='facts', mode='semantic')],
                          [fact.id])
         self.assertEqual(self.search(self.member, 'restituzioni', scope='tasks', mode='semantic')[0]['id'], self.task.id)
+        # the access rules are in the query of the nearest chunks: more nearer facts the member may not
+        # read than the candidates read per search, and the readable one is still found
+        hidden = self.env['project.project'].create({'name': 'Hidden', 'privacy_visibility': 'followers'})
+        self.env['memory.note'].create([{'name': f'Resi {i}', 'body': 'Resi resi resi: restituzioni dei clienti.',
+                                         'kind': 'fact', 'state': 'active', 'project_id': hidden.id}
+                                        for i in range(memory_embedding.CANDIDATES + 10)])
+        self.cron()
+        self.assertEqual([r['id'] for r in self.search(self.member, 'restituzioni', scope='facts', mode='semantic')],
+                         [fact.id])
 
     def test_the_service_down_falls_back_to_lexical(self):
         fact = self.fact('Resi', 'I resi dei clienti tornano con una rotta dedicata.')
