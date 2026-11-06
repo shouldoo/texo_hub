@@ -11,7 +11,7 @@ and `project`.
 |---|---|---|
 | `/texo/v1/project/my_work` | `limit` (default 50) | open project tasks assigned to the user: project, customer, stage, priority, deadline |
 | `/texo/v1/project/task` | `task_id`, `messages` (default 10, max 30) | the task summary, description as plain text, tags, parent, subtasks, milestone and the latest chatter messages |
-| `/texo/v1/project/task_note` | `task_id`, `body` (plain text, max 10,000 characters) | posts an internal note as the user |
+| `/texo/v1/project/task_note` | `task_id`, `body` (plain text, max 10,000 characters) | posts an internal note as the user; the same text as the last internal note of the task is not posted again: the answer gives that note with `existing: true` |
 | `/texo/v1/project/project` | `project_id` | the project: customer, manager, description as plain text (max 4,000 characters), milestones, its present (`now`, the last update) and the `warnings` on it |
 | `/texo/v1/project/update` | `project_id`, `name`, `status` (`on_track`, `at_risk`, `off_track`, `on_hold`, `done`), `description` (plain text, max 10,000 characters), `progress` (0-100; default: the last one) | writes a project update as the user: the new present of the project |
 
@@ -68,6 +68,11 @@ odoo -c <conf> -d test_cohub20 -i texo_project --test-tags /texo_project --stop-
 ```
 
 ## Changelog
+
+### 20.0.1.1.0
+
+- `project/task_note` is idempotent: the same text as the last internal note of the task gives that note
+  back with `existing: true`, nothing is posted.
 
 ### 20.0.1.0.1
 

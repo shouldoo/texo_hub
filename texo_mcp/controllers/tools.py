@@ -51,7 +51,8 @@ TOOLS = [
                       "be found later: the symptom or request in the words of who reported it, the technical cause, "
                       "what was done or decided and why, the state. keywords: 5 to 10 synonyms and other names "
                       "(Italian and English, acronym and expansion, the word of a non-technical person; no generic "
-                      "words), merged into the search keywords of the task, which the search weighs above the chatter.",
+                      "words), merged into the search keywords of the task, which the search weighs above the chatter. The same "
+                      "text as the last note is not posted again (existing true).",
          {'task_id': INTEGER, 'body': STRING, 'keywords': STRINGS}, ['task_id', 'body'], route=('project', 'task_note'),
          write=True),
     tool('context', "The context pack of a task or project: the task with its description, milestone and latest "
@@ -104,7 +105,8 @@ TOOLS = [
                  "kind fact: what the record is (who decides, how a process runs, what was agreed). kind procedure: how "
                  "an operation is done, step by step; what in it binds is a rule. A fact or a procedure is active at "
                  "once. A note taken from a document of the memory cites it with document_id: when the original changes, "
-                 "the note is marked source_changed.",
+                 "the note is marked source_changed. The same title and text already on the record give that note back "
+                 "(existing true), nothing is written.",
          {'name': STRING, 'body': STRING, 'kind': {'type': 'string', 'enum': KINDS}, 'section': SECTION,
           'task_id': INTEGER, 'project_id': INTEGER, 'partner_id': INTEGER, 'company_id': INTEGER,
           'state': {'type': 'string', 'enum': ['draft', 'active']}, 'expires': STRING, 'source_ref': STRING,
@@ -140,7 +142,7 @@ TOOLS = [
                    "the pack of a task gives the lessons that share a tag with the task or its project. keywords: "
                    "synonyms, translations and other names, so the search finds it by other words. activities: the "
                    "codes of the work it helps. source_ref (the task) only feeds the leak filter. state active only "
-                   "for a lead.",
+                   "for a lead. The same finding and solution already live give that lesson back (existing true).",
          {'finding': STRING, 'solution': STRING, 'tags': STRINGS, 'keywords': STRINGS, 'activities': STRINGS,
           'title': STRING, 'applies_to': STRING, 'verified': STRING,
           'state': {'type': 'string', 'enum': ['draft', 'active']}, 'source_ref': STRING, 'generated_by': GENERATED_BY},

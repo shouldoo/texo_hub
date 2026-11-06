@@ -86,8 +86,13 @@ class TestMemoryNote(MemoryCase):
         with self.assertRaises(UserError):
             Lesson.with_user(self.member)._agent_lesson(CLEAN_FINDING, ' ')
         self.assertEqual(Lesson.search_count([('kind', '=', 'finding')]), 1)
-        active = Lesson.with_user(self.lead)._agent_lesson(CLEAN_FINDING, CLEAN_SOLUTION, title='UoM on 20.0', state='active')
-        self.assertEqual((active['title'], active['state']), ('UoM on 20.0', 'active'))
+        # the lead writes the same finding: the member's draft comes back, nothing is written twice; the
+        # lead activates it
+        again = Lesson.with_user(self.lead)._agent_lesson(CLEAN_FINDING, CLEAN_SOLUTION, title='UoM on 20.0', state='active')
+        self.assertEqual((again['id'], again['state'], again['existing']), (lesson.id, 'draft', True))
+        self.assertEqual(Lesson.search_count([('kind', '=', 'finding')]), 1)
+        active = lesson.with_user(self.lead)._agent_set_state('active')
+        self.assertEqual(active['state'], 'active')
 
     def test_outsider_reads_the_lesson_but_not_the_rule(self):
         rule = self.note_as(self.lead, state='active')

@@ -63,7 +63,8 @@ class TestOkf(MemoryCase):
         self.assertEqual(meta['anchor'], f"/projects/{self.project.id}.md")
         self.assertIn('never upgrade', body)
         # a draft of a member: no verification, written by the hub tool when the agent gives no name
-        draft = self.env['memory.note'].browse(self.note_as(self.member, generated_by='not an actor')['id'])
+        draft = self.env['memory.note'].browse(self.note_as(self.member, name='Pending idea',
+                                                            generated_by='not an actor')['id'])
         meta, _body = frontmatter(draft._okf_concept())
         self.assertEqual(meta['status'], 'draft')
         self.assertNotIn('verified', meta)

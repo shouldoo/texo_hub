@@ -156,11 +156,23 @@ class ProjectTask(models.Model):
             raise UserError(_("The note is empty."))
         if len(body) > MAX_NOTE:
             raise UserError(_("The note is longer than %(max)s characters.", max=MAX_NOTE))
-        # A str body is escaped by message_post: agents cannot inject HTML.
-        message = self.message_post(body=body, message_type='comment', subtype_xmlid='mail.mt_note')
         merged = self._texo_merge_keywords(keywords, self.texo_keywords)
+        # idempotent: the last internal note of the task with the same text (a call retried, a session
+        # that proposes it twice) is given back, with existing true, and nothing is posted
+        last = self.env['mail.message'].search(
+            [('model', '=', 'project.task'), ('res_id', '=', self.id), ('message_type', '=', 'comment'),
+             ('subtype_id', '=', self.env.ref('mail.mt_note').id)], order='id desc', limit=1)
+        existing = bool(last) and " ".join(html2plaintext(last.body or '').split()) == " ".join(body.split())
+        if existing:
+            message = last
+        else:
+            # A str body is escaped by message_post: agents cannot inject HTML.
+            message = self.message_post(body=body, message_type='comment', subtype_xmlid='mail.mt_note')
         if merged != (self.texo_keywords or False):
             # sudo: the keywords belong to the note, which the user could post (read access to the
             # task is enough for a note); they change nothing else on the task
             self.sudo().write({'texo_keywords': merged})
-        return {'message_id': message.id, 'task_id': self.id, 'keywords': merged or None}
+        result = {'message_id': message.id, 'task_id': self.id, 'keywords': merged or None}
+        if existing:
+            result['existing'] = True
+        return result

@@ -40,6 +40,24 @@ class TestFact(MemoryCase):
         with self.assertRaises(UserError):
             self.fact_as(self.outsider)
 
+    def test_the_same_text_on_the_same_record_is_written_once(self):
+        """A session that proposes a note twice, a call retried: the existing note comes back, with
+        existing true; another title or text, another record or another kind is a new note."""
+        first = self.fact_as(self.member)
+        again = self.fact_as(self.member, name=' warehouse', body='  Two locations:  the shop and the yard. ')
+        self.assertEqual((again['id'], again['existing']), (first['id'], True))
+        self.assertNotIn('existing', first)
+        self.assertNotEqual(self.fact_as(self.member, name='Warehouse (bis)')['id'], first['id'], "another title")
+        elsewhere = self.fact_as(self.member, project_id=None, task_id=self.task.id)
+        self.assertNotEqual(elsewhere['id'], first['id'])
+        rule = self.env['memory.note'].with_user(self.lead)._agent_note(
+            'Warehouse', 'Two locations: the shop and the yard.', project_id=self.project.id, kind='rule', state='active')
+        self.assertNotEqual(rule['id'], first['id'], "another kind")
+        self.assertEqual(self.env['memory.note'].with_user(self.lead)._agent_note(
+            'Warehouse', 'Two locations: the shop and the yard.', project_id=self.project.id, kind='rule')['id'], rule['id'])
+        self.env['memory.note'].browse(first['id']).with_user(self.lead)._agent_set_state('archived')
+        self.assertNotEqual(self.fact_as(self.member)['id'], first['id'], "an archived note is not the live one")
+
     def test_append_merges_and_update_needs_the_version_read(self):
         fact = self.env['memory.note'].browse(self.fact_as(self.member)['id'])
         version = fact.with_user(self.member)._agent_read()['version']
