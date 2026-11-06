@@ -66,6 +66,107 @@ class TestVector(VectorCase):
         self.assertGreaterEqual(self.cron()['embedded'], 1)
         self.assertEqual(set(Embedding.search([]).mapped('model_name')), {'test/other'})
 
+    def pending(self):
+        Pending = self.env['memory.embedding.pending']
+        return sorted((row.res_model, row.res_id) for row in Pending.search([]))
+
+    def test_a_write_marks_the_record_pending_and_the_cron_reads_the_pending_only(self):
+        """A write on a record of the scope marks it pending; the cron computes the texts of the
+        pending records and no other; a record whose chunks are stored is no longer pending."""
+        self.cron()
+        self.assertEqual(self.pending(), [], "the fixtures were computed")
+        fact = self.fact('Resi', 'I resi dei clienti tornano con una rotta dedicata.')
+        self.assertEqual(self.pending(), [('memory.note', fact.id)])
+        calls, original = [], self.EmbeddingClass._texts
+
+        def spy(embedding_self, groups=None):
+            calls.append(groups)
+            return original(embedding_self, groups)
+
+        with patch.object(self.EmbeddingClass, '_texts', spy):
+            outcome = self.cron()
+        self.assertEqual((outcome['embedded'], calls), (1, [{'memory.note': [fact.id]}]),
+                         "the texts of the pending record only, not of the whole memory")
+        self.assertEqual(self.pending(), [])
+        # a message of the chatter marks its task; a field outside the texts marks nothing
+        self.task.with_user(self.member)._texo_post_note("Il rientro dal cliente era in attesa.")
+        self.assertEqual(self.pending(), [('project.task', self.task.id)])
+        self.cron()
+        fact.write({'applies_to': 'Odoo 20'})
+        self.assertEqual(self.pending(), [], "applies_to is not in the text of a fact")
+        fact.write({'keywords': 'restituzioni'})
+        self.assertEqual(self.pending(), [('memory.note', fact.id)])
+        self.cron()
+        # a record out of the scope is pending until its rows are dropped
+        fact.write({'state': 'archived'})
+        self.assertEqual(self.pending(), [('memory.note', fact.id)])
+        self.assertEqual(self.cron()['deleted'], 1)
+        self.assertEqual((self.pending(), bool(self.rows(fact))), ([], False))
+        # a document and its passages
+        document = self.env['ir.attachment'].browse(self.env['ir.attachment'].with_user(self.lead)._texo_write(
+            name='Resi', url='https://example.com/resi', project_id=self.project.id, summary='I resi.',
+            text="# Resi\n\n## Art. 1\n\nUn reso torna con una rotta.\n\n## Art. 2\n\nUn reso si fattura a fine mese al cliente.")['id'])
+        self.assertIn(('ir.attachment', document.id), self.pending())
+        self.cron()
+        self.assertEqual(self.rows(document).mapped('chunk'), [0, 1, 2])
+        self.assertEqual(self.pending(), [])
+
+    def test_the_reconciliation_marks_what_the_writes_missed(self):
+        """A row and its text apart (a text changed behind the hooks, a chunk missing, a row of a
+        record gone): the weekly reconciliation marks the record pending and computes nothing."""
+        Embedding = self.env['memory.embedding']
+        fact = self.fact('Resi', 'I resi dei clienti tornano con una rotta dedicata.')
+        self.cron()
+        self.assertEqual(Embedding._cron_reconcile(), {'marked': 0})
+        # the text changes behind the hooks (raw SQL): nothing is pending until the reconciliation
+        self.env.cr.execute("UPDATE memory_note SET body = 'Le restituzioni tornano dal magazzino.' WHERE id = %s",
+                            (fact.id,))
+        fact.invalidate_recordset()
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(Embedding._cron_reconcile(), {'marked': 1})
+        self.assertEqual(self.pending(), [('memory.note', fact.id)])
+        before = self.rows(fact).text_hash
+        self.assertEqual(self.cron()['embedded'], 1)
+        self.assertNotEqual(self.rows(fact).text_hash, before)
+        # a row of a record that left the scope behind the hooks
+        self.env.cr.execute("UPDATE memory_note SET state = 'archived' WHERE id = %s", (fact.id,))
+        fact.invalidate_recordset()
+        self.assertEqual(Embedding._cron_reconcile(), {'marked': 1})
+        self.assertEqual(self.cron()['deleted'], 1)
+
+    def test_the_queue_is_optional(self):
+        """Without queue_job a write marks the record and waits for the cron; with it, one job is
+        asked for by identity key, and a queue that refuses never fails the write."""
+        Embedding = self.env['memory.embedding']
+        self.cron()
+        self.assertFalse(Embedding._queue_available())
+        self.assertFalse(Embedding._schedule_now())
+        asked = []
+
+        class Delayed:
+            def _job_embed(self):
+                asked.append('job')
+
+        def with_delay(embedding_self, **kwargs):
+            asked.append(kwargs)
+            return Delayed()
+
+        with patch.object(self.EmbeddingClass, '_queue_available', return_value=True), \
+                patch.object(self.EmbeddingClass, 'with_delay', with_delay, create=True):
+            self.fact('Resi', 'I resi dei clienti tornano con una rotta dedicata.')
+        self.assertEqual(asked[0]['identity_key'], memory_embedding.JOB_IDENTITY)
+        self.assertEqual(asked[1], 'job')
+
+        def refuse(embedding_self, **kwargs):
+            raise RuntimeError("no channel")
+
+        with patch.object(self.EmbeddingClass, '_queue_available', return_value=True), \
+                patch.object(self.EmbeddingClass, 'with_delay', refuse, create=True), \
+                self.assertLogs('odoo.addons.texo_vector.models.memory_embedding', 'WARNING'):
+            fact = self.fact('Fatture', 'Le fatture si emettono a fine mese.')
+        self.assertIn(('memory.note', fact.id), self.pending(), "marked all the same: the cron will do it")
+        self.assertEqual(Embedding._job_embed()['embedded'], 2)
+
     def test_the_cron_works_off_a_backlog_in_committed_batches(self):
         """Inside the cron every batch is committed through ir.cron._commit_progress and the run
         stops when its time is up; the rest stays pending for the next run, nothing is lost."""

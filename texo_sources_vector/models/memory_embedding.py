@@ -9,6 +9,8 @@ themes, acts, keywords) and the abstract written by whoever filled it in. Never 
 article: the memory does not keep it."""
 from odoo import api, models
 
+from odoo.addons.texo_sources.models.memory_source_item import CONTENT_FIELDS
+
 
 class MemoryEmbedding(models.Model):
     _inherit = 'memory.embedding'
@@ -18,10 +20,10 @@ class MemoryEmbedding(models.Model):
         return dict(super()._sources(), **{'memory.source.item': self._texts_of_cards})
 
     @api.model
-    def _texts_of_cards(self):
+    def _texts_of_cards(self, ids=None):
         Item = self.env['memory.source.item'].sudo()
         rows = []
-        for item in Item.search(Item._search_domain()):
+        for item in Item.search(Item._search_domain() + self._of(ids)):
             title, about, says = item._search_texts()
             rows.append(('memory.source.item', item.id, 0, f"{title}\n{about}\n{item.abstract or ''}"))
         return rows
@@ -39,3 +41,24 @@ class MemoryNote(models.Model):
                                                                        Item._search_domain(), limit)
             entries += items._search_entries({res_id: (None, cosine) for res_id, cosine in similarity.items()})
         return entries
+
+
+class MemorySourceItem(models.Model):
+    """A card written, changed or moved in or out of the active state is pending for the vectors."""
+    _inherit = 'memory.source.item'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        items = super().create(vals_list)
+        self.env['memory.embedding.pending']._touch('memory.source.item', items.ids)
+        return items
+
+    def write(self, vals):
+        result = super().write(vals)
+        if set(vals) & (CONTENT_FIELDS | {'state', 'keywords'}):
+            self.env['memory.embedding.pending']._touch('memory.source.item', self.ids)
+        return result
+
+    def unlink(self):
+        self.env['memory.embedding.pending']._touch('memory.source.item', self.ids)
+        return super().unlink()

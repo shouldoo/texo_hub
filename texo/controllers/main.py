@@ -47,8 +47,7 @@ class TexoController(http.Controller):
                 save_session=False, readonly=True)
     def metrics(self):
         """The gauges of the hub in the Prometheus exposition format, for an administrator's token:
-        counts and timestamps, never a text of the memory. Scrape it every few minutes, not seconds:
-        the counts of the vectors read the scope."""
+        counts and timestamps, never a text of the memory."""
         if request.env.user._texo_role() != 'admin':
             raise Forbidden("Only a Texo administrator reads the metrics.")
         return request.make_response(request.env['texo.metrics']._render(),

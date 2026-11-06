@@ -8,5 +8,6 @@ from . import (
     memory_review,
     memory_search,
     memory_vector_status,
+    scope_hooks,
     texo_metrics,
 )

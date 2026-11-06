@@ -80,6 +80,19 @@ turn it on where an accelerator serves it.
   `embedding vector(n)` and its HNSW index (cosine) are created by `init()`, as the `tsvector` columns of
   the memory are; `n` is `texo_vector.dimensions`. A change of dimensions drops the column and every
   vector: the cron computes them again. Administrators read the table; everything else is done by the module.
+- **What changed, not the whole memory.** A write on a record of the scope (a task; a message of its chatter;
+  a fact or a procedure; a lesson; a document, its passages cut again) marks the record pending
+  (`memory.embedding.pending`: the hooks of `models/scope_hooks.py`, on the fields the texts are made of and
+  the scope is decided by; a deletion too). The cron reads the texts of the pending records only, computes the
+  vectors missing or whose text changed and drops those of the chunks gone, and a record whose chunks are all
+  stored is no longer pending: a run costs what changed. A weekly cron, **reconciliation of the vectors with
+  the memory** (`_cron_reconcile()`), walks the whole scope and marks pending what the writes may have missed
+  (a text changed by SQL, a row of a record gone); it computes nothing. The install, a change of model and a
+  change of dimensions mark every record of the scope.
+- **queue_job, optional.** Where the OCA module `queue_job` is installed, a write also asks for one job that
+  works off the pending records at once (`_schedule_now()`: identity key `texo_vector.embed_pending`, so one
+  such job waits at a time, however many writes ask); a queue that refuses is logged and the cron does it within
+  fifteen minutes. Without `queue_job` nothing changes: the cron alone.
 - The cron **Memory: vectors of the episodes, the facts and the lessons** (`_cron_embed()`, every 15 minutes,
   at most 2,000 chunks per run) computes the vectors missing, those whose text or model changed, and drops
   those of the chunks that left the scope. A new fact is found by its words at once and by meaning after the
@@ -147,6 +160,13 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.3.0
+
+- The vectors follow the writes: a record of the scope that changes is marked pending and the cron reads the
+  pending records only (before, every run read the texts of the whole memory); a weekly reconciliation marks
+  what the writes missed; where `queue_job` is installed a write asks for one job at once.
+- The state of the search and the metrics count the chunks with a vector and the records waiting.
 
 ### 20.0.1.2.0
 

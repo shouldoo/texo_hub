@@ -23,9 +23,11 @@ class MemoryVectorStatus(models.TransientModel):
     last_run = fields.Datetime(string="Last Computed", readonly=True)
     next_run = fields.Datetime(string="Next Computation", readonly=True)
     cron_active = fields.Boolean(string="Scheduled", readonly=True)
-    texts = fields.Integer(readonly=True)
-    stored = fields.Integer(string="With a Vector", readonly=True)
-    pending = fields.Integer(string="Waiting", readonly=True)
+    texts = fields.Integer(readonly=True, help="The chunks with a vector plus the records waiting.")
+    stored = fields.Integer(string="With a Vector", readonly=True, help="Chunks with a vector of the current model.")
+    pending = fields.Integer(string="Waiting", readonly=True,
+                             help="Records changed, new or gone since their vectors were computed: the cron "
+                                  "reads them at its next run.")
     line_ids = fields.One2many('memory.vector.status.line', 'status_id', readonly=True)
 
     def _compute_display_name(self):
@@ -52,12 +54,13 @@ class MemoryVectorStatus(models.TransientModel):
         by_model = Embedding._counts()
         labels = {'project.task': self.env._("Episodes (Tasks)"), 'memory.note': self.env._("Facts and Procedures"),
                   'memory.lesson': self.env._("Lessons"), 'ir.attachment': self.env._("Documents")}
+        # stored: the chunks with a vector of the current model; pending: the records waiting for the cron
         lines = [fields.Command.create({'res_model': res_model, 'label': labels.get(res_model, res_model),
-                                        'texts': texts, 'stored': stored, 'pending': texts - stored})
-                 for res_model, (texts, stored) in sorted(by_model.items())]
-        texts = sum(counts[0] for counts in by_model.values())
-        stored = sum(counts[1] for counts in by_model.values())
-        return dict(result, texts=texts, stored=stored, pending=texts - stored, line_ids=lines)
+                                        'texts': stored + pending, 'stored': stored, 'pending': pending})
+                 for res_model, (stored, pending) in sorted(by_model.items())]
+        stored = sum(counts[0] for counts in by_model.values())
+        pending = sum(counts[1] for counts in by_model.values())
+        return dict(result, texts=stored + pending, stored=stored, pending=pending, line_ids=lines)
 
     def action_compute_now(self):
         """Ask the cron of the vectors to run as soon as a worker is free: the computation takes minutes on a

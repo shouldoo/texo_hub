@@ -98,7 +98,8 @@ $C up -d
 
 With `texo_vector`, name the embedding service once per database (Settings, Technical, System
 Parameters, or the shell): `texo_vector.endpoint` = `http://tei:80`; the cron computes the vectors
-within fifteen minutes, the search is lexical until then.
+within fifteen minutes, the search is lexical until then. With the OCA module `queue_job` installed (optional),
+a write asks for its vectors at once.
 
 Updating to a newer version: pull the branch to the chosen commit, then `-u <changed modules>` with the
 same test tags and the same `checklog-odoo` pass, and restart `web`. Migration scripts, when a version
