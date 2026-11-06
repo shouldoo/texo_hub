@@ -42,11 +42,13 @@ stay lexical whatever the mode; in `all` the facts and the lessons go by meaning
 The answer of the route says the `mode` used (`lexical` when the vectors were asked and the service did not
 answer) and what the reranker did (`rerank`: `off`, `skipped`, `applied`, `unavailable`).
 
-The access rules apply as in the lexical search: the nearest chunks come from SQL (the index HNSW, at most
-60 chunks), the records then go through the ORM as the person, and the domains of the lexical search
-(state, expiry, `applies_to`, a project for the episodes) apply. The question is embedded by the same
-service; when the service does not answer (within 10 s) the search is lexical and the log says so once per
-call.
+The access rules apply as in the lexical search, in the query: the nearest chunks come from SQL among the
+records the person may read (the sub-query of their ids, given by the ORM with its record rules and the
+domains of the lexical search: state, expiry, `applies_to`, a project for the episodes), at most 60 chunks
+(200 for the documents), with the iterative scan of pgvector 0.8 (`hnsw.iterative_scan = relaxed_order`) so
+the filter does not leave the query with fewer candidates than asked; the records then go through the ORM
+as the person, the second check. The question is embedded by the same service; when the service does not
+answer (within 10 s) the search is lexical and the log says so once per call.
 
 ## The reranker (optional)
 
@@ -152,6 +154,8 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
   `unavailable`); a fused hit says its rank in each list (`ranks`).
 - The gauges of the vectors in `GET /texo/metrics`: available, services named, texts with and without their
   vector by kind, the cron.
+- The access rules are in the query of the nearest chunks (the sub-query of the readable ids), with the
+  iterative scan of pgvector 0.8: the candidates are readable records, not the nearest of everyone's.
 
 ### 20.0.1.1.0
 

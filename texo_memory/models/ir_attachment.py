@@ -283,12 +283,13 @@ class IrAttachment(models.Model):
         word_list = fulltext.words(query, related_terms)
         best = {}
 
-        def ranker(window):
+        def ranker(window, readable):
             # the document whole and its passages: a document ranks with the better of the two, and
-            # holds every word when the whole or one passage does
+            # holds every word when the whole or one passage does; only the documents the user may read
             ranked = fulltext.rank(self.env.cr, 'ir_attachment', 'texo_tsv', word_list, window,
-                                   "texo_tsv IS NOT NULL")
-            passages = fulltext.rank(self.env.cr, 'memory_document_passage', 'search_tsv', word_list, window * 4)
+                                   "texo_tsv IS NOT NULL", readable)
+            passages = fulltext.rank(self.env.cr, 'memory_document_passage', 'search_tsv', word_list, window * 4,
+                                     readable=readable, readable_column='attachment_id')
             if passages:
                 self.env['memory.document.passage'].flush_model(['attachment_id'])
                 self.env.cr.execute("SELECT id, attachment_id FROM memory_document_passage WHERE id IN %s",

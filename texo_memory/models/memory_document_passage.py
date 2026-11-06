@@ -1,6 +1,7 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 from odoo import api, fields, models
+from odoo.tools import SQL
 
 from . import fulltext, structure
 
@@ -66,7 +67,7 @@ class MemoryDocumentPassage(models.Model):
     def _by_words(self, document_id, word_list, limit=PASSAGES_PER_HIT):
         """The passages of a document that hold the words, the best first (every word, then rank)."""
         ranked = fulltext.rank(self.env.cr, 'memory_document_passage', 'search_tsv', word_list, limit,
-                               f"attachment_id = {int(document_id)}")
+                               SQL("attachment_id = %s", int(document_id)))
         return self.sudo().browse(sorted(ranked, key=lambda pid: (not ranked[pid][0], -ranked[pid][1], pid)))
 
     @api.model

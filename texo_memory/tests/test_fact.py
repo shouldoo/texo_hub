@@ -109,6 +109,12 @@ class TestFact(MemoryCase):
         found = self.env['memory.note'].with_user(self.member)._agent_search('prelievo', scope='facts', limit=1)
         self.assertEqual([(f['id'], f['fact']) for f in found], [(readable.id, True)])
         self.assertEqual(self.env['memory.note'].with_user(self.outsider)._agent_search('prelievo', scope='facts'), [])
+        # the access rules are in the query: more stronger matches the member may not read than any
+        # window could hold, and the readable one is still found
+        Fact.create([{'name': f'Prelievo {i}', 'body': 'prelievo picking prelievo picking', 'kind': 'fact',
+                      'keywords': 'prelievo', 'project_id': hidden.id} for i in range(500)])
+        found = self.env['memory.note'].with_user(self.member)._agent_search('prelievo', scope='facts', limit=1)
+        self.assertEqual([f['id'] for f in found], [readable.id])
 
     def test_optout_deletes_the_facts_of_the_customer(self):
         fact = self.env['memory.note'].browse(self.fact_as(self.lead)['id'])

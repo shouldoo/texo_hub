@@ -1,13 +1,22 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
-"""The full-text search shared by the lessons and the documents.
+"""The full-text search shared by the notes, the lessons, the documents and the episodes.
 
 The ranking needs the tsvector operators, which the ORM cannot express: the ids come
 from SQL and the records go through the ORM afterwards, so the access rules apply. The
 words are reduced to letters, digits and underscores before they reach to_tsquery, so a
 query can never carry its operators.
+
+The access rules are in the query too: the ORM gives the sub-query of the ids the user
+may read (model._search(domain), the record rules included), and SQL ranks only those.
+Without it the best candidates could all be records of other customers and the window
+had to grow past them; with it the first window holds readable rows only, and the ORM
+pass that follows is the second check, never the first. A failure of the access check
+raises: a search never answers "nothing" for a permission it could not read.
 """
 import re
+
+from odoo.tools import SQL
 
 CONFIGS = ('simple', 'italian', 'english')
 # Below this rank a hit matched only some of the words, in a long text: noise.
@@ -26,25 +35,35 @@ def words(query, related_terms=None):
 def _group(word):
     """One word in every configuration, as a prefix when it is long enough."""
     term = f"{word}:*" if len(word) >= PREFIX_LEN else word
-    return "(" + " || ".join(f"to_tsquery('{config}', %s)" for config in CONFIGS) + ")", [term] * len(CONFIGS)
+    return SQL("(%s)", SQL(" || ").join(SQL("to_tsquery(%s::regconfig, %s)", config, term) for config in CONFIGS))
 
 
-def rank(cr, table, vector, word_list, limit, where="TRUE"):
+def readable_ids(model, domain=()):
+    """The sub-query of the ids of model the user may read that match the domain (the ORM
+    applies the record rules), or None when the query is known to give nothing."""
+    query = model._search(list(domain))
+    return None if query.is_empty() else query.subselect()
+
+
+def rank(cr, table, vector, word_list, limit, where="TRUE", readable=None, readable_column='id'):
     """{id: (holds every word, rank)} of the rows of table whose vector matches: first the
     rows that hold every word; only to fill the limit, those that hold some, above
-    MIN_SCORE; at most limit rows per pass. table, vector and where are SQL written by the
-    caller, never user input."""
+    MIN_SCORE; at most limit rows per pass. table, vector, where and readable_column are SQL
+    written by the caller, never user input; readable, when given, is the sub-query of the
+    ids the user may read (readable_ids), joined on readable_column."""
     if not word_list:
         return {}
     groups = [_group(w) for w in word_list]
-    params = [p for _, group_params in groups for p in group_params]
+    conditions = [SQL(where) if isinstance(where, str) else where]
+    if readable is not None:
+        conditions.append(SQL("%s IN %s", SQL.identifier(readable_column), readable))
     ranked = {}
     for operator in (" && ", " || "):
-        tsquery = operator.join(sql for sql, _ in groups)
-        cr.execute(
-            f"SELECT id, ts_rank({vector}, ({tsquery})) FROM {table} "
-            f"WHERE {where} AND {vector} @@ ({tsquery}) ORDER BY 2 DESC, id DESC LIMIT %s",
-            params + params + [limit])
+        tsquery = SQL(operator).join(groups)
+        cr.execute(SQL(
+            "SELECT id, ts_rank(%s, (%s)) FROM %s WHERE %s AND %s @@ (%s) ORDER BY 2 DESC, id DESC LIMIT %s",
+            SQL.identifier(vector), tsquery, SQL.identifier(table), SQL(" AND ").join(conditions),
+            SQL.identifier(vector), tsquery, int(limit)))
         for row_id, score in cr.fetchall():
             if row_id not in ranked and (operator == " && " or score >= MIN_SCORE):
                 ranked[row_id] = (operator == " && ", score)
@@ -71,20 +90,23 @@ def fields(ranked, record_id):
 def search(model, table, vector, word_list, limit, domain=(), where="TRUE", cap=400):
     """The records of model the user may read that match, in order, at most limit.
 
-    SQL ranks the candidates without the access rules, the ORM keeps those the user may
-    read: when the best candidates are not readable (the facts of other customers), the
-    window grows until limit readable records are found or nothing more matches."""
-    return search_ranked(model, lambda window: rank(model.env.cr, table, vector, word_list, window, where), limit,
-                         domain, cap)
+    SQL ranks the readable candidates (readable_ids in the query), the ORM then reads them
+    as the user: when the two disagree (a rule that SQL could not express), the window grows
+    until limit readable records are found or nothing more matches."""
+    return search_ranked(model, lambda window, readable: rank(model.env.cr, table, vector, word_list, window, where,
+                                                              readable), limit, domain, cap)
 
 
 def search_ranked(model, ranker, limit, domain=(), cap=400):
-    """search, with the ranking given by ranker(window) -> {id: (holds every word, rank)}."""
+    """search, with the ranking given by ranker(window, readable) -> {id: (holds every word, rank)}."""
     # the vectors are read by SQL: the pending writes of the ORM go first
     model.flush_model()
+    readable = readable_ids(model, domain)
+    if readable is None:
+        return model.browse(), {}
     window = limit * 3
     while True:
-        ranked = ranker(window)
+        ranked = ranker(window, readable)
         records = model.search([('id', 'in', list(ranked))] + list(domain)) if ranked else model.browse()
         records = records.sorted(key=lambda r: order(ranked, r))
         if len(records) >= limit or len(ranked) < window or window >= cap:
