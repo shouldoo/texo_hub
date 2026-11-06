@@ -6,6 +6,7 @@ from odoo import Command, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 from odoo.addons.texo import okf
+from odoo.addons.texo.models.secrets import check_no_credential
 
 from . import fulltext
 from .leak_filter import forbidden_names, leak_reason
@@ -98,8 +99,9 @@ class MemoryLesson(models.Model):
             raise AccessError(self.env._("Only a Texo lead can change the state of a lesson."))
 
     def _check_clean(self, vals):
-        """Refuse a shared text that names a customer, a person or a record."""
+        """Refuse a shared text that names a customer, a person or a record, or holds a credential."""
         names = None
+        check_no_credential(self.env, *(vals.get(key) for key in ('name', 'finding', 'solution', 'keywords')))
         for key in ('name', 'finding', 'solution', 'keywords'):
             if vals.get(key):
                 if names is None:

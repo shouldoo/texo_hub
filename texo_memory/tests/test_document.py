@@ -31,6 +31,12 @@ class TestDocument(MemoryCase):
     def attachment_on(self, record, name='spec.pdf', raw=b'%PDF-1.4 fictional spec'):
         return self.env['ir.attachment'].create({'name': name, 'res_model': record._name, 'res_id': record.id, 'raw': raw})
 
+    def test_a_summary_never_holds_a_credential(self):
+        with self.assertRaisesRegex(UserError, "credential"):
+            self.env['ir.attachment'].with_user(self.lead)._texo_write(
+                name='Access', url='https://example.com/access', project_id=self.project.id,
+                summary='The cloud folder: token=4f2a9c1b8d7e6f5a9c1b.')
+
     def test_a_link_with_its_converted_text(self):
         result = self.write_as(self.member)
         document = self.env['ir.attachment'].browse(result['id'])

@@ -110,7 +110,7 @@ carries them, run from the manifest version bump.
 | Step | Where |
 |---|---|
 | Give a person a hub role | *Settings > Users*, privilege *Texo*: Member, Lead or Administrator (each implies the previous). A user without a role gets 403 from every route |
-| Create a personal token | the person, from *My Preferences > Security > New API Key*, scope *Texo*, at most `texo.token_max_days` days (default 90); shown once |
+| Create a personal token | the person, from *My Preferences > Security > New API Key*, scope *Texo*, at most `texo.token_max_days` days (default 90); shown once; *Read Only* for a token that never writes |
 | Review the tokens | *Users > Texo Tokens* (administrators): owner, creation, expiry, last use |
 | Revoke | delete the key or disable the user |
 

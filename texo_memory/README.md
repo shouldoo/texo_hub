@@ -409,6 +409,11 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
 
 ## Changelog
 
+### 20.0.1.2.0
+
+- A note, a lesson, the summary or the keywords of a document that hold what looks like a credential are
+  refused (`texo/models/secrets.py`); a read-only token is refused on every write.
+
 ### 20.0.1.1.0
 
 - The answer of `memory/search` says how the search ran: `mode` (the one used), `rerank` (off, skipped,

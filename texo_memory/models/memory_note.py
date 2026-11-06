@@ -8,6 +8,7 @@ from odoo import Command, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 from odoo.addons.texo import okf
+from odoo.addons.texo.models.secrets import check_no_credential
 
 from . import fulltext
 
@@ -603,6 +604,7 @@ class MemoryNote(models.Model):
         text = (text or '').strip() if isinstance(text, str) else ''
         if not text or len(text) > MAX_BODY:
             raise UserError(self.env._("The text is empty or longer than %s characters.", MAX_BODY))
+        check_no_credential(self.env, text)
         return text
 
     @api.model
@@ -637,6 +639,7 @@ class MemoryNote(models.Model):
                 "finding without the customer goes in a lesson; the state of a project goes in a project update."))
         if not (name or '').strip():
             raise UserError(self.env._("A note needs a title."))
+        check_no_credential(self.env, name, keywords)
         vals = self._anchor_vals(task_id, project_id, partner_id, company_id)
         vals.update({'kind': kind, 'name': name.strip()[:200], 'body': self._agent_body(body),
                      'expires': expires or False, 'keywords': self._agent_keywords(keywords),

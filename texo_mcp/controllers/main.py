@@ -60,8 +60,10 @@ class TexoMcpController(http.Controller):
         return 'memory.source.item' in request.env
 
     def _tools(self):
+        """The tools of the modules installed; a read-only token sees the read tools only."""
         optional = {'timesheet': self._has_timesheet(), 'sources': self._has_sources()}
-        return [t for t in TOOLS if optional.get(t['route'][0], True)]
+        read_only = request.env['res.users.apikeys']._texo_request_read_only()
+        return [t for t in TOOLS if optional.get(t['route'][0], True) and not (read_only and t['write'])]
 
     def _authenticate(self):
         """The person behind the bearer token (an API key of the hub scope: a personal one, or
@@ -98,6 +100,9 @@ class TexoMcpController(http.Controller):
             # a notification (initialized, cancelled): nothing to answer
             return request.make_response('', status=202)
         rid, method, params = message['id'], message['method'], message.get('params') or {}
+        # this endpoint writes (readonly=False): the role check of a route called here learns from the context
+        # whether the tool writes; the handshake and the listing never do
+        request.update_context(texo_write_tool=False)
         role = request.env.user._texo_role()
         if not role:
             return self._answer(rid, error=(NO_ROLE, "You have no Texo role."))
@@ -142,6 +147,8 @@ class TexoMcpController(http.Controller):
         and what the tool wrote before it is rolled back."""
         spec = next((t for t in self._tools() if t['name'] == name), None)
         if not spec:
+            if any(t['name'] == name for t in TOOLS):
+                return self._result(f"The tool {name} writes, and this token is read-only.", error=True)
             return self._result(f"Unknown tool {name}.", error=True)
         if not isinstance(arguments, dict):
             return self._result("The arguments of a tool are an object.", error=True)
@@ -155,6 +162,9 @@ class TexoMcpController(http.Controller):
         values = {key: value for key, value in arguments.items()
                   if key in schema['properties'] and key != 'confirm' and value is not None}
         controller, method = spec['route']
+        # the route runs on the writable cursor of this endpoint: the role check learns from the context
+        # whether the tool writes, so a read-only token is refused on a write tool only
+        request.update_context(texo_write_tool=spec['write'])
         try:
             with request.env.cr.savepoint():
                 data = getattr(self._controllers()[controller], method)(**values)

@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="form_res_users_key_description_texo" model="ir.ui.view">
+        <field name="name">res.users.apikeys.description.form.texo</field>
+        <field name="model">res.users.apikeys.description</field>
+        <field name="inherit_id" ref="base.form_res_users_key_description"/>
+        <field name="arch" type="xml">
+            <field name="duration" position="after">
+                <field name="texo_read_only" invisible="scope != 'texo'"/>
+            </field>
+        </field>
+    </record>
+
     <record id="view_res_users_apikeys_texo_list" model="ir.ui.view">
         <field name="name">res.users.apikeys.list.texo</field>
         <field name="model">res.users.apikeys</field>
@@ -9,6 +20,7 @@
                 <field name="name"/>
                 <field name="create_date"/>
                 <field name="expiration_date"/>
+                <field name="texo_read_only"/>
                 <field name="user_texo_last_seen"/>
             </list>
         </field>

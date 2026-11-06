@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 21:40+0000\n"
-"PO-Revision-Date: 2026-11-06 21:40+0000\n"
+"POT-Creation-Date: 2026-11-06 23:23+0000\n"
+"PO-Revision-Date: 2026-11-06 23:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -43,6 +43,9 @@ msgid ""
 "|---|---|\n"
 "| API key scope `texo` | Added to the standard *New API Key* wizard. A key with this scope opens only routes declared with `bearer_scope='texo'`: `/json/2` and XML-RPC refuse it. |\n"
 "| Token rules | A hub token always has an expiration date, at most `texo.token_max_days` days (system parameter, default 90), administrators included. Only users with a hub role can create one. |\n"
+"| Read-only token | The wizard offers *Read Only* for the scope Texo: a token that reads the memory and never writes. Every route that is not read-only refuses it (403), the MCP server hides the write tools and refuses a call to one; `whoami`, which only touches the last-seen date, accepts it. For an assistant that only consults, or a scraper of the metrics. |\n"
+"| Rate limit | At most `texo.rate_limit_per_minute` requests per minute per person (default 240; 0 disables), counted in each Odoo process: past it a route answers 429 until the minute passes. A brake on a runaway agent, not a quota. |\n"
+"| Credentials | What an agent writes in the memory (a note, a lesson, a note of a task, the summary and keywords of a document) is refused (422) when it holds what looks like a credential: a named key, token or password, a bearer token, an API key with a known prefix, an AWS key, a JWT, a private key, a long hexadecimal secret (`models/secrets.py`). The converted text of a document is not filtered: a document is a source. |\n"
 "| Privilege *Texo* | Groups Member, Lead and Administrator (each implies the previous one). The highest one is the hub role. |\n"
 "| `POST /texo/v1/whoami` | Called by the agent's client with the user's token as bearer. Odoo checks scope, expiry and active user, then returns `uid`, `login`, `name` and `role`. Returns 401 for an invalid token and 403 for a user without a hub role. |\n"
 "| Last seen | `res.users.texo_last_seen` is updated by `whoami`, with a resolution of one minute. |\n"
@@ -121,6 +124,12 @@ msgid ""
 "\n"
 "## Changelog\n"
 "\n"
+"### 20.0.1.3.0\n"
+"\n"
+"- Read-only hub tokens: a choice of the key wizard; every write refuses them, the MCP server hides the write tools.\n"
+"- A limit of requests per minute per person (`texo.rate_limit_per_minute`), 429 past it.\n"
+"- The credential filter the writes of the memory share (`models/secrets.py`).\n"
+"\n"
 "### 20.0.1.2.0\n"
 "\n"
 "- The route `GET /texo/metrics`: the gauges of the hub for a scraper, administrators only, extended by every\n"
@@ -151,6 +160,26 @@ msgstr "Un token Texo non può durare più di %(days)s giorni."
 #: code:addons/texo/models/res_users_apikeys.py:0
 msgid "A Texo token must have an expiration date."
 msgstr "Un token Texo deve avere una data di scadenza."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_res_users_apikeys__texo_read_only
+msgid ""
+"A Texo token that reads the memory and never writes: every write route "
+"refuses it, the MCP server hides the write tools. For an assistant that only"
+" consults, or a scraper."
+msgstr ""
+"Un token Texo che legge la memoria e non scrive mai: ogni route che scrive "
+"lo rifiuta, il server MCP nasconde gli strumenti di scrittura. Per un "
+"assistente che consulta soltanto, o per uno scraper."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_res_users_apikeys_description__texo_read_only
+msgid ""
+"A Texo token that reads the memory and never writes: for an assistant that "
+"only consults, or a scraper of the metrics."
+msgstr ""
+"Un token Texo che legge la memoria e non scrive mai: per un assistente che "
+"consulta soltanto, o per uno scraper delle metriche."
 
 #. module: texo
 #. odoo-python
@@ -385,6 +414,12 @@ msgid "Model %(model)s is not available to agents."
 msgstr "Il modello %(model)s non è disponibile per gli agenti."
 
 #. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users.py:0
+msgid "More than %s requests in a minute: wait, then go on."
+msgstr "Più di %s richieste in un minuto: aspetta, poi prosegui."
+
+#. module: texo
 #: model:ir.model.fields,field_description:texo.field_texo_pack__name
 msgid "Name"
 msgstr "Nome"
@@ -437,6 +472,12 @@ msgstr "Organizzazione"
 #: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__public
 msgid "Public"
 msgstr "Pubblica"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys__texo_read_only
+#: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__texo_read_only
+msgid "Read Only"
+msgstr "Sola lettura"
 
 #. module: texo
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__scope
@@ -607,6 +648,16 @@ msgstr ""
 
 #. module: texo
 #. odoo-python
+#: code:addons/texo/models/secrets.py:0
+msgid ""
+"The text holds what looks like %s: a credential never goes in the memory. "
+"Remove it and write again."
+msgstr ""
+"Il testo contiene quella che sembra %s: una credenziale non entra mai nella "
+"memoria. Toglila e riscrivi."
+
+#. module: texo
+#. odoo-python
 #: code:addons/texo/models/texo_config.py:0
 msgid "The version of a pack is a tag such as v1.2.0: %s."
 msgstr "La versione di un pacchetto è un tag come v1.2.0: %s."
@@ -615,6 +666,12 @@ msgstr "La versione di un pacchetto è un tag come v1.2.0: %s."
 #: model:ir.model.fields,help:texo.field_texo_pack__version
 msgid "The version the organisation installs, e.g. v1.0.0."
 msgstr "La versione che l'organizzazione installa, per esempio v1.0.0."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/res_users.py:0
+msgid "This token is read-only: it reads the memory and never writes."
+msgstr "Questo token è di sola lettura: legge la memoria e non scrive mai."
 
 #. module: texo
 #: model:ir.model.fields,field_description:texo.field_texo_thread__code
