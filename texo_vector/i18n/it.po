@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 07:11+0000\n"
-"PO-Revision-Date: 2026-11-06 07:11+0000\n"
+"POT-Creation-Date: 2026-11-06 21:40+0000\n"
+"PO-Revision-Date: 2026-11-06 21:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -56,14 +56,19 @@ msgid ""
 "Without `mode` the configured one applies (`texo_vector.mode`, `hybrid` by default). Every hit of a\n"
 "semantic or hybrid search says which search found it (`match`: `lexical`, `semantic`, `both`) and its\n"
 "`similarity` when the vectors did; a hit of the words says, as in the lexical search, whether it holds every\n"
-"word of the question or some (`words`). The scopes without vectors (`rules`, `notes`, `procedures`, `documents`)\n"
+"word of the question or some (`words`); a fused hit says its rank in each list (`ranks`: the score is the sum\n"
+"of weight / (K + rank)). The scopes without vectors (`rules`, `notes`)\n"
 "stay lexical whatever the mode; in `all` the facts and the lessons go by meaning too, the rules by their words.\n"
+"The answer of the route says the `mode` used (`lexical` when the vectors were asked and the service did not\n"
+"answer) and what the reranker did (`rerank`: `off`, `skipped`, `applied`, `unavailable`).\n"
 "\n"
-"The access rules apply as in the lexical search: the nearest chunks come from SQL (the index HNSW, at most\n"
-"60 chunks), the records then go through the ORM as the person, and the domains of the lexical search\n"
-"(state, expiry, `applies_to`, a project for the episodes) apply. The question is embedded by the same\n"
-"service; when the service does not answer (within 10 s) the search is lexical and the log says so once per\n"
-"call.\n"
+"The access rules apply as in the lexical search, in the query: the nearest chunks come from SQL among the\n"
+"records the person may read (the sub-query of their ids, given by the ORM with its record rules and the\n"
+"domains of the lexical search: state, expiry, `applies_to`, a project for the episodes), at most 60 chunks\n"
+"(200 for the documents), with the iterative scan of pgvector 0.8 (`hnsw.iterative_scan = relaxed_order`) so\n"
+"the filter does not leave the query with fewer candidates than asked; the records then go through the ORM\n"
+"as the person, the second check. The question is embedded by the same service; when the service does not\n"
+"answer (within 10 s) the search is lexical and the log says so once per call.\n"
 "\n"
 "## The reranker (optional)\n"
 "\n"
@@ -79,7 +84,9 @@ msgid ""
 "| `rerank_chars` | 800 | characters of each result it reads: the title and the text; for a document the passage chosen for the hit |\n"
 "| `rerank_timeout` | 5 | seconds; past them the hybrid order stays and the log says why |\n"
 "\n"
-"Only the hybrid mode is reranked; each reordered hit carries its score (`rerank`). Measured with\n"
+"Only the hybrid mode is reranked; each reordered hit carries its score (`rerank`), and the answer of the search\n"
+"says what happened: `applied`; `skipped` (a lexical or semantic search, or fewer than two results); `unavailable`\n"
+"(named but refused outside the local network, or no answer in time: the hybrid order stays). Measured with\n"
 "`BAAI/bge-reranker-v2-m3` on 40 questions whose answer is one passage of a long act (an evaluation set of a demo customer):\n"
 "on a design studio the right document goes first more often (mrr 0.86 to 0.97 with 10 results of 800\n"
 "characters, to 1.00 with 20 of 2000), on an association whose hybrid was right already nothing changes (0.96 to\n"
@@ -161,6 +168,15 @@ msgid ""
 "\n"
 "## Changelog\n"
 "\n"
+"### 20.0.1.2.0\n"
+"\n"
+"- The answer of the search says the mode used and what the reranker did (`applied`, `skipped`,\n"
+"  `unavailable`); a fused hit says its rank in each list (`ranks`).\n"
+"- The gauges of the vectors in `GET /texo/metrics`: available, services named, texts with and without their\n"
+"  vector by kind, the cron.\n"
+"- The access rules are in the query of the nearest chunks (the sub-query of the readable ids), with the\n"
+"  iterative scan of pgvector 0.8: the candidates are readable records, not the nearest of everyone's.\n"
+"\n"
 "### 20.0.1.1.0\n"
 "\n"
 "- The embedding service may be llama.cpp server (`texo_vector.api` = `llamacpp`, `POST /v1/embeddings`): the\n"
@@ -197,9 +213,24 @@ msgid "<span class=\"o_stat_text\">Texts Without a Vector</span>"
 msgstr "<span class=\"o_stat_text\">Testi senza vettore</span>"
 
 #. module: texo_vector
+#: model:ir.model.constraint,message:texo_vector.constraint_memory_embedding_pending_unique_record
+msgid "A record is pending once."
+msgstr "Un record è in attesa una volta sola."
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_ir_attachment
+msgid "Attachment"
+msgstr "Allegato"
+
+#. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__chunk
 msgid "Chunk"
 msgstr "Pezzo"
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_vector_status__stored
+msgid "Chunks with a vector of the current model."
+msgstr "Pezzi con un vettore del modello corrente."
 
 #. module: texo_vector
 #: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
@@ -219,7 +250,10 @@ msgid "Created on"
 msgstr "Creato il"
 
 #. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_ir_attachment__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_mail_message__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding_pending__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_lesson__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_note__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_review__display_name
@@ -227,6 +261,8 @@ msgstr "Creato il"
 #: model:ir.model.fields,field_description:texo_vector.field_memory_search__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__display_name
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_project_task__display_name
+#: model:ir.model.fields,field_description:texo_vector.field_texo_metrics__display_name
 msgid "Display Name"
 msgstr "Nome visualizzato"
 
@@ -260,7 +296,10 @@ msgid "Facts and Procedures"
 msgstr "Fatti e procedure"
 
 #. module: texo_vector
+#: model:ir.model.fields,field_description:texo_vector.field_ir_attachment__id
+#: model:ir.model.fields,field_description:texo_vector.field_mail_message__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding_pending__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_lesson__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_note__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_review__id
@@ -268,6 +307,8 @@ msgstr "Fatti e procedure"
 #: model:ir.model.fields,field_description:texo_vector.field_memory_search__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__id
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__id
+#: model:ir.model.fields,field_description:texo_vector.field_project_task__id
+#: model:ir.model.fields,field_description:texo_vector.field_texo_metrics__id
 msgid "ID"
 msgstr ""
 
@@ -310,6 +351,11 @@ msgid "Memory Embedding"
 msgstr "Vettore della memoria"
 
 #. module: texo_vector
+#: model:ir.model,name:texo_vector.model_memory_embedding_pending
+msgid "Memory Embedding: Pending Record"
+msgstr "Vettori della memoria: record in attesa"
+
+#. module: texo_vector
 #: model:ir.model,name:texo_vector.model_memory_lesson
 msgid "Memory Lesson"
 msgstr "Lezione della memoria"
@@ -340,12 +386,23 @@ msgid "Memory: To Review"
 msgstr "Memoria: da rivedere"
 
 #. module: texo_vector
+#: model:ir.actions.server,name:texo_vector.ir_cron_memory_vectors_reconcile_ir_actions_server
+msgid "Memory: reconciliation of the vectors with the memory"
+msgstr "Memoria: riconciliazione dei vettori con la memoria"
+
+#. module: texo_vector
 #: model:ir.actions.server,name:texo_vector.ir_cron_memory_vectors_ir_actions_server
 msgid "Memory: vectors of the episodes, the facts and the lessons"
 msgstr "Memoria: vettori degli episodi, dei fatti e delle lezioni"
 
 #. module: texo_vector
+#: model:ir.model,name:texo_vector.model_mail_message
+msgid "Message"
+msgstr "Messaggio"
+
+#. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__res_model
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding_pending__res_model
 msgid "Model"
 msgstr "Modello"
 
@@ -367,8 +424,18 @@ msgstr "Un vettore per pezzo di un record."
 
 #. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__res_id
+#: model:ir.model.fields,field_description:texo_vector.field_memory_embedding_pending__res_id
 msgid "Record"
+msgstr "Record"
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_vector_status__pending
+msgid ""
+"Records changed, new or gone since their vectors were computed: the cron "
+"reads them at its next run."
 msgstr ""
+"Record cambiati, nuovi o spariti da quando i loro vettori sono stati "
+"calcolati: il cron li legge alla prossima esecuzione."
 
 #. module: texo_vector
 #: model_terms:ir.ui.view,arch_db:texo_vector.view_memory_vector_status_form
@@ -383,7 +450,7 @@ msgstr "Riordino (reranker)"
 #. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status_line__res_model
 msgid "Res Model"
-msgstr ""
+msgstr "Modello"
 
 #. module: texo_vector
 #: model:ir.model.fields,help:texo_vector.field_memory_embedding__text_hash
@@ -425,9 +492,19 @@ msgid "Status"
 msgstr "Stato"
 
 #. module: texo_vector
+#: model:ir.model,name:texo_vector.model_project_task
+msgid "Task"
+msgstr "Lavoro"
+
+#. module: texo_vector
 #: model:ir.module.module,shortdesc:base.module_texo_vector
 msgid "Texo - Vector"
 msgstr "Texo - Vettori"
+
+#. module: texo_vector
+#: model:ir.model,name:texo_vector.model_texo_metrics
+msgid "Texo Metrics"
+msgstr "Metriche Texo"
 
 #. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_embedding__text_hash
@@ -464,6 +541,11 @@ msgid ""
 msgstr ""
 "Testi in attesa del vettore: un numero che non scende è un servizio che non "
 "risponde o un cron che non gira"
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_memory_vector_status__texts
+msgid "The chunks with a vector plus the records waiting."
+msgstr "I pezzi con un vettore più i record in attesa."
 
 #. module: texo_vector
 #: model:ir.model.fields,help:texo_vector.field_memory_embedding__model_name
@@ -513,6 +595,31 @@ msgid ""
 msgstr ""
 "I vettori saranno calcolati in background; aggiorna questa pagina fra "
 "qualche minuto."
+
+#. module: texo_vector
+#: model:ir.model.fields,help:texo_vector.field_project_task__display_name
+msgid ""
+"Use these keywords in the title to set new tasks:\n"
+"\n"
+"        30h Allocate 30 hours to the task\n"
+"        #tags Set tags on the task\n"
+"        @user Assign the task to a user\n"
+"        ! Set the task a medium priority\n"
+"        !! Set the task a high priority\n"
+"        !!! Set the task a urgent priority\n"
+"\n"
+"        Make sure to use the right format and order e.g. Improve the configuration screen 5h #feature #v16 @Mitchell !"
+msgstr ""
+"Usa queste parole chiave nel titolo per configurare nuovi lavori:\n"
+"\n"
+"        30h per assegnare 30 ore al lavoro\n"
+"        #tags per configurare tag nel lavoro\n"
+"        @user per assegnare il lavoro a un utente\n"
+"        ! per impostare la priorità su media\n"
+"        !! per impostare la priorità su alta\n"
+"        !!! per impostare la priorità su urgente\n"
+"\n"
+"        Assicurati di utilizzare il formato e l'ordine corretti, ad es. Migliorare la schermata di configurazione 5h #feature #v16 @Mitchell!"
 
 #. module: texo_vector
 #: model:ir.model.fields,field_description:texo_vector.field_memory_vector_status__available

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 07:09+0000\n"
-"PO-Revision-Date: 2026-11-06 07:09+0000\n"
+"POT-Creation-Date: 2026-11-06 21:40+0000\n"
+"PO-Revision-Date: 2026-11-06 21:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -44,6 +44,7 @@ msgid ""
 "| `POST /texo/v1/whoami` | Called by the agent's client with the user's token as bearer. Odoo checks scope, expiry and active user, then returns `uid`, `login`, `name` and `role`. Returns 401 for an invalid token and 403 for a user without a hub role. |\n"
 "| Last seen | `res.users.texo_last_seen` is updated by `whoami`, with a resolution of one minute. |\n"
 "| Users > Texo Tokens | Menu for hub administrators: every hub token with owner, creation date, expiry and last use. |\n"
+"| `GET /texo/metrics` | The gauges of the hub in the Prometheus exposition format, for an administrator's token (403 for the others): users by role, the version; every module adds its own (`texo_memory`: notes by kind and state, stale rules, lessons, documents, passages, episodes; `texo_vector`: the vectors available, the services named, the texts with and without their vector by kind, the cron). Counts and timestamps only, never a text of the memory. Scrape it every few minutes: the counts of the vectors read the scope. |\n"
 "\n"
 "A user creates a token from *My Preferences > Security > New API Key*, scope *Texo*.\n"
 "Disabling the user or deleting the key revokes it at once: every route checks the token on each\n"
@@ -116,6 +117,11 @@ msgid ""
 "```\n"
 "\n"
 "## Changelog\n"
+"\n"
+"### 20.0.1.2.0\n"
+"\n"
+"- The route `GET /texo/metrics`: the gauges of the hub for a scraper, administrators only, extended by every\n"
+"  module (`texo.metrics`).\n"
 "\n"
 "### 20.0.1.1.0\n"
 "\n"
@@ -262,6 +268,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__display_name
 #: model:ir.model.fields,field_description:texo.field_texo_api__display_name
 #: model:ir.model.fields,field_description:texo.field_texo_config__display_name
+#: model:ir.model.fields,field_description:texo.field_texo_metrics__display_name
 #: model:ir.model.fields,field_description:texo.field_texo_pack__display_name
 #: model:ir.model.fields,field_description:texo.field_texo_thread__display_name
 msgid "Display Name"
@@ -298,6 +305,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__id
 #: model:ir.model.fields,field_description:texo.field_texo_api__id
 #: model:ir.model.fields,field_description:texo.field_texo_config__id
+#: model:ir.model.fields,field_description:texo.field_texo_metrics__id
 #: model:ir.model.fields,field_description:texo.field_texo_pack__id
 #: model:ir.model.fields,field_description:texo.field_texo_thread__id
 msgid "ID"
@@ -315,7 +323,6 @@ msgid "Invalid domain element: %(leaf)s"
 msgstr ""
 
 #. module: texo
-#: model:ir.model.fields,field_description:texo.field_auth_totp_device__user_texo_last_seen
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys__user_texo_last_seen
 msgid "Last Seen by the Hub"
 msgstr ""
@@ -333,7 +340,6 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: texo
-#: model:ir.model.fields,help:texo.field_auth_totp_device__user_texo_last_seen
 #: model:ir.model.fields,help:texo.field_res_users__texo_last_seen
 #: model:ir.model.fields,help:texo.field_res_users_apikeys__user_texo_last_seen
 msgid "Last time the Texo gateway verified a token of this user."
@@ -453,6 +459,11 @@ msgstr ""
 #. module: texo
 #: model:ir.model.fields,field_description:texo.field_res_users__texo_last_seen
 msgid "Texo Last Seen"
+msgstr ""
+
+#. module: texo
+#: model:ir.model,name:texo.model_texo_metrics
+msgid "Texo Metrics"
 msgstr ""
 
 #. module: texo
