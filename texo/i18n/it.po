@@ -6,15 +6,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-10 16:40+0000\n"
-"PO-Revision-Date: 2026-10-10 16:40+0000\n"
+"POT-Creation-Date: 2026-11-06 07:11+0000\n"
+"PO-Revision-Date: 2026-11-06 07:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
-"Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
 
 #. module: texo
 #: model:ir.model.fields,help:texo.field_res_users_apikeys_description__scope
@@ -35,8 +34,8 @@ msgid ""
 "\n"
 "Odoo 20.0 · LGPL-3\n"
 "\n"
-"Makes Odoo the identity provider of Texo: people, hub roles and personal hub tokens\n"
-"live in Odoo, and every agent route of the hub modules runs as the person behind the token.\n"
+"Makes Odoo the identity provider and the configuration of Texo: people, hub roles, personal hub tokens\n"
+"and what the CLI mounts live in Odoo, and every agent route of the hub modules runs as the person behind the token.\n"
 "\n"
 "## How it works\n"
 "\n"
@@ -76,6 +75,25 @@ msgid ""
 "\n"
 "Task, ticket and chatter routes live in companion modules (`texo_project`).\n"
 "\n"
+"## The configuration of the organisation\n"
+"\n"
+"What the `texo` CLI mounts on the machine of every person of the organisation lives here, never in a repository:\n"
+"\n"
+"| Model | What |\n"
+"|---|---|\n"
+"| `texo.pack` | the skill packs of the marketplace the organisation installs, each at a version (`odoo_partner`, `v1.0.0`) |\n"
+"| `texo.thread` | the threads it mounts next to the memory: id, type (`source`, `tool`, `connector`), driver, `data_class`, `writes`, guide, and the settings of the driver as a JSON object |\n"
+"| `res.company.texo_slug` | the name of the organisation for the CLI: its credentials file is `~/.config/texo/<slug>.env` (empty: derived from the name of the company) |\n"
+"\n"
+"A credential is never stored: a thread names it as `env:NAME` and the person keeps its value on the machine; a\n"
+"value in its place is refused. Administrators edit both lists in *Settings > Users* (*Texo Skill Packs*, *Texo\n"
+"Threads*) or through the route `admin/config`.\n"
+"\n"
+"| Route (`POST /texo/v1/...`) | Who | Parameters | Returns |\n"
+"|---|---|---|---|\n"
+"| `config` | every role | `company_id` (optional) | `organisation` (the slug), `company`, `packs` (`name`, `version`), `threads` (each as a `[[thread]]` of `texo.toml`) |\n"
+"| `admin/config` | administrators | `packs`, `threads` (the full lists; one left out is not touched), `slug`, `company_id`, `apply` (default false) | every pack and thread `created`, `updated` (with `changes`), `unchanged` or `archived` (left out of the list: never deleted), and the counts; written only with `apply` |\n"
+"\n"
 "## Client configuration\n"
 "\n"
 "A client needs three values, kept in a file of the person outside any repository (mode 600):\n"
@@ -102,6 +120,11 @@ msgid ""
 "\n"
 "## Changelog\n"
 "\n"
+"### 20.0.1.1.0\n"
+"\n"
+"- The configuration of the organisation for the texo CLI: skill packs and threads, the slug of the organisation,\n"
+"  the routes `config` and `admin/config`, the menus for administrators.\n"
+"\n"
 "### 20.0.1.0.0\n"
 "\n"
 "- First release in Texo.\n"
@@ -124,9 +147,67 @@ msgid "A Texo token must have an expiration date."
 msgstr "Un token Texo deve avere una data di scadenza."
 
 #. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid ""
+"A connector holds data of the organisation or its customers, never public: "
+"%s."
+msgstr ""
+"Un connettore contiene dati dell'organizzazione o dei suoi clienti, mai "
+"pubblici: %s."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid ""
+"A credential of %s is written as env:NAME, never as its value: nothing is "
+"stored."
+msgstr ""
+"Una credenziale di %s si scrive come env:NOME, mai come valore: non si salva"
+" nulla."
+
+#. module: texo
+#: model:ir.model.constraint,message:texo.constraint_texo_pack_name_company_unique
+msgid "A pack is installed once per company."
+msgstr "Un pacchetto si installa una volta per azienda."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "A pack is named by one lowercase word: %s."
+msgstr "Un pacchetto si chiama con una sola parola minuscola: %s."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "A source is read only: %s."
+msgstr "Una fonte è in sola lettura: %s."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid ""
+"A thread id is one lowercase word (letters, digits, - or _), and memoria is "
+"the hub: %s."
+msgstr ""
+"L'id di un filo è una sola parola minuscola (lettere, cifre, - o _), e "
+"memoria è il hub: %s."
+
+#. module: texo
+#: model:ir.model.constraint,message:texo.constraint_texo_thread_code_company_unique
+msgid "A thread id is used once per company."
+msgstr "L'id di un filo si usa una volta per azienda."
+
+#. module: texo
 #: model:ir.model,name:texo.model_res_users_apikeys_description
 msgid "API Key Description"
 msgstr "Descrizione chiave API"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__active
+#: model:ir.model.fields,field_description:texo.field_texo_thread__active
+msgid "Active"
+msgstr "Attivo"
 
 #. module: texo
 #: model:res.groups,name:texo.group_texo_admin
@@ -139,12 +220,66 @@ msgid "Administrator: reviews every Texo token."
 msgstr "Amministratore: controlla tutti i token Texo."
 
 #. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__writes__confirm
+msgid "After confirmation"
+msgstr "Dopo conferma"
+
+#. module: texo
+#: model:ir.model,name:texo.model_res_company
+#: model:ir.model.fields,field_description:texo.field_texo_pack__company_id
+#: model:ir.model.fields,field_description:texo.field_texo_thread__company_id
+msgid "Company"
+msgstr "Azienda"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "Company %s does not exist or is not yours."
+msgstr "L'azienda %s non esiste o non è tua."
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__connector
+msgid "Connector"
+msgstr "Connettore"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__create_uid
+#: model:ir.model.fields,field_description:texo.field_texo_thread__create_uid
+msgid "Created by"
+msgstr "Creato da"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__create_date
+#: model:ir.model.fields,field_description:texo.field_texo_thread__create_date
+msgid "Created on"
+msgstr "Data creazione"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__customer
+msgid "Customer"
+msgstr "Cliente"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__data_class
+msgid "Data Class"
+msgstr "Classe di dati"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_company__display_name
 #: model:ir.model.fields,field_description:texo.field_res_users__display_name
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys__display_name
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__display_name
 #: model:ir.model.fields,field_description:texo.field_texo_api__display_name
+#: model:ir.model.fields,field_description:texo.field_texo_config__display_name
+#: model:ir.model.fields,field_description:texo.field_texo_pack__display_name
+#: model:ir.model.fields,field_description:texo.field_texo_thread__display_name
 msgid "Display Name"
 msgstr "Nome visualizzato"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__driver
+msgid "Driver"
+msgstr ""
 
 #. module: texo
 #. odoo-python
@@ -163,17 +298,26 @@ msgid "Give at least 3 characters to search models."
 msgstr "Indica almeno 3 caratteri per cercare i modelli."
 
 #. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__guide
+msgid "Guide"
+msgstr "Guida"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_company__id
 #: model:ir.model.fields,field_description:texo.field_res_users__id
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys__id
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__id
 #: model:ir.model.fields,field_description:texo.field_texo_api__id
+#: model:ir.model.fields,field_description:texo.field_texo_config__id
+#: model:ir.model.fields,field_description:texo.field_texo_pack__id
+#: model:ir.model.fields,field_description:texo.field_texo_thread__id
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #. module: texo
 #: model:ir.module.module,summary:base.module_texo
-msgid "Identity and access tokens for the Texo, managed in Odoo"
-msgstr "Identità e token di accesso al Texo, gestiti in Odoo"
+msgid "Identity, access tokens and configuration of Texo, managed in Odoo"
+msgstr "Identità, token di accesso e configurazione di Texo, gestiti in Odoo"
 
 #. module: texo
 #. odoo-python
@@ -182,11 +326,25 @@ msgid "Invalid domain element: %(leaf)s"
 msgstr "Elemento di dominio non valido: %(leaf)s"
 
 #. module: texo
+#: model:ir.model.fields,field_description:texo.field_auth_totp_device__user_texo_last_seen
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys__user_texo_last_seen
 msgid "Last Seen by the Hub"
 msgstr "Ultimo accesso al Hub"
 
 #. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__write_uid
+#: model:ir.model.fields,field_description:texo.field_texo_thread__write_uid
+msgid "Last Updated by"
+msgstr "Ultimo aggiornamento di"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__write_date
+#: model:ir.model.fields,field_description:texo.field_texo_thread__write_date
+msgid "Last Updated on"
+msgstr "Ultimo aggiornamento il"
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_auth_totp_device__user_texo_last_seen
 #: model:ir.model.fields,help:texo.field_res_users__texo_last_seen
 #: model:ir.model.fields,help:texo.field_res_users_apikeys__user_texo_last_seen
 msgid "Last time the Texo gateway verified a token of this user."
@@ -197,7 +355,7 @@ msgstr ""
 #. module: texo
 #: model:res.groups,name:texo.group_texo_lead
 msgid "Lead"
-msgstr "Lead"
+msgstr ""
 
 #. module: texo
 #: model:res.groups,comment:texo.group_texo_lead
@@ -221,14 +379,34 @@ msgid "Model %(model)s is not available to agents."
 msgstr "Il modello %(model)s non è disponibile per gli agenti."
 
 #. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_pack__name
+msgid "Name"
+msgstr "Nome"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__writes__never
+msgid "Never"
+msgstr "Mai"
+
+#. module: texo
 #: model:res.groups.privilege,placeholder:texo.res_groups_privilege_texo
 msgid "No"
-msgstr "No"
+msgstr ""
 
 #. module: texo
 #: model_terms:ir.actions.act_window,help:texo.action_res_users_apikeys_texo
 msgid "No Texo token yet"
 msgstr "Ancora nessun token Texo"
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_texo_pack
+msgid "No skill pack yet"
+msgstr "Ancora nessun pacchetto di skill"
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_texo_thread
+msgid "No thread yet"
+msgstr "Ancora nessun filo"
 
 #. module: texo
 #. odoo-python
@@ -237,16 +415,44 @@ msgid "Only Texo users can create a Texo token."
 msgstr "Solo gli utenti del Texo possono creare un token Texo."
 
 #. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid ""
+"Only a Texo administrator changes the configuration of the organisation."
+msgstr ""
+"Solo un amministratore di Texo cambia la configurazione dell'organizzazione."
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__org
+msgid "Organisation"
+msgstr "Organizzazione"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__public
+msgid "Public"
+msgstr "Pubblica"
+
+#. module: texo
 #: model:ir.model.fields,field_description:texo.field_res_users_apikeys_description__scope
 msgid "Scope"
 msgstr "Ambito"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__settings
+msgid "Settings"
+msgstr "Impostazioni"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__source
+msgid "Source"
+msgstr "Fonte"
 
 #. module: texo
 #: model:ir.model.fields.selection,name:texo.selection__res_users_apikeys_description__scope__texo
 #: model:ir.module.module,shortdesc:base.module_texo
 #: model:res.groups.privilege,name:texo.res_groups_privilege_texo
 msgid "Texo"
-msgstr "Texo"
+msgstr ""
 
 #. module: texo
 #: model:ir.model,name:texo.model_texo_api
@@ -254,15 +460,61 @@ msgid "Texo Agent API"
 msgstr "API agenti del Texo"
 
 #. module: texo
+#: model:ir.model,name:texo.model_texo_config
+msgid "Texo Configuration"
+msgstr "Configurazione Texo"
+
+#. module: texo
 #: model:ir.model.fields,field_description:texo.field_res_users__texo_last_seen
 msgid "Texo Last Seen"
 msgstr "Ultimo accesso Texo"
+
+#. module: texo
+#: model:ir.model,name:texo.model_texo_pack
+msgid "Texo Skill Pack"
+msgstr "Pacchetto di skill Texo"
+
+#. module: texo
+#: model:ir.actions.act_window,name:texo.action_texo_pack
+#: model:ir.ui.menu,name:texo.menu_texo_packs
+msgid "Texo Skill Packs"
+msgstr "Pacchetti di skill Texo"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_res_company__texo_slug
+msgid "Texo Slug"
+msgstr "Slug Texo"
+
+#. module: texo
+#: model:ir.model,name:texo.model_texo_thread
+msgid "Texo Thread"
+msgstr "Filo Texo"
+
+#. module: texo
+#: model:ir.actions.act_window,name:texo.action_texo_thread
+#: model:ir.ui.menu,name:texo.menu_texo_threads
+msgid "Texo Threads"
+msgstr "Fili Texo"
 
 #. module: texo
 #: model:ir.actions.act_window,name:texo.action_res_users_apikeys_texo
 #: model:ir.ui.menu,name:texo.menu_texo_tokens
 msgid "Texo Tokens"
 msgstr "Token Texo"
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "The Texo slug is one lowercase word (letters, digits, underscore): %s."
+msgstr ""
+"Lo slug Texo è una sola parola minuscola (lettere, cifre, trattino basso): "
+"%s."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "The configuration has the %(kind)s %(name)s twice."
+msgstr "La configurazione contiene due volte %(kind)s %(name)s."
 
 #. module: texo
 #. odoo-python
@@ -281,6 +533,92 @@ msgstr "Il dominio usa un campo non disponibile per gli agenti."
 #: code:addons/texo/controllers/main.py:0
 msgid "The format is json or okf."
 msgstr "Il formato è json oppure okf."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_texo_thread__code
+msgid "The id of the thread, e.g. normativa."
+msgstr "L'id del filo, per esempio normativa."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_res_company__texo_slug
+msgid ""
+"The name of the organisation for the texo CLI: its credentials file is "
+"~/.config/texo/<slug>.env. Empty: derived from the name of the company."
+msgstr ""
+"Il nome dell'organizzazione per la CLI texo: il suo file delle credenziali è"
+" ~/.config/texo/<slug>.env. Vuoto: ricavato dal nome dell'azienda."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_texo_pack__name
+msgid "The pack of the marketplace, e.g. odoo_partner."
+msgstr "Il pacchetto del marketplace, per esempio odoo_partner."
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_texo_pack
+msgid ""
+"The packs of the marketplace the organisation installs: the texo CLI "
+"installs them for every assistant."
+msgstr ""
+"I pacchetti del marketplace che l'organizzazione installa: la CLI texo li "
+"installa per ogni assistente."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "The settings of %(code)s repeat %(keys)s."
+msgstr "Le impostazioni di %(code)s ripetono %(keys)s."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "The settings of %s are not a JSON object."
+msgstr "Le impostazioni di %s non sono un oggetto JSON."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_texo_thread__settings
+msgid ""
+"The settings of the driver, as a JSON object: repo, ref, url, paths, skills,"
+" command, args, env, auth…"
+msgstr ""
+"Le impostazioni del driver, come oggetto JSON: repo, ref, url, paths, "
+"skills, command, args, env, auth…"
+
+#. module: texo
+#: model_terms:ir.actions.act_window,help:texo.action_texo_thread
+msgid ""
+"The sources, tools and connectors the organisation mounts next to the "
+"memory. A credential is never written here: name it as env:NAME in the "
+"settings."
+msgstr ""
+"Le fonti, gli strumenti e i connettori che l'organizzazione monta accanto "
+"alla memoria. Una credenziale non si scrive mai qui: nominala come env:NOME "
+"nelle impostazioni."
+
+#. module: texo
+#. odoo-python
+#: code:addons/texo/models/texo_config.py:0
+msgid "The version of a pack is a tag such as v1.2.0: %s."
+msgstr "La versione di un pacchetto è un tag come v1.2.0: %s."
+
+#. module: texo
+#: model:ir.model.fields,help:texo.field_texo_pack__version
+msgid "The version the organisation installs, e.g. v1.0.0."
+msgstr "La versione che l'organizzazione installa, per esempio v1.0.0."
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__code
+msgid "Thread"
+msgstr "Filo"
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__tool
+msgid "Tool"
+msgstr "Strumento"
+
+#. module: texo
+#: model:ir.model.fields,field_description:texo.field_texo_thread__thread_type
+msgid "Type"
+msgstr "Tipo"
 
 #. module: texo
 #. odoo-python
@@ -309,84 +647,9 @@ msgstr ""
 "API, ambito Texo."
 
 #. module: texo
-#. odoo-python
-#: code:addons/texo/models/res_users.py:0
-msgid "You have no Texo role."
-msgstr "Non hai un ruolo nel Texo."
-
-#. module: texo
-#: model:ir.model,name:texo.model_texo_pack
-msgid "Texo Skill Pack"
-msgstr "Pacchetto di skill Texo"
-
-#. module: texo
-#: model:ir.model,name:texo.model_texo_thread
-msgid "Texo Thread"
-msgstr "Filo Texo"
-
-#. module: texo
-#: model:ir.model,name:texo.model_texo_config
-msgid "Texo Configuration"
-msgstr "Configurazione Texo"
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_res_company__texo_slug
-msgid "Texo Slug"
-msgstr "Slug Texo"
-
-#. module: texo
-#: model:ir.model.fields,help:texo.field_res_company__texo_slug
-msgid ""
-"The name of the organisation for the texo CLI: its credentials file is "
-"~/.config/texo/<slug>.env. Empty: derived from the name of the company."
-msgstr ""
-"Il nome dell'organizzazione per la CLI texo: il suo file delle credenziali è"
-" ~/.config/texo/<slug>.env. Vuoto: ricavato dal nome dell'azienda."
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_pack__name
-msgid "Name"
-msgstr "Nome"
-
-#. module: texo
-#: model:ir.model.fields,help:texo.field_texo_pack__name
-msgid "The pack of the marketplace, e.g. odoo_partner."
-msgstr "Il pacchetto del marketplace, per esempio odoo_partner."
-
-#. module: texo
 #: model:ir.model.fields,field_description:texo.field_texo_pack__version
 msgid "Version"
 msgstr "Versione"
-
-#. module: texo
-#: model:ir.model.fields,help:texo.field_texo_pack__version
-msgid "The version the organisation installs, e.g. v1.0.0."
-msgstr "La versione che l'organizzazione installa, per esempio v1.0.0."
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__code
-msgid "Thread"
-msgstr "Filo"
-
-#. module: texo
-#: model:ir.model.fields,help:texo.field_texo_thread__code
-msgid "The id of the thread, e.g. normativa."
-msgstr "L'id del filo, per esempio normativa."
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__thread_type
-msgid "Type"
-msgstr "Tipo"
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__driver
-msgid "Driver"
-msgstr "Driver"
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__data_class
-msgid "Data Class"
-msgstr "Classe di dati"
 
 #. module: texo
 #: model:ir.model.fields,help:texo.field_texo_thread__data_class
@@ -395,14 +658,9 @@ msgstr ""
 "Che cosa il filo può ricevere: mai dati di una classe superiore alla sua."
 
 #. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__writes
-msgid "Writes"
-msgstr "Scritture"
-
-#. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__guide
-msgid "Guide"
-msgstr "Guida"
+#: model_terms:ir.ui.view,arch_db:texo.view_texo_thread_form
+msgid "When the agent uses it, and its limits"
+msgstr "Quando l'agente lo usa, e i suoi limiti"
 
 #. module: texo
 #: model:ir.model.fields,help:texo.field_texo_thread__guide
@@ -410,200 +668,42 @@ msgid "When the agent uses it, and its limits."
 msgstr "Quando l'agente lo usa, e i suoi limiti."
 
 #. module: texo
-#: model:ir.model.fields,field_description:texo.field_texo_thread__settings
-msgid "Settings"
-msgstr "Impostazioni"
+#: model:ir.model.fields,field_description:texo.field_texo_thread__writes
+msgid "Writes"
+msgstr "Scritture"
 
 #. module: texo
-#: model:ir.model.fields,help:texo.field_texo_thread__settings
-msgid ""
-"The settings of the driver, as a JSON object: repo, ref, url, paths, skills,"
-" command, args, env, auth…"
+#. odoo-python
+#: code:addons/texo/models/res_users.py:0
+msgid "You have no Texo role."
+msgstr "Non hai un ruolo nel Texo."
+
+#. module: texo
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__cli
+msgid "cli"
 msgstr ""
-"Le impostazioni del driver, come oggetto JSON: repo, ref, url, paths, "
-"skills, command, args, env, auth…"
 
 #. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__source
-msgid "Source"
-msgstr "Fonte"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__tool
-msgid "Tool"
-msgstr "Strumento"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__thread_type__connector
-msgid "Connector"
-msgstr "Connettore"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__public
-msgid "Public"
-msgstr "Pubblica"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__org
-msgid "Organisation"
-msgstr "Organizzazione"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__data_class__customer
-msgid "Customer"
-msgstr "Cliente"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__writes__never
-msgid "Never"
-msgstr "Mai"
-
-#. module: texo
-#: model:ir.model.fields.selection,name:texo.selection__texo_thread__writes__confirm
-msgid "After confirmation"
-msgstr "Dopo conferma"
-
-#. module: texo
-#: model:ir.actions.act_window,name:texo.action_texo_pack
-#: model:ir.ui.menu,name:texo.menu_texo_packs
-msgid "Texo Skill Packs"
-msgstr "Pacchetti di skill Texo"
-
-#. module: texo
-#: model:ir.actions.act_window,name:texo.action_texo_thread
-#: model:ir.ui.menu,name:texo.menu_texo_threads
-msgid "Texo Threads"
-msgstr "Fili Texo"
-
-#. module: texo
-#: model_terms:ir.actions.act_window,help:texo.action_texo_pack
-msgid "No skill pack yet"
-msgstr "Ancora nessun pacchetto di skill"
-
-#. module: texo
-#: model_terms:ir.actions.act_window,help:texo.action_texo_pack
-msgid ""
-"The packs of the marketplace the organisation installs: the texo CLI "
-"installs them for every assistant."
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__git-mirror
+msgid "git-mirror"
 msgstr ""
-"I pacchetti del marketplace che l'organizzazione installa: la CLI texo li "
-"installa per ogni assistente."
 
 #. module: texo
-#: model_terms:ir.actions.act_window,help:texo.action_texo_thread
-msgid "No thread yet"
-msgstr "Ancora nessun filo"
-
-#. module: texo
-#: model_terms:ir.actions.act_window,help:texo.action_texo_thread
-msgid ""
-"The sources, tools and connectors the organisation mounts next to the "
-"memory. A credential is never written here: name it as env:NAME in the "
-"settings."
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__git-remote
+msgid "git-remote"
 msgstr ""
-"Le fonti, gli strumenti e i connettori che l'organizzazione monta accanto "
-"alla memoria. Una credenziale non si scrive mai qui: nominala come env:NOME "
-"nelle impostazioni."
 
 #. module: texo
-#: model_terms:ir.ui.view,arch_db:texo.view_texo_thread_form
-msgid "When the agent uses it, and its limits"
-msgstr "Quando l'agente lo usa, e i suoi limiti"
-
-#. module: texo
-#: model:ir.model.constraint,message:texo.constraint_texo_pack__name_company_unique
-msgid "A pack is installed once per company."
-msgstr "Un pacchetto si installa una volta per azienda."
-
-#. module: texo
-#: model:ir.model.constraint,message:texo.constraint_texo_thread__code_company_unique
-msgid "A thread id is used once per company."
-msgstr "L'id di un filo si usa una volta per azienda."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "The Texo slug is one lowercase word (letters, digits, underscore): %s."
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__http
+msgid "http"
 msgstr ""
-"Lo slug Texo è una sola parola minuscola (lettere, cifre, trattino basso): "
-"%s."
 
 #. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "A pack is named by one lowercase word: %s."
-msgstr "Un pacchetto si chiama con una sola parola minuscola: %s."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "The version of a pack is a tag such as v1.2.0: %s."
-msgstr "La versione di un pacchetto è un tag come v1.2.0: %s."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid ""
-"A thread id is one lowercase word (letters, digits, - or _), and memoria is "
-"the hub: %s."
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__mcp-http
+msgid "mcp-http"
 msgstr ""
-"L'id di un filo è una sola parola minuscola (lettere, cifre, - o _), e "
-"memoria è il hub: %s."
 
 #. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "A source is read only: %s."
-msgstr "Una fonte è in sola lettura: %s."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid ""
-"A connector holds data of the organisation or its customers, never public: "
-"%s."
+#: model:ir.model.fields.selection,name:texo.selection__texo_thread__driver__mcp-stdio
+msgid "mcp-stdio"
 msgstr ""
-"Un connettore contiene dati dell'organizzazione o dei suoi clienti, mai "
-"pubblici: %s."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "The settings of %s are not a JSON object."
-msgstr "Le impostazioni di %s non sono un oggetto JSON."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "The settings of %(code)s repeat %(keys)s."
-msgstr "Le impostazioni di %(code)s ripetono %(keys)s."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid ""
-"A credential of %s is written as env:NAME, never as its value: nothing is "
-"stored."
-msgstr ""
-"Una credenziale di %s si scrive come env:NOME, mai come valore: non si salva"
-" nulla."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "Company %s does not exist or is not yours."
-msgstr "L'azienda %s non esiste o non è tua."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid ""
-"Only a Texo administrator changes the configuration of the organisation."
-msgstr ""
-"Solo un amministratore di Texo cambia la configurazione dell'organizzazione."
-
-#. module: texo
-#. odoo-python
-#: code:addons/texo/models/texo_config.py:0
-msgid "The configuration has the %(kind)s %(name)s twice."
-msgstr "La configurazione contiene due volte %(kind)s %(name)s."

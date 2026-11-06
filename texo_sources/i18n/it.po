@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 15:40+0000\n"
-"PO-Revision-Date: 2026-11-03 15:40+0000\n"
+"POT-Creation-Date: 2026-11-06 07:11+0000\n"
+"PO-Revision-Date: 2026-11-06 07:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -732,7 +732,7 @@ msgstr "Ogni quanto va letto il canale; oltre questo intervallo è in ritardo."
 #: model:ir.model.fields,field_description:texo_sources.field_memory_source_tag__id
 #: model:ir.model.fields,field_description:texo_sources.field_project_project__id
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #. module: texo_sources
 #: model:ir.model.fields,help:texo_sources.field_memory_source_channel__message_needaction
@@ -830,7 +830,7 @@ msgstr "Fonte normativa"
 #. module: texo_sources
 #: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__url
 msgid "Link"
-msgstr "Link"
+msgstr ""
 
 #. module: texo_sources
 #: model:ir.model.fields,field_description:texo_sources.field_memory_source_channel__watch_terms
@@ -1582,7 +1582,7 @@ msgstr "Verso l'organizzazione: un giudizio interno."
 #: model:ir.actions.act_window,name:texo_sources.action_memory_source_triage
 #: model:ir.ui.menu,name:texo_sources.menu_memory_source_triage
 msgid "Triage"
-msgstr "Triage"
+msgstr ""
 
 #. module: texo_sources
 #: model:ir.model.fields,field_description:texo_sources.field_memory_source_item__triage_note
@@ -1604,7 +1604,7 @@ msgstr "Dubbi sconosciuti: %(unknown)s. I dubbi sono: %(all)s."
 #: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_item__kind__video
 #: model_terms:ir.ui.view,arch_db:texo_sources.view_memory_source_item_form
 msgid "Video"
-msgstr "Video"
+msgstr ""
 
 #. module: texo_sources
 #: model:ir.model.fields.selection,name:texo_sources.selection__memory_source_channel__kind__video
