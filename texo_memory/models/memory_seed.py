@@ -1,9 +1,9 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
-"""The seed of an industry: the activities, sections, rules of the organisation and project
-templates a sector brings, applied by an administrator from the hub/seed.toml of the industry.
+"""The seed of a pack: the activities, sections, rules of the organisation and project
+templates a sector brings, applied by an administrator from the seed.toml of the pack.
 
-Every seeded record carries a stable key (industry/kind/code) and the fingerprint of the values
+Every seeded record carries a stable key (pack/kind/code) and the fingerprint of the values
 the seed last wrote. A run creates what is missing, updates what nobody changed since, and keeps
 what was changed here: the answer lists every item with what happens to it, so the person sees
 the differences before applying them (apply false, the default) and after. Nothing is deleted:
@@ -34,14 +34,14 @@ class MemorySeedMixin(models.AbstractModel):
     _description = "Seeded Record"
 
     seed_key = fields.Char(copy=False, index=True, readonly=True,
-                           help="The industry and the key of the seed item this record comes from.")
+                           help="The pack and the key of the seed item this record comes from.")
     seed_fingerprint = fields.Char(copy=False, readonly=True,
                                    help="The values the seed last wrote: a record changed since is kept as it is.")
 
 
 class MemorySeed(models.AbstractModel):
     _name = 'memory.seed'
-    _description = "Industry Seed"
+    _description = "Seed of a Pack"
 
     # -- what each kind of item is, as values to compare and to write ------------
     def _code_values(self, record):
@@ -82,16 +82,16 @@ class MemorySeed(models.AbstractModel):
     @api.model
     def _agent_seed(self, industry, activities=None, sections=None, rules=None, project_templates=None,
                     company_id=None, apply=False, lang='en_US'):
-        """Compare the seed of an industry with the hub and, with apply, write the differences.
+        """Compare the seed of a pack with the hub and, with apply, write the differences.
 
-        industry: the slug of the industry (odoo_partner); every item has a code (activities,
+        industry: the name of the pack (odoo_partner); every item has a code (activities,
         sections) or a key (rules, project templates), stable across the versions of the seed.
         The rules are rules of the organisation (the company, or company_id), active at once:
         the administrator who applies the seed reviewed them in the answer of the dry run."""
         if self.env.user._texo_check_role() != 'admin':
-            raise AccessError(self.env._("Only a Texo administrator applies the seed of an industry."))
+            raise AccessError(self.env._("Only a Texo administrator applies the seed of a pack."))
         if not CODE.match(industry or ''):
-            raise UserError(self.env._("The industry is one lowercase word (letters, digits, underscore): %s.",
+            raise UserError(self.env._("The pack is one lowercase word (letters, digits, underscore): %s.",
                                        industry))
         seed = self.with_context(lang=lang or 'en_US', active_test=False)
         company = seed.env['memory.note']._company(company_id)

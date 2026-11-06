@@ -13,7 +13,7 @@ class MemoryNoteActivity(models.Model):
     The session says what it is doing and its context pack carries the rules of that
     activity and the rules with none, which apply to every activity. The module ships
     only activities every organisation has; a sector adds its own through the seed of
-    its industry (writing code, deploying), the organisation through the backend."""
+    its pack (writing code, deploying), the organisation through the backend."""
     _name = 'memory.note.activity'
     _inherit = ['memory.seed.mixin']
     _description = "Rule Activity"

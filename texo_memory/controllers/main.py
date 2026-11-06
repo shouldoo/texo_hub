@@ -212,7 +212,7 @@ class TexoMemoryController(http.Controller):
     @http.route('/texo/v1/admin/seed', **HUB_ROUTE)
     def seed(self, industry, activities=None, sections=None, rules=None, project_templates=None, company_id=None,
              apply=False, lang='en_US'):
-        """The seed of an industry: what it would create, update or keep, written with apply."""
+        """The seed of a pack: what it would create, update or keep, written with apply."""
         return request.env['memory.seed']._agent_seed(
             industry, activities=activities, sections=sections, rules=rules, project_templates=project_templates,
             company_id=company_id, apply=apply, lang=lang)

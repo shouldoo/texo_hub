@@ -10,7 +10,7 @@ CLEAN_SOLUTION = ("Rename the field to uom_id in Python, views, domains and test
 
 
 def sector_activities(env):
-    """The activities a sector adds through the seed of its industry, as the tests use them:
+    """The activities a sector adds through the seed of its pack, as the tests use them:
     the module itself ships only analysis and communication."""
     Activity = env['memory.note.activity']
     for sequence, code in enumerate(('code', 'deploy', 'migration'), start=30):

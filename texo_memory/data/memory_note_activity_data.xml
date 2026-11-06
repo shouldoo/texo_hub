@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright 2026 Daniele Lucarelli
      License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
-<!-- Only the activities every organisation has: a sector adds its own through the seed of its industry. -->
+<!-- Only the activities every organisation has: a sector adds its own through the seed of its pack. -->
 <odoo noupdate="1">
     <record id="activity_analysis" model="memory.note.activity">
         <field name="name">Analysis</field>

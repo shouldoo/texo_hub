@@ -4,6 +4,6 @@ from odoo import models
 
 
 class ProjectProject(models.Model):
-    """A project template can come from the seed of an industry."""
+    """A project template can come from the seed of a pack."""
     _name = 'project.project'
     _inherit = ['project.project', 'memory.seed.mixin']
