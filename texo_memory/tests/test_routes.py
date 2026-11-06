@@ -98,8 +98,12 @@ class TestMemoryRoutes(HttpCase):
         lead_pack = self._post('context', self.lead, {'task_id': self.task.id}).json()
         self.assertEqual([l['id'] for l in lead_pack['pending_lessons']], [finding.json()['id']])
         self.assertEqual(self._post('state', self.lead, {'lesson_id': finding.json()['id'], 'state': 'active'}).json()['state'], 'active')
-        found = self._post('search', self.member, {'query': 'uom_id purchase', 'scope': 'lessons'}).json()['results']
+        answer = self._post('search', self.member, {'query': 'uom_id purchase', 'scope': 'lessons'}).json()
+        found = answer['results']
         self.assertEqual(len(found), 1)
+        # how the search ran: the mode used, what the reranker did, how long it took
+        self.assertEqual((answer['mode'], answer['rerank']), ('lexical', 'off'))
+        self.assertIsInstance(answer['latency_ms'], int)
         lesson = self._post('read', self.member, {'lesson_id': found[0]['id']}).json()
         self.assertEqual(lesson['solution'], CLEAN_SOLUTION)
         self.assertEqual(self._post('read', self.member, {'note_id': 999999}).status_code, 404)
@@ -109,3 +113,20 @@ class TestMemoryRoutes(HttpCase):
         confirmed = self._post('confirm', self.lead, {'note_id': active.json()['id'], 'expires': '2030-01-01'})
         self.assertEqual(confirmed.json()['expires'], '2030-01-01')
         self.assertEqual(self._post('confirm', self.member, {'note_id': active.json()['id']}).status_code, 403)
+
+    def test_show_expired_and_the_metrics(self):
+        """An expired fact stays out of the search unless asked for, and then says it is stale; the
+        metrics of the memory count the notes by kind and state."""
+        expired = self._post('fact', self.lead, {'name': 'Old tariff', 'body': 'The tariff of 2024 was flat.',
+                                                 'project_id': self.project.id, 'expires': '2024-12-31'}).json()
+        self.assertEqual(self._post('search', self.lead, {'query': 'tariff', 'scope': 'facts'}).json()['results'], [])
+        found = self._post('search', self.lead, {'query': 'tariff', 'scope': 'facts', 'show_expired': True}).json()
+        self.assertEqual([(r['id'], r['stale']) for r in found['results']], [(expired['id'], 'expired')])
+        admin = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Admin', 'login': 'chm_http_admin',
+            'group_ids': [Command.link(self.env.ref('texo.group_texo_admin').id)]})
+        key = self.env['res.users.apikeys'].with_user(admin)._generate('texo', 'test', datetime.now() + timedelta(days=1))
+        lines = self.url_open('/texo/metrics', headers={'Authorization': f'Bearer {key}'}).text.splitlines()
+        self.assertIn('# TYPE texo_memory_notes gauge', lines)
+        self.assertTrue(any(line.startswith('texo_memory_notes{kind="fact",state="active"} ') for line in lines), lines)
+        self.assertTrue(any(line.startswith('texo_memory_episodes ') for line in lines))

@@ -36,8 +36,11 @@ the next run of the cron.
 Without `mode` the configured one applies (`texo_vector.mode`, `hybrid` by default). Every hit of a
 semantic or hybrid search says which search found it (`match`: `lexical`, `semantic`, `both`) and its
 `similarity` when the vectors did; a hit of the words says, as in the lexical search, whether it holds every
-word of the question or some (`words`). The scopes without vectors (`rules`, `notes`, `procedures`, `documents`)
+word of the question or some (`words`); a fused hit says its rank in each list (`ranks`: the score is the sum
+of weight / (K + rank)). The scopes without vectors (`rules`, `notes`)
 stay lexical whatever the mode; in `all` the facts and the lessons go by meaning too, the rules by their words.
+The answer of the route says the `mode` used (`lexical` when the vectors were asked and the service did not
+answer) and what the reranker did (`rerank`: `off`, `skipped`, `applied`, `unavailable`).
 
 The access rules apply as in the lexical search: the nearest chunks come from SQL (the index HNSW, at most
 60 chunks), the records then go through the ORM as the person, and the domains of the lexical search
@@ -59,7 +62,9 @@ until `texo_vector.rerank_endpoint` names a service:
 | `rerank_chars` | 800 | characters of each result it reads: the title and the text; for a document the passage chosen for the hit |
 | `rerank_timeout` | 5 | seconds; past them the hybrid order stays and the log says why |
 
-Only the hybrid mode is reranked; each reordered hit carries its score (`rerank`). Measured with
+Only the hybrid mode is reranked; each reordered hit carries its score (`rerank`), and the answer of the search
+says what happened: `applied`; `skipped` (a lexical or semantic search, or fewer than two results); `unavailable`
+(named but refused outside the local network, or no answer in time: the hybrid order stays). Measured with
 `BAAI/bge-reranker-v2-m3` on 40 questions whose answer is one passage of a long act (an evaluation set of a demo customer):
 on a design studio the right document goes first more often (mrr 0.86 to 0.97 with 10 results of 800
 characters, to 1.00 with 20 of 2000), on an association whose hybrid was right already nothing changes (0.96 to
@@ -140,6 +145,13 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.2.0
+
+- The answer of the search says the mode used and what the reranker did (`applied`, `skipped`,
+  `unavailable`); a fused hit says its rank in each list (`ranks`).
+- The gauges of the vectors in `GET /texo/metrics`: available, services named, texts with and without their
+  vector by kind, the cron.
 
 ### 20.0.1.1.0
 

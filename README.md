@@ -128,6 +128,7 @@ anything on the person's machine through the remote MCP server of `texo_mcp`
 | Route family | Routes | Module |
 |---|---|---|
 | Identity | `whoami` | `texo` |
+| Metrics | `GET /texo/metrics` (administrators, Prometheus text) | `texo` |
 | Configuration of the organisation | `config`, `admin/config` (administrators) | `texo` |
 | Read-only ERP | `search_read`, `read_group`, `fields`, `models` | `texo` |
 | Project | `project/my_work`, `project/task`, `project/task_note` | `texo_project` |

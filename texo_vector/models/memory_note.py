@@ -14,33 +14,45 @@ class MemoryNote(models.Model):
     _inherit = 'memory.note'
 
     @api.model
-    def _agent_search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None):
+    def _agent_search_run(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
+                          show_expired=False):
         """The search with a mode: lexical (the words, as texo_memory does), semantic
         (the nearest vectors among the episodes, the facts, the procedures, the lessons and the
         documents the user may read)
         or hybrid (both, fused by reciprocal rank: hybrid.py). The configured mode when the
         call gives none; lexical when the vectors are not available here, when the scope has
-        none (the rules) or when the embedding service does not answer."""
+        none (the rules) or when the embedding service does not answer. Gives (entries, the
+        mode used, what the reranker did)."""
         Embedding = self.env['memory.embedding']
         mode = Embedding._mode(mode)
+        rerank = Embedding._rerank_state()
         if mode == 'lexical' or scope not in SEMANTIC_SCOPES:
-            return super()._agent_search(query, related_terms, scope, applies_to, limit, mode=mode)
+            entries, _mode, _rerank = super()._agent_search_run(query, related_terms, scope, applies_to, limit,
+                                                                 mode=mode, show_expired=show_expired)
+            return entries, 'lexical', 'skipped' if rerank == 'configured' else rerank
         vector = Embedding._embed_query(query)
         if vector is None:
-            return super()._agent_search(query, related_terms, scope, applies_to, limit, mode=mode)
+            entries, _mode, _rerank = super()._agent_search_run(query, related_terms, scope, applies_to, limit,
+                                                                 mode=mode, show_expired=show_expired)
+            return entries, 'lexical', 'skipped' if rerank == 'configured' else rerank
         limit = max(1, min(int(limit or 5), 20))
         # each search gives twice the limit, so the fusion has something to choose from
         window = min(max(limit * 2, 10), 20)
-        semantic = self._semantic_entries(vector, scope, applies_to, window)
+        semantic = self._semantic_entries(vector, scope, applies_to, window, show_expired)
         if mode == 'semantic':
-            return self._passages_by_meaning(semantic[:limit], vector)
-        lexical = super()._agent_search(query, related_terms, scope, applies_to, window, mode=mode)
-        pool = Embedding._rerank_pool()
+            return (self._passages_by_meaning(semantic[:limit], vector), 'semantic',
+                    'skipped' if rerank == 'configured' else rerank)
+        lexical, _mode, _rerank = super()._agent_search_run(query, related_terms, scope, applies_to, window,
+                                                             mode=mode, show_expired=show_expired)
+        pool = Embedding._rerank_pool() if rerank == 'configured' else 0
         if not pool:
-            return self._passages_by_meaning(hybrid.fuse(lexical, semantic, limit), vector)
+            return self._passages_by_meaning(hybrid.fuse(lexical, semantic, limit), vector), 'hybrid', rerank
         # the optional reranker (memory_rerank.py) reorders the first pool results, the passages chosen first
         fused = self._passages_by_meaning(hybrid.fuse(lexical, semantic, max(limit, pool)), vector)
-        return (self._reranked(query, fused[:pool]) + fused[pool:])[:limit]
+        if len(fused) < 2:
+            return fused[:limit], 'hybrid', 'skipped'
+        reranked, applied = self._rerank_apply(query, fused[:pool])
+        return (reranked + fused[pool:])[:limit], 'hybrid', 'applied' if applied else 'unavailable'
 
     @api.model
     def _passages_by_meaning(self, entries, vector):
@@ -67,7 +79,7 @@ class MemoryNote(models.Model):
         return Passage._annotate(entries, chosen)
 
     @api.model
-    def _semantic_entries(self, vector, scope, applies_to, limit):
+    def _semantic_entries(self, vector, scope, applies_to, limit, show_expired=False):
         """The entries of the records nearest to the vector in the scope, the user's access rules
         and the domains of the lexical search applied, by similarity (score and similarity are
         the cosine), flagged as the lexical entries are and with match semantic."""
@@ -81,11 +93,12 @@ class MemoryNote(models.Model):
         if scope in SEMANTIC_KINDS:
             today = fields.Date.context_today(self)
             notes, similarity = Embedding._readable(
-                vector, 'memory.note', self._search_domain(SEMANTIC_KINDS[scope], today), limit)
+                vector, 'memory.note', self._search_domain(SEMANTIC_KINDS[scope], today, show_expired), limit)
             entries += notes._search_entries(ranked(similarity), today)
         if scope in ('all', 'lessons'):
             Lesson = self.env['memory.lesson']
-            lessons, similarity = Embedding._readable(vector, 'memory.lesson', Lesson._search_domain(applies_to), limit)
+            lessons, similarity = Embedding._readable(vector, 'memory.lesson', Lesson._search_domain(applies_to, show_expired=show_expired),
+                                                    limit)
             entries += lessons._search_entries(ranked(similarity))
         if scope in ('all', 'documents'):
             Attachment = self.env['ir.attachment']

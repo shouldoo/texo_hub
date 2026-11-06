@@ -40,7 +40,8 @@ def key(entry):
 def fuse(lexical, semantic, limit, k=RRF_K):
     """The entries of the two lists, fused and in order, at most limit: score is the fused
     score, match says which search found the entry (lexical, semantic, both), similarity is
-    the cosine when the vectors found it, words (all, some) what the lexical search said."""
+    the cosine when the vectors found it, words (all, some) what the lexical search said,
+    ranks the place of the entry in each list (the score is the sum of weight / (K + rank))."""
     fused = {}
     for entries, match in ((lexical, 'lexical'), (semantic, 'semantic')):
         for rank, entry in enumerate(entries, 1):
@@ -52,6 +53,8 @@ def fuse(lexical, semantic, limit, k=RRF_K):
                 if match == 'semantic':
                     found['similarity'] = entry.get('similarity')
             found['score'] += weight(entry, match) / (k + rank)
+            # the explanation of the fused score: the rank of the entry in each list that holds it
+            found.setdefault('ranks', {})[match] = rank
     # at equal score: what both found, then the words (a hit of every word against the first
     # vector is a tie), then the vectors; the newer first among equals
     result = sorted(fused.values(), key=lambda e: (-e['score'], ORDER[e['match']], -e['id']))

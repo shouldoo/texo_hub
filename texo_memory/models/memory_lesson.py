@@ -170,29 +170,35 @@ class MemoryLesson(models.Model):
         }
         return okf.concept(meta, f"# Finding\n\n{self.finding}\n\n# Solution\n\n{self.solution}")
 
-    def _live_domain(self, include_draft=False):
+    def _live_domain(self, include_draft=False, show_expired=False):
         today = fields.Date.context_today(self)
-        return [('state', 'in', ('draft', 'active') if include_draft else ('active',)),
-                '|', ('expires', '=', False), ('expires', '>=', today)]
+        domain = [('state', 'in', ('draft', 'active') if include_draft else ('active',))]
+        if not show_expired:
+            domain += ['|', ('expires', '=', False), ('expires', '>=', today)]
+        return domain
 
     @api.model
-    def _agent_search(self, query, related_terms=None, applies_to=None, limit=5, include_draft=False):
+    def _agent_search(self, query, related_terms=None, applies_to=None, limit=5, include_draft=False,
+                      show_expired=False):
         """Lessons ranked by PostgreSQL full-text search over title, keywords and text: first
         those that hold every word (a long word also as a prefix), then, only to fill the
         limit, those that hold some (fulltext.rank)."""
         limit = max(1, min(int(limit or 5), 20))
         lessons, ranked = fulltext.search(self, 'memory_lesson', 'search_tsv', fulltext.words(query, related_terms),
-                                          limit, self._search_domain(applies_to, include_draft))
+                                          limit, self._search_domain(applies_to, include_draft, show_expired))
         return lessons._search_entries(ranked)
 
-    def _search_domain(self, applies_to=None, include_draft=False):
-        return self._live_domain(include_draft) + ([('applies_to', 'ilike', applies_to)] if applies_to else [])
+    def _search_domain(self, applies_to=None, include_draft=False, show_expired=False):
+        return (self._live_domain(include_draft, show_expired)
+                + ([('applies_to', 'ilike', applies_to)] if applies_to else []))
 
     def _search_entries(self, ranked):
         """The search results of these lessons, in this order: the summary, the score and the
         words (fulltext.fields of ranked), the first words of the finding, flagged as lessons."""
+        today = fields.Date.context_today(self)
         return [dict(lesson._agent_summary(), **fulltext.fields(ranked, lesson.id), snippet=(lesson.finding or '')[:160],
-                     lesson=True) for lesson in self]
+                     lesson=True, **({'stale': 'expired'} if lesson.expires and lesson.expires < today else {}))
+                for lesson in self]
 
     @api.model
     def _agent_pack(self, tags, activities=None, limit=PACK_LESSONS):

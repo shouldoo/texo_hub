@@ -15,6 +15,7 @@ and what the CLI mounts live in Odoo, and every agent route of the hub modules r
 | `POST /texo/v1/whoami` | Called by the agent's client with the user's token as bearer. Odoo checks scope, expiry and active user, then returns `uid`, `login`, `name` and `role`. Returns 401 for an invalid token and 403 for a user without a hub role. |
 | Last seen | `res.users.texo_last_seen` is updated by `whoami`, with a resolution of one minute. |
 | Users > Texo Tokens | Menu for hub administrators: every hub token with owner, creation date, expiry and last use. |
+| `GET /texo/metrics` | The gauges of the hub in the Prometheus exposition format, for an administrator's token (403 for the others): users by role, the version; every module adds its own (`texo_memory`: notes by kind and state, stale rules, lessons, documents, passages, episodes; `texo_vector`: the vectors available, the services named, the texts with and without their vector by kind, the cron). Counts and timestamps only, never a text of the memory. Scrape it every few minutes: the counts of the vectors read the scope. |
 
 A user creates a token from *My Preferences > Security > New API Key*, scope *Texo*.
 Disabling the user or deleting the key revokes it at once: every route checks the token on each
@@ -87,6 +88,11 @@ odoo -c <conf> -d test_cohub20 -i texo --test-tags /texo --stop-after-init --htt
 ```
 
 ## Changelog
+
+### 20.0.1.2.0
+
+- The route `GET /texo/metrics`: the gauges of the hub for a scraper, administrators only, extended by every
+  module (`texo.metrics`).
 
 ### 20.0.1.1.0
 

@@ -55,6 +55,16 @@ class MemoryEmbedding(models.Model):
         return url
 
     @api.model
+    def _rerank_state(self):
+        """What a search may expect of the reranker: off (no endpoint named), unavailable (named
+        outside the local network without the opt-in: refused), configured (a search decides
+        whether it is applied or skipped)."""
+        url = (self._param(PARAM_RERANK_ENDPOINT, 'str', '') or '').strip()
+        if not url:
+            return 'off'
+        return 'configured' if self._rerank_endpoint() else 'unavailable'
+
+    @api.model
     def _rerank_pool(self):
         """How many of the first results the reranker reads, 0 when it is off."""
         if not self._rerank_endpoint():
@@ -135,13 +145,19 @@ class MemoryNote(models.Model):
     @api.model
     def _reranked(self, query, entries):
         """The entries in the order of the reranker (each with its score as rerank), or as they are."""
+        return self._rerank_apply(query, entries)[0]
+
+    @api.model
+    def _rerank_apply(self, query, entries):
+        """(the entries in the order of the reranker, each with its score as rerank, whether it
+        answered); as they are when it did not."""
         Embedding = self.env['memory.embedding']
         if len(entries) < 2:
-            return entries
+            return entries, False
         size = min(max(Embedding._param(PARAM_RERANK_CHARS, 'int', DEFAULT_CHARS), 200), 4000)
         scores = Embedding._rerank_scores(query, [self._rerank_text(entry, size) for entry in entries])
         if scores is None:
-            return entries
+            return entries, False
         for entry, score in zip(entries, scores, strict=True):
             entry['rerank'] = round(score, 4)
-        return sorted(entries, key=lambda entry: -entry['rerank'])
+        return sorted(entries, key=lambda entry: -entry['rerank']), True

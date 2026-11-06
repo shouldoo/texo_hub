@@ -180,6 +180,8 @@ class TestVector(VectorCase):
         self.assertEqual((both[0]['id'], both[0]['match']), (invoices.id, 'both'), "found by the words and by the vectors")
         self.assertEqual([r['id'] for r in both], [invoices.id, returns.id], "what only the vectors found fills the rest")
         self.assertEqual((both[0]['words'], both[1].get('words')), ('all', None))
+        self.assertEqual((both[0]['ranks'], both[1]['ranks']), ({'lexical': 1, 'semantic': 1}, {'semantic': 2}),
+                         "the explanation of a fused score: the rank in each list")
         # a hit of every word stays ahead of what only the vectors found, however many they are:
         # an acronym is far from every vector, the question has no other word
         vdi = self.fact('VDI', 'Resi, rotte, fornitori, fatture e rilasci: dal cliente solo via VDI, mai dal portatile.')
