@@ -6,8 +6,8 @@ personal tokens, tasks and hours, rules for the agents with states and roles, cl
 documents of the memory as attachments of the records they belong to, with the sources the rules cite. The
 AI agents of the organisation reach it through its routes, as the person, with the person's own token. Built
 for the `texo` CLI of [`texo_core`](https://github.com/shouldoo/texo_core), usable by any client that speaks
-HTTP. What a sector adds (activities, sections, rules, project templates) comes from the seed of an industry
-repository, not from these modules.
+HTTP. What a sector adds (activities, sections, rules, project templates) comes from the seed of a skill pack of
+[`texo_marketplace`](https://github.com/shouldoo/texo_marketplace), not from these modules.
 
 | Module | Purpose | Depends on |
 |---|---|---|
@@ -133,7 +133,7 @@ anything on the person's machine through the remote MCP server of `texo_mcp`
 | Project | `project/my_work`, `project/task`, `project/task_note` | `texo_project` |
 | Memory | `memory/rules`, `memory/context`, `memory/search`, `memory/read`, `memory/note`, `memory/state`, `memory/review`, `memory/confirm` | `texo_memory` |
 | Documents | `document/list`, `document/read`, `document/write`, `document/remove`, `document/attachment` | `texo_memory` |
-| Seed of an industry | `admin/seed` (administrators) | `texo_memory` |
+| Seed of a pack | `admin/seed` (administrators) | `texo_memory` |
 | Hours | `project/log_time` | `texo_timesheet` |
 | MCP | `/texo/mcp` (JSON-RPC: `initialize`, `tools/list`, `tools/call`, `ping`) | `texo_mcp` |
 

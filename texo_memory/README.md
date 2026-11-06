@@ -36,8 +36,8 @@ A rule is typed for the agent that reads it (a fact and a procedure may carry ac
 - `severity`: how it binds, `never` (a prohibition), `must` (an obligation, the default) or `prefer`
   (what the agent does unless the person decides otherwise);
 - `rule_activity_ids` («Applies to»): the work it concerns, among the activities of
-  `memory.note.activity` (`analysis` and `communication` in the data of the module; the seed of an
-  industry adds those of its sector, such as `code` or `deploy`, and a lead the organisation's own in
+  `memory.note.activity` (`analysis` and `communication` in the data of the module; the seed of a
+  pack adds those of its sector, such as `code` or `deploy`, and a lead the organisation's own in
   *Memory > Rule Activities*). None means
   every activity. A session that passes its activity gets the rules of that activity and those of
   every activity; the field is not `activity_ids`, which is the to-do list of the chatter.
@@ -338,22 +338,23 @@ reason, a refusal 403, a record the user cannot read 404.
 | `document/remove` | `document_id` | lead only: the document out of the memory |
 | `document/attachment` | `attachment_id` | the file of an attachment the person may read: name, type, size, sha256, record, content in base64 (max 20 MB) |
 | `confirm` | `note_id`, `expires` (optional, `YYYY-MM-DD`) | a note re-checked today: an active rule by a lead, a fact or a procedure by whoever may write it |
-| `admin/seed` (`/texo/v1/admin/seed`) | `industry` (a slug), `activities` and `sections` (`code`, `name`, `description`, `sequence`), `rules` (`key`, `name`, `body`, `severity`, `activities`, `section`, `keywords`, `applies_to`), `project_templates` (`key`, `name`, `description`, `tasks` with `name` and `description`), `company_id`, `lang` (default `en_US`), `apply` (default false) | administrator only: every item of the seed with its status (see «The seed of an industry») and the counts; written only with `apply` |
+| `admin/seed` (`/texo/v1/admin/seed`) | `industry` (the name of the pack), `activities` and `sections` (`code`, `name`, `description`, `sequence`), `rules` (`key`, `name`, `body`, `severity`, `activities`, `section`, `keywords`, `applies_to`), `project_templates` (`key`, `name`, `description`, `tasks` with `name` and `description`), `company_id`, `lang` (default `en_US`), `apply` (default false) | administrator only: every item of the seed with its status (see «The seed of an industry») and the counts; written only with `apply` |
 
 The same logic is available as methods on the models (`_agent_context`, `_agent_search`,
 `_agent_read`, `_agent_note`, `_agent_rules_text`, `memory.lesson._agent_lesson`, `_agent_set_state`,
 `ir.attachment._texo_write` and the other `_texo_*` methods of the documents), for an adapter that exposes it another way.
 
-## The seed of an industry
+## The seed of a pack
 
 The module ships only what every organisation has: the activities `analysis` and `communication`, the
 sections `profile`, `operations`, `compliance`, `sector`, `offer`. What a sector adds (its activities and
 sections, the rules every organisation of the sector starts with, its project templates) is the seed of
-an industry repository (`hub/seed.toml`), which the `texo seed` command of `texo_core` sends to
-`admin/seed` (`memory.seed._agent_seed`).
+its skill pack (`packs/<name>/seed.toml` of `texo_marketplace`), which the `texo seed` command of `texo_core` sends
+to `admin/seed` (`memory.seed._agent_seed`). The field `industry` of the route is the name of the pack: it keeps
+the name it had when the packs were industry repositories, since it is the first part of every `seed_key`.
 
 Every item has a stable key (a `code` for activities and sections, a `key` for rules and templates); the
-record it becomes carries `seed_key` (`<industry>/<kind>/<key>`) and the fingerprint of the values the seed
+record it becomes carries `seed_key` (`<pack>/<kind>/<key>`) and the fingerprint of the values the seed
 last wrote (`seed_fingerprint`). Each run answers, item by item:
 
 | Status | What happens |
@@ -362,7 +363,7 @@ last wrote (`seed_fingerprint`). Each run answers, item by item:
 | `updated` | the seed changed and nobody touched the record since the last run: rewritten with `apply` (`changes` names the fields) |
 | `unchanged` | the record already says what the seed says |
 | `kept` | `changed_here`: a lead changed the record since the seed wrote it, the record stays as it is (`changes` names what differs); `not_from_seed`: an activity or a section with the same code was written by hand, never taken over |
-| `left_seed` | a record of this industry that the seed no longer has: reported, never deleted |
+| `left_seed` | a record of this pack that the seed no longer has: reported, never deleted |
 
 The rules of the seed are rules of the organisation (the company, or `company_id`), active at once and
 verified by the administrator who applies them after reading the dry run. A project template is a
@@ -397,6 +398,11 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.0.2
+
+- The seed comes from a skill pack of the marketplace: its texts say pack, the field `industry` of `admin/seed`
+  keeps its name.
 
 ### 20.0.1.0.1
 
