@@ -108,4 +108,5 @@ class TestReadOnlyTokensAndSecrets(TransactionCase):
                            ("the token expires in 90 days", None),
                            ("password policy: twelve characters", None)):
             found = credential_reason(text)
-            self.assertEqual(str(found) if found is not None else None, what, text)
+            # the reason is a lazy translation: its source is the English text, str() the language of the session
+            self.assertEqual(found._source if found is not None else None, what, text)

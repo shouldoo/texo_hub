@@ -144,11 +144,11 @@ class TestMemoryRoutes(HttpCase):
         self.assertEqual(post('context', {'task_id': self.task.id}).status_code, 200)
         refused = post('note', {'name': 'Tariff', 'body': 'The tariff is flat.', 'kind': 'fact', 'project_id': self.project.id})
         self.assertEqual(refused.status_code, 403)
-        self.assertIn('read-only', refused.json()['message'])
+        self.assertRegex(refused.json()['message'], 'read-only|sola lettura')
         # a credential never enters the memory, whoever writes
         leak = self._post('fact', self.lead, {'name': 'Access', 'body': 'TEXO_HUB_TOKEN=4f2a9c1b8d7e6f5a of the stage',
                                              'project_id': self.project.id})
         self.assertEqual(leak.status_code, 422)
-        self.assertIn('credential', leak.json()['message'])
+        self.assertRegex(leak.json()['message'], 'credential|credenziale')
         self.assertEqual(self._post('fact', self.lead, {'name': 'Access', 'body': 'The stage asks a password at login.',
                                                         'project_id': self.project.id}).status_code, 200)
