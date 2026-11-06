@@ -333,7 +333,8 @@ class MemoryEmbedding(models.Model):
     def _texts_of_tasks(self, ids=None):
         """The episodes: the title, search keywords and description of every task of a project (a task without
         one is a personal to-do), then each human message of its chatter."""
-        tasks = self.env['project.task'].sudo().search([('project_id', '!=', False)] + self._of(ids))
+        Task = self.env['project.task'].sudo()
+        tasks = Task.search(Task._texo_search_domain() + self._of(ids))
         rows = [('project.task', task.id, 0,
                  f"{task.name}\n{task.texo_keywords or ''}\n{html2plaintext(task.description or '')}")
                 for task in tasks]
