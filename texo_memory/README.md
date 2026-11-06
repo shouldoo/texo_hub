@@ -417,6 +417,7 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
   the existing record back with `existing: true`, nothing is written (`content_hash` on notes and lessons).
 - The access rules are in the full-text query (`fulltext.readable_ids`): the candidates are readable records,
   however many stronger matches of other customers there are; the ORM pass is the second check.
+- The tasks of a project template and the task templates are not episodes: out of the search and of the vectors.
 - The gauges of the memory in `GET /texo/metrics`: notes by kind and state, stale rules, lessons, documents,
   passages, episodes.
 

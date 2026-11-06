@@ -8,7 +8,7 @@ from odoo import api, models
 
 from odoo.addons.texo_memory.models.project_task import EPISODE_MESSAGE_TYPES
 
-TASK_FIELDS = {'name', 'description', 'texo_keywords', 'active', 'project_id'}
+TASK_FIELDS = {'name', 'description', 'texo_keywords', 'active', 'project_id', 'is_template'}
 NOTE_FIELDS = {'name', 'body', 'keywords', 'kind', 'state'}
 LESSON_FIELDS = {'name', 'keywords', 'finding', 'solution', 'state'}
 

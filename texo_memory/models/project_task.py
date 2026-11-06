@@ -94,13 +94,14 @@ class ProjectTask(models.Model):
         so do the tasks without a project: personal to-dos are not episodes of the work."""
         limit = max(1, min(int(limit or 5), 20))
         tasks, ranked = fulltext.search(self, 'project_task', 'texo_tsv', fulltext.words(query, related_terms),
-                                        limit, self._texo_search_domain(),
-                                        where="texo_tsv IS NOT NULL AND project_id IS NOT NULL")
+                                        limit, self._texo_search_domain(), where="texo_tsv IS NOT NULL")
         return tasks._texo_search_entries(ranked)
 
     @api.model
     def _texo_search_domain(self):
-        return [('project_id', '!=', False)]
+        """The episodes: the tasks of a project; not a template (of a project template, or a task
+        template): nothing happened there."""
+        return [('project_id', '!=', False), ('is_template', '=', False), ('project_id.is_template', '=', False)]
 
     def _texo_search_entries(self, ranked):
         """The search results of these tasks, in this order: the summary, the title, the concept

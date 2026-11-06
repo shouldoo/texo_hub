@@ -72,6 +72,15 @@ class TestTaskSearch(MemoryCase):
         self.task.action_archive()
         self.assertEqual(self.search(self.member, 'complaints inbox'), [], "an archived task is not an episode")
 
+    def test_a_template_is_not_an_episode(self):
+        template = self.env['project.project'].create({'name': 'Model', 'is_template': True})
+        self.env['project.task'].create({'name': 'Returns route of the model', 'project_id': template.id,
+                                         'description': '<p>Handle customer returns with a dedicated route.</p>'})
+        self.env['project.task'].create({'name': 'Returns task template', 'project_id': self.project.id,
+                                         'is_template': True, 'description': '<p>Handle customer returns.</p>'})
+        self.assertEqual([r['id'] for r in self.search(self.lead, 'returns route')], [self.task.id],
+                         "the tasks of a project template and the task templates are not episodes")
+
     def test_a_personal_todo_is_not_an_episode(self):
         self.env['project.task'].with_user(self.member).create({
             'name': 'Welcome to-do', 'description': '<p>A dedicated route for my own notes.</p>'})
