@@ -40,6 +40,15 @@ class TestTaskContext(TransactionCase):
         self.assertEqual(tasks[0]['customer'], 'Alfa S.r.l.')
         self.assertEqual(self.env['project.task'].with_user(self.other)._texo_my_work()['tasks'], [])
 
+    def test_my_work_leaves_out_the_tasks_of_a_template(self):
+        template = self.env['project.project'].create({'name': 'Shop (template)', 'is_template': True})
+        self.env['project.task'].create({'name': 'Find the premises', 'project_id': template.id,
+                                         'user_ids': [Command.link(self.dev.id)]})
+        self.env['project.task'].create({'name': 'Checklist', 'project_id': self.project.id, 'is_template': True,
+                                         'user_ids': [Command.link(self.dev.id)]})
+        tasks = self.env['project.task'].with_user(self.dev)._texo_my_work()['tasks']
+        self.assertEqual([t['id'] for t in tasks], [self.task.id])
+
     def test_context_is_plain_text_with_latest_messages(self):
         context = self.task.with_user(self.dev)._texo_context(messages=5)
         self.assertEqual(context['description'], 'Handle *customer returns* with a dedicated route.')
