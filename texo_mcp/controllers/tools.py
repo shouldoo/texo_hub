@@ -69,7 +69,11 @@ TOOLS = [
                     "index line), log.md (the latest updates "
                     "of the project, the chatter of the task); read the rest with read and its concept id.",
          {'task_id': INTEGER, 'project_id': INTEGER, 'company_id': INTEGER, 'messages': INTEGER, 'activity': STRING,
-          'format': FORMAT},
+          'format': FORMAT,
+          'max_tokens': {'type': 'integer', 'description': "cut the pack to about this many tokens: the messages of "
+                                                           "the task, the outlines, the lessons, the texts of the "
+                                                           "project, then the texts of the rules (never a rule); the "
+                                                           "pack says what was cut (budget)"}},
          route=('memory', 'context')),
     tool('search', "Search the rules, facts and procedures I may read, the documents of the memory (title, summary, "
                    "keywords and text) and the lessons of every project. Put the person's words in query and synonyms, "
@@ -91,7 +95,10 @@ TOOLS = [
           'show_expired': {'type': 'boolean'},
           'as_of': {'type': 'string', 'description': "YYYY-MM-DD: the facts and procedures that held on that day "
                                                      "(started, not yet expired, not yet superseded), superseded "
-                                                     "ones included"}}, ['query'],
+                                                     "ones included"},
+          'max_tokens': {'type': 'integer', 'description': "the results that fit in about this many tokens, an "
+                                                           "entry too long skipped for the next, never none"}},
+         ['query'],
          route=('memory', 'search')),
     tool('read', "One note (note_id: a rule, a fact with the version to name in note_update, a procedure) or lesson in "
                  "full; or any concept of the memory by its OKF id (concept: rules/12, facts/3, procedures/8, lessons/5, "

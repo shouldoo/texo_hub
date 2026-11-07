@@ -19,11 +19,20 @@ words half as much: the first two fill the top together, the third stays the fil
 on two evaluation sets: 173 of 192 (lessons 16 of 17 paraphrases, episodes 20 of 20
 with mrr 0.94), the seed set whole, no lexical hit lost.
 """
+import datetime
+
 RRF_K = 10
 WEIGHT_LEXICAL_ALL = 2.0
 WEIGHT_LEXICAL_SOME = 0.5
 WEIGHT_SEMANTIC = 2.0
 ORDER = {'both': 0, 'lexical': 1, 'semantic': 2}
+# the recency boost, off unless texo_vector.recency_boost says how much: a fused score is multiplied by
+# 1 + boost * 0.5 ** (age in days / half-life), so a hit of today gains the whole boost, one of three
+# months ago half of it; an entry without a date (updated) gains nothing. A tie-breaker between hits of
+# neighbouring ranks: at a few percent a rank of the fusion is worth more than the boost, at the maximum
+# (0.2) a hit of today may pass the one above it (Sim does the same, by rank)
+HALF_LIFE_DAYS = 90
+MAX_BOOST = 0.2
 
 
 def weight(entry, match):
@@ -61,3 +70,28 @@ def fuse(lexical, semantic, limit, k=RRF_K):
     for entry in result:
         entry['score'] = round(entry['score'], 4)
     return result[:limit]
+
+
+def recency_factor(entry, boost, today, half_life=HALF_LIFE_DAYS):
+    """1 + boost * 0.5 ** (age / half_life) for an entry with a date (updated, YYYY-MM-DD or a datetime
+    string); 1 without."""
+    updated = (entry.get('updated') or '')[:10]
+    try:
+        age = (today - datetime.date.fromisoformat(updated)).days
+    except ValueError:
+        return 1.0
+    return 1.0 + boost * 0.5 ** (max(age, 0) / half_life)
+
+
+def with_recency(entries, boost, today):
+    """The entries with their fused score multiplied by the recency factor, in the new order; the factor
+    applied is written on the entry (recency). Nothing happens with a boost of zero."""
+    boost = min(max(float(boost or 0), 0.0), MAX_BOOST)
+    if not boost:
+        return entries
+    for entry in entries:
+        factor = recency_factor(entry, boost, today)
+        if factor != 1.0:
+            entry['recency'] = round(factor, 4)
+            entry['score'] = round(entry['score'] * factor, 4)
+    return sorted(entries, key=lambda e: (-e['score'], ORDER.get(e.get('match'), 1), -e['id']))

@@ -7,11 +7,12 @@ class MemoryNote(models.Model):
     _inherit = 'memory.note'
 
     @api.model
-    def _agent_context(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None):
+    def _agent_context_whole(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None):
         """The pack, with the external sources when the organisation follows any: the channels
         overdue (of the organisation and of the project of the pack), the candidates to sort
-        and the cards waiting for approval. So the agent knows what to read without remembering."""
-        pack = super()._agent_context(task_id, project_id, messages, company_id, activity)
+        and the cards waiting for approval. So the agent knows what to read without remembering.
+        Before the budget, which counts them."""
+        pack = super()._agent_context_whole(task_id, project_id, messages, company_id, activity)
         Channel = self.env['memory.source.channel']
         if not Channel.search_count([]):
             return pack
