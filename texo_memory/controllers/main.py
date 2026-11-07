@@ -58,12 +58,13 @@ class TexoMemoryController(http.Controller):
         return pack
 
     @http.route('/texo/v1/memory/search', readonly=True, **HUB_ROUTE)
-    def search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None, show_expired=False):
+    def search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None, show_expired=False,
+               as_of=None):
         """The results, and how the search ran: mode (the one used), rerank (off, skipped, applied,
-        unavailable), latency_ms."""
+        unavailable), latency_ms. as_of (YYYY-MM-DD): the facts and procedures that held on that day."""
         request.env.user._texo_check_role()
         return request.env['memory.note']._agent_search_report(query, related_terms, scope, applies_to, limit,
-                                                               mode=mode, show_expired=bool(show_expired))
+                                                               mode=mode, show_expired=bool(show_expired), as_of=as_of)
 
     @http.route('/texo/v1/memory/read', readonly=True, **HUB_ROUTE)
     def read(self, note_id=None, lesson_id=None, fact_id=None, max_chars=6000, concept=None, format='json'):
@@ -113,14 +114,14 @@ class TexoMemoryController(http.Controller):
     @http.route('/texo/v1/memory/note', **HUB_ROUTE)
     def note(self, name, body, project_id=None, partner_id=None, state=None, expires=None, source_ref=None,
              document_id=None, company_id=None, kind='rule', task_id=None, severity=None, activities=None,
-             generated_by=None, section=None, keywords=None, applies_to=None):
+             generated_by=None, section=None, keywords=None, applies_to=None, valid_from=None):
         """A rule, a fact or a procedure (kind) on the record it is about; none, the organisation."""
         request.env.user._texo_check_role()
         return request.env['memory.note']._agent_note(
             name, body, project_id=project_id, partner_id=partner_id, state=state, expires=expires,
             source_ref=source_ref, document_id=document_id, company_id=company_id, kind=kind, task_id=task_id,
             severity=severity, activities=activities, generated_by=generated_by, section=section, keywords=keywords,
-            applies_to=applies_to)
+            applies_to=applies_to, valid_from=valid_from)
 
     @http.route('/texo/v1/memory/note_append', **HUB_ROUTE)
     def note_append(self, note_id, text, keywords=None):
@@ -129,10 +130,10 @@ class TexoMemoryController(http.Controller):
 
     @http.route('/texo/v1/memory/note_update', **HUB_ROUTE)
     def note_update(self, note_id, expected_version=None, body=None, name=None, keywords=None, applies_to=None,
-                    expires=None, verified=False, section=None):
+                    expires=None, verified=False, section=None, valid_from=None):
         request.env.user._texo_check_role()
         return self._note(note_id)._agent_update(expected_version, body, name, keywords, applies_to, expires, verified,
-                                                 section)
+                                                 section, valid_from)
 
     @http.route('/texo/v1/memory/lesson', **HUB_ROUTE)
     def lesson(self, finding, solution, tags=None, title=None, applies_to=None, verified=None, state='draft',

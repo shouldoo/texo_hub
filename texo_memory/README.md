@@ -27,7 +27,9 @@ of our companies, has no `customer_id`, and the opt-out refuses our own companie
 company (`texo_project`) stays, for the internal work: its tasks and updates.
 
 Every note and lesson carries its state, `draft`, `active`, `superseded` or `archived`, with
-`supersedes` / `superseded_by` and `expires`; a note also `verified` and `verified_by_id` (for a rule, the
+`supersedes` / `superseded_by`, `expires`, `valid_from` (the first day a fact or a procedure holds, when it is
+not the day it is written) and `superseded_on` (the day it was superseded or archived: with the two others,
+what the memory knew on a given day); a note also `verified` and `verified_by_id` (for a rule, the
 confirmation of a lead), a lesson `verified` as free text and `applies_to`. Only an active rule binds the
 agent. Nothing is deleted: a newer one supersedes the older.
 
@@ -201,6 +203,9 @@ pack says which (`activities`).
   (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.
   They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given
   with the session note): in the vector of the episode they weigh B, above the description and the chatter.
+- **`as_of`** (`YYYY-MM-DD`): the facts and procedures that held on that day, superseded and archived ones
+  included: started by then (`valid_from`, else the day they were written), not yet expired, not yet superseded
+  (`superseded_on`); a draft never held. «What was the tariff in February?» is asked this way.
 - **The answer says how it ran**: `results`, then `mode` (the mode used: `lexical` here, whatever was asked),
   `rerank` (what the reranker did: `off`, `skipped`, `applied`, `unavailable`; always `off` here) and
   `latency_ms`, so a degraded search is seen for what it is. `show_expired` gives the expired notes and lessons
@@ -316,6 +321,7 @@ through `format: okf` on the reading routes and `texo/okf.py`, the one place of 
 | `generated` (`by`, `at`) | `origin` and `generated_by`: a person as `human:<login>`, an agent as the `<producer>/<version>` it gave, else the hub tool it called (`texo_memory/<version>`); Odoo itself (the superuser: data files, migrations) as `process:odoo`, never as a person; `at` the last write. A lesson names no one: its person is `human:anonymous`, its time the day only |
 | `verified` (`by`, `at`) | a note: `verified` and `verified_by_id` (for a rule, the confirmation of a lead); by the superuser it is `process:odoo`: machine-confirmed, not human-reviewed |
 | `stale_after` | the earliest of the day after `expires`, 180 days after the check and the change of the cited document; `stale` gives the reason (`expired`, `unconfirmed`, `unverified`, `source_changed`) |
+| `valid_from`, `valid_to` | keys of the hub: the first day a fact or a procedure holds, and the earliest of its expiry and the day it was superseded or archived |
 | `sources` | the cited document (`document_id`, with its `last_modified`) and `source_ref`, for every note |
 | `tags` | the activities of a rule, the project tags of a lesson |
 | `index.md` | the context pack: every level of the chain with its rules, facts, procedures and documents by title and one line (the organisation by section), the lessons, the pending items, the warnings, the activities of a rule, the expiry of a fact, a document whose original changed; the rules that bind (`never`, `must`) come in full, in a file of their own unless their line already carries their whole text |
@@ -335,9 +341,9 @@ reason, a refusal 403, a record the user cannot read 404.
 | `context` | `task_id` or `project_id` (neither: the company, or `company_id`), `messages` (default 5), `activity` (optional), `format` (`json`, `okf`) | the context pack; in OKF, the files of the bundle (`index.md`, the task and the project, the binding rules, `log.md`) |
 | `search` | `query`, `related_terms`, `scope` (`all`, `rules` or `notes`, `facts`, `procedures`, `documents`, `lessons`; `tasks` for the episodes), `applies_to` (lessons), `limit` (max 20) | rules the user may read (first), then documents and lessons by score, with a snippet; with `tasks`, the tasks the user may read ranked by title, description and chatter |
 | `read` | `note_id` (`fact_id` as a synonym) or `lesson_id`, or `concept` (`rules/12`, `facts/3`, `procedures/8`, `lessons/5`, `documents/9`, `projects/2`, `tasks/7`; a concept whose kind is not the record's is refused), `max_chars` (200 to 20000), `format` (`json`, `okf`) | one note (with its `version`, unless cut) or lesson; a concept of another kind as its own route gives it |
-| `note` | `name`, `body`, `kind` (`rule`, the default, `fact`, `procedure`), one anchor among `task_id` (not a rule), `project_id`, `partner_id` (none: the organisation, the company or `company_id`), `section` (a code), `keywords`, `applies_to`, `expires`, `document_id` (the document of the memory it comes from), `source_ref`, `generated_by` (the agent, `<producer>/<version>`); for a rule `state` (`draft` or, for a lead, `active`), `severity` (`never`, `must`, `prefer`; default `must`), `activities` (codes, a list or comma-separated; none: every activity) | a rule: its summary; a fact or a procedure: the note, active, verified by the person |
+| `note` | `name`, `body`, `kind` (`rule`, the default, `fact`, `procedure`), one anchor among `task_id` (not a rule), `project_id`, `partner_id` (none: the organisation, the company or `company_id`), `section` (a code), `keywords`, `applies_to`, `expires`, `valid_from`, `document_id` (the document of the memory it comes from), `source_ref`, `generated_by` (the agent, `<producer>/<version>`); for a rule `state` (`draft` or, for a lead, `active`), `severity` (`never`, `must`, `prefer`; default `must`), `activities` (codes, a list or comma-separated; none: every activity) | a rule: its summary; a fact or a procedure: the note, active, verified by the person |
 | `note_append` | `note_id`, `text`, `keywords` | a fact or a procedure, with a dated and signed paragraph more |
-| `note_update` | `note_id`, `body` with `expected_version`, `name`, `section`, `keywords`, `applies_to`, `expires`, `verified` (a rule only by a lead) | the note |
+| `note_update` | `note_id`, `body` with `expected_version`, `name`, `section`, `keywords`, `applies_to`, `expires`, `valid_from`, `verified` (a rule only by a lead) | the note |
 | `fact`, `fact_append`, `fact_update` | as `note` with `kind` `fact`, `note_append`, `note_update` (`fact_id` for `note_id`) | kept for the clients that call them |
 | `lesson` | `finding`, `solution`, `tags` (names, a list or comma-separated), `activities` (codes), `keywords`, `title`, `applies_to`, `verified`, `state` (`draft` or, for a lead, `active`), `source_ref` (for the leak filter only), `generated_by` | the finding written |
 | `state` | `note_id` (`fact_id`) or `lesson_id`, `state` (`active`, `superseded`, `archived`), `superseded_by_id` | a rule or a lesson: lead only; a fact or a procedure: its author or a lead |
@@ -408,6 +414,11 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.3.0
+
+- `valid_from` on the notes and `superseded_on` set by a change of state; the search takes `as_of`: the facts and
+  procedures that held on a day, superseded ones included; OKF keys `valid_from` and `valid_to`.
 
 ### 20.0.1.2.0
 
