@@ -52,6 +52,7 @@ PARAM_DIMENSIONS = 'texo_vector.dimensions'
 PARAM_MODE = 'texo_vector.mode'
 PARAM_ALLOW_REMOTE = 'texo_vector.allow_remote_endpoint'
 PARAM_DUPLICATE = 'texo_vector.duplicate_similarity'
+PARAM_RECENCY = 'texo_vector.recency_boost'
 DEFAULT_MODEL = 'BAAI/bge-m3'
 DEFAULT_DIMENSIONS = 1024
 DEFAULT_DUPLICATE = 0.80

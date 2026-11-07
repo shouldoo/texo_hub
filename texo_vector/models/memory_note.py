@@ -45,10 +45,15 @@ class MemoryNote(models.Model):
         lexical, _mode, _rerank = super()._agent_search_run(query, related_terms, scope, applies_to, window,
                                                              mode=mode, show_expired=show_expired, as_of=as_of)
         pool = Embedding._rerank_pool() if rerank == 'configured' else 0
+        # the recency boost, off unless configured: a tie-breaker on the fused scores, before the reranker
+        boost = Embedding._param(memory_embedding.PARAM_RECENCY, 'float', 0.0)
+        today = fields.Date.context_today(self)
         if not pool:
-            return self._passages_by_meaning(hybrid.fuse(lexical, semantic, limit), vector), 'hybrid', rerank
+            fused = hybrid.with_recency(hybrid.fuse(lexical, semantic, limit), boost, today)
+            return self._passages_by_meaning(fused, vector), 'hybrid', rerank
         # the optional reranker (memory_rerank.py) reorders the first pool results, the passages chosen first
-        fused = self._passages_by_meaning(hybrid.fuse(lexical, semantic, max(limit, pool)), vector)
+        fused = hybrid.with_recency(hybrid.fuse(lexical, semantic, max(limit, pool)), boost, today)
+        fused = self._passages_by_meaning(fused, vector)
         if len(fused) < 2:
             return fused[:limit], 'hybrid', 'skipped'
         reranked, applied = self._rerank_apply(query, fused[:pool])
