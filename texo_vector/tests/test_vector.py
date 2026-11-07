@@ -267,6 +267,21 @@ class TestVector(VectorCase):
         self.assertEqual(calls, [(memory_embedding.CRON_BATCH, 1.0)])
         self.assertGreater(outcome['pending'], 0)
 
+    def test_a_hit_of_some_words_lifts_a_vector_hit_by_one_place(self):
+        from ..models import hybrid
+        def entry(i, words=None):
+            return {'id': i, 'kind': 'fact', 'concept': f'facts/{i}', 'words': words}
+        vectors = [entry(1), entry(2), entry(3)]
+        # the third vector, found by some words of the question as well, stays behind the first one
+        fused = hybrid.fuse([entry(3, 'some')], vectors, 5)
+        self.assertEqual([e['id'] for e in fused], [1, 3, 2], "some words: one place up, not two")
+        # the second one passes the first: the words are worth a place
+        fused = hybrid.fuse([entry(2, 'some')], vectors, 5)
+        self.assertEqual([e['id'] for e in fused][:2], [2, 1])
+        # a hit of every word the vectors do not find stays first against them all
+        fused = hybrid.fuse([entry(9, 'all')], vectors, 5)
+        self.assertEqual(fused[0]['id'], 9)
+
     def test_hybrid_finds_a_paraphrase_and_keeps_the_lexical_hits(self):
         returns = self.fact('Resi', 'I resi dei clienti tornano con una rotta dedicata.')
         invoices = self.fact('Fatturazione', 'Le fatture si emettono a fine mese.')

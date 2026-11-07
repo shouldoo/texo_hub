@@ -18,12 +18,21 @@ lexical hit, 1/11). So a lexical hit of every word weighs as a vector, and a hit
 words half as much: the first two fill the top together, the third stays the fill. Measured
 on two evaluation sets: 173 of 192 (lessons 16 of 17 paraphrases, episodes 20 of 20
 with mrr 0.94), the seed set whole, no lexical hit lost.
+
+A hit of some words then weighed half a hit of every word (0.5). The measure on the four demo sets of the
+packs (689 questions, November 2026) showed that this fill still pushed down the paraphrases the vectors
+put first, documents and facts above all: the hybrid had a lower mrr than the vectors alone on every set
+(0.881 against 0.911 on average). At 0.25 a hit of some words lifts a vector hit by one place, no longer
+by two: the mrr rises on every set (0.881 to 0.891 on average; the facts of odoo_partner asked with other
+words from 0.64 to 0.77), one hit more in all, and the hit of every word keeps its place. Heavier vectors
+gave more on these sets (0.91) but would push a code or an acronym, which only the words find, out of the
+first five: the sets have no such question, and the rule above stays.
 """
 import datetime
 
 RRF_K = 10
 WEIGHT_LEXICAL_ALL = 2.0
-WEIGHT_LEXICAL_SOME = 0.5
+WEIGHT_LEXICAL_SOME = 0.25
 WEIGHT_SEMANTIC = 2.0
 ORDER = {'both': 0, 'lexical': 1, 'semantic': 2}
 # the recency boost, off unless texo_vector.recency_boost says how much: a fused score is multiplied by
