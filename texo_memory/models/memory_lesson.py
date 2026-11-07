@@ -207,7 +207,8 @@ class MemoryLesson(models.Model):
         words (fulltext.fields of ranked), the first words of the finding, flagged as lessons."""
         today = fields.Date.context_today(self)
         return [dict(lesson._agent_summary(), **fulltext.fields(ranked, lesson.id), snippet=(lesson.finding or '')[:160],
-                     lesson=True, **({'stale': 'expired'} if lesson.expires and lesson.expires < today else {}))
+                     lesson=True, updated=fields.Date.to_string(lesson.write_date),
+                     **({'stale': 'expired'} if lesson.expires and lesson.expires < today else {}))
                 for lesson in self]
 
     @api.model

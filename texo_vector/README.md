@@ -116,6 +116,7 @@ through Vulkan. Named in `ir.config_parameter`:
 | `texo_vector.dimensions` | `1024` | the size of its vectors (`384` for e5-small) |
 | `texo_vector.mode` | `hybrid` | the mode of a search that gives none |
 | `texo_vector.duplicate_similarity` | `0.80` | two lessons at least this close are near-duplicates for the housekeeping (`0.93` with e5-small, whose unrelated pairs sit above 0.8) |
+| `texo_vector.recency_boost` | `0` (off) | a tie-breaker on the fused scores of the hybrid search: a hit's score is multiplied by `1 + boost × 0.5^(age in days / 90)`, the age from its `updated` date (a note's last write, a lesson's, a document's reading, a task's); at most `0.2`: at a few percent a rank of the fusion is worth more than the boost, at the maximum a hit of today may pass the one above it. **Not measured yet**: turn it on only after a measure on your sets (`playbooks/valutazione-memoria.md`) says it helps |
 | `texo_vector.allow_remote_endpoint` | `False` | an endpoint outside the local network (a public name or address) is refused, with a warning, unless this is `True` |
 
 The texts of clients and projects are what gets embedded: the endpoint is an outgoing call, declared here and
@@ -160,6 +161,11 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.4.0
+
+- `texo_vector.recency_boost`, off by default: a tie-breaker on the fused scores of the hybrid search, by the
+  date of the hit (`recency` on the hit when applied). To measure before turning it on.
 
 ### 20.0.1.3.0
 

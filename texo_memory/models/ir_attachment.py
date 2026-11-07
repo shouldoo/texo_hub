@@ -319,7 +319,8 @@ class IrAttachment(models.Model):
         """The search results of these documents, in this order: the summary, the score and the
         words (fulltext.fields of ranked) and the first words of the summary, flagged as documents.
         The passages that answered are put on them by memory.document.passage._annotate."""
-        return [dict(s, document=True, **fulltext.fields(ranked, d.id), snippet=(d.description or '')[:SNIPPET])
+        return [dict(s, document=True, **fulltext.fields(ranked, d.id), snippet=(d.description or '')[:SNIPPET],
+                     updated=fields.Date.to_string(d.texo_read_on or d.write_date))
                 for d, s in zip(self, self._texo_summary(), strict=True)]
 
     @api.model

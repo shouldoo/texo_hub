@@ -9,7 +9,9 @@ import requests
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 
-from ..models import memory_embedding
+from odoo import fields
+
+from ..models import hybrid, memory_embedding
 from ..models.memory_embedding import PARAM_ALLOW_REMOTE, PARAM_API, PARAM_DIMENSIONS, PARAM_ENDPOINT, PARAM_MODE
 from .common import DIMENSIONS, VectorCase, fake_embed
 
@@ -315,6 +317,38 @@ class TestVector(VectorCase):
             self.search(self.member, 'resi', mode='magic')
         self.env['ir.config_parameter'].sudo().set_str(PARAM_MODE, 'lexical')
         self.assertEqual(self.search(self.member, 'restituzioni', scope='facts'), [], "the configured mode")
+
+    def test_the_recency_boost_is_off_unless_asked_and_is_a_tie_breaker(self):
+        """Two facts the vectors find alike: without the boost the newer id wins the tie as before; with it
+        the one verified recently goes first; a hit of every word is never overtaken."""
+        old = self.fact('Resi di prima', 'I resi tornano con una rotta dedicata.')
+        new = self.fact('Resi di adesso', 'I resi tornano con una rotta dedicata.')
+        # the computed fields of the creation are flushed later, with a new write_date: flush first
+        self.env.flush_all()
+        self.env.cr.execute("UPDATE memory_note SET write_date = now() - interval '400 days' WHERE id = %s", (new.id,))
+        new.invalidate_recordset()
+        self.cron()
+        found = self.search(self.member, 'restituzioni', scope='facts')
+        self.assertEqual([r['id'] for r in found][:2], [new.id, old.id], "a tie: the newer id first, as before")
+        self.assertNotIn('recency', found[0])
+        self.env['ir.config_parameter'].sudo().set_float(memory_embedding.PARAM_RECENCY, 0.05)
+        found = self.search(self.member, 'restituzioni', scope='facts')
+        self.assertEqual([r['id'] for r in found][:2], [new.id, old.id],
+                         "five percent: a rank of the fusion is worth more, nothing changes")
+        self.env['ir.config_parameter'].sudo().set_float(memory_embedding.PARAM_RECENCY, 0.2)
+        found = self.search(self.member, 'restituzioni', scope='facts')
+        self.assertEqual([r['id'] for r in found][:2], [old.id, new.id], "the one written today gains the boost")
+        self.assertGreater(found[0]['recency'], found[1].get('recency', 1.0))
+        vdi = self.fact('VDI', 'Resi, rotte, fornitori, fatture e rilasci: dal cliente solo via VDI, mai dal portatile.')
+        self.env.flush_all()
+        self.env.cr.execute("UPDATE memory_note SET write_date = now() - interval '800 days' WHERE id = %s", (vdi.id,))
+        vdi.invalidate_recordset()
+        self.cron()
+        self.assertEqual(self.search(self.member, 'VDI', scope='facts')[0]['id'], vdi.id,
+                         "a hit of every word, however old, stays first")
+        self.assertEqual(hybrid.recency_factor({'updated': 'no date'}, 0.05, fields.Date.today()), 1.0)
+        self.assertEqual(hybrid.with_recency([{'id': 1, 'score': 1.0, 'updated': '2020-01-01'}], 0, fields.Date.today()),
+                         [{'id': 1, 'score': 1.0, 'updated': '2020-01-01'}], "zero: nothing changes")
 
     def test_documents_and_procedures_by_meaning(self):
         """A document by the title, summary and keywords, then by each piece of its converted text;
