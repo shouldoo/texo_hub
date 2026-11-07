@@ -7,7 +7,7 @@
     'license': 'LGPL-3',
     'author': "Daniele Lucarelli",
     'category': 'Services/Project',
-    'version': '20.0.1.2.0',
+    'version': '20.0.1.3.0',
     'website': "https://github.com/shouldoo/texo_hub",
     'depends': ['texo_memory'],
     'data': [
