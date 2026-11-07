@@ -152,6 +152,16 @@ verified against it (`source_checked`): an original changed after that marks the
 the review queue and for the housekeeping, until it is verified again (a rule by a lead) or activated.
 A document stays a source: what it gives is written as notes that cite it.
 
+**Conversion by the hub, optional.** When an administrator names a conversion service in the system
+parameters (`texo_memory.convert_endpoint`, a docling-serve: `POST /v1/convert/file`; `convert_api` `docling`;
+`convert_timeout` 300 s), `document/convert` sends the file of an attachment of a record the person may read
+to the service and keeps the Markdown it gives back next to the original: the document is in the memory,
+read today, its passages cut (`models/convert.py`). The service is reached on the local network only, unless
+`texo_memory.allow_remote_convert` is set, as for the embeddings: an original leaves the hub for the converter
+and for nothing else. A text file needs no service; a sensitive document (no text kept) is refused. Without a
+service the route says so and the conversion stays on the machine of the person (`ingest.py` of the core),
+as before. `GET /texo/metrics` says the state of the service (`texo_memory_convert_info`).
+
 A document has no state: it is in the memory or not. A lead takes one out (`document/remove`): what the
 memory brought in goes, an attachment the people put on the record stays theirs.
 
@@ -360,6 +370,7 @@ reason, a refusal 403, a record the user cannot read 404.
 | `document/list` (`/texo/v1/document/...`) | one of `task_id` / `project_id` / `partner_id` (none: the company, or `company_id`) | the documents of that record |
 | `document/read` | `document_id`, `text` (default false), `max_chars`, `offset`, `format` (`json`, `okf`) | the document, with a slice of its text when asked (`text_next_offset` while more remains) |
 | `document/write` | `document_id` (an attachment of a record the person reads: it becomes a document, or a document gets its new reading; a different `fingerprint` sets `changed_on`), or `name` with `url` (a link) or `data` (a file in base64, max 20 MB) and one anchor (none: the company, or `company_id`); `summary`, `keywords`, `read_on`, `fingerprint`, `keep_text`, `text` (the converted text, max 5 MB) | the document written |
+| `document/convert` | `document_id` | the file converted by the service of the hub, the text kept next to it, the document in the memory; `converter`, `chars` |
 | `document/remove` | `document_id` | lead only: the document out of the memory |
 | `document/attachment` | `attachment_id` | the file of an attachment the person may read: name, type, size, sha256, record, content in base64 (max 20 MB) |
 | `confirm` | `note_id`, `expires` (optional, `YYYY-MM-DD`) | a note re-checked today: an active rule by a lead, a fact or a procedure by whoever may write it |
@@ -423,6 +434,11 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.5.0
+
+- `document/convert`: the file of an attachment converted by the conversion service named in the hub (docling-serve,
+  local network only unless the administrator opts in), the text kept next to the original.
 
 ### 20.0.1.4.0
 

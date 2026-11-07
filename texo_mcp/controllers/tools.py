@@ -205,6 +205,11 @@ TOOLS = [
           'task_id': INTEGER, 'project_id': INTEGER, 'partner_id': INTEGER, 'company_id': INTEGER,
           'read_on': STRING, 'fingerprint': STRING, 'keep_text': {'type': 'boolean'}, 'text': STRING},
          route=('memory', 'document_write'), write=True),
+    tool('document_convert', "After the person's yes: convert the file of an attachment of a record with the conversion "
+                             "service of the hub, where an administrator named one (else convert on your machine): "
+                             "the text is kept next to the original, the document is in the memory, read today. A "
+                             "sensitive document (no text kept) is refused.",
+         {'document_id': INTEGER}, ['document_id'], route=('memory', 'document_convert'), write=True),
     tool('document_remove', "Lead only, after the person's yes: take a document out of the memory (what the memory "
                             "brought in goes; an attachment the people put on the record stays).",
          {'document_id': INTEGER}, ['document_id'], route=('memory', 'document_remove'), write=True),

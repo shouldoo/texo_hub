@@ -30,4 +30,7 @@ class TexoMetrics(models.AbstractModel):
         self.env.cr.execute("SELECT count(*) FROM project_task WHERE texo_tsv IS NOT NULL AND project_id IS NOT NULL")
         metrics.append(self._metric('texo_memory_episodes', "Tasks of a project with their full-text vector.",
                                     self.env.cr.fetchone()[0]))
+        metrics.append(self._metric('texo_memory_convert_info', "The conversion service of the hub: off, "
+                                                                "configured, unavailable.", 1,
+                                    {'state': self.env['memory.convert']._state()}))
         return metrics

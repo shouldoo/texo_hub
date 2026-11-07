@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0-20260926\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 23:55+0000\n"
-"PO-Revision-Date: 2026-11-06 23:55+0000\n"
+"POT-Creation-Date: 2026-11-07 00:40+0000\n"
+"PO-Revision-Date: 2026-11-07 00:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -171,6 +171,16 @@ msgid ""
 "`source_changed` (its `stale` value, after `expired` and before `unverified`) in the context pack, in\n"
 "the review queue and for the housekeeping, until it is verified again (a rule by a lead) or activated.\n"
 "A document stays a source: what it gives is written as notes that cite it.\n"
+"\n"
+"**Conversion by the hub, optional.** When an administrator names a conversion service in the system\n"
+"parameters (`texo_memory.convert_endpoint`, a docling-serve: `POST /v1/convert/file`; `convert_api` `docling`;\n"
+"`convert_timeout` 300 s), `document/convert` sends the file of an attachment of a record the person may read\n"
+"to the service and keeps the Markdown it gives back next to the original: the document is in the memory,\n"
+"read today, its passages cut (`models/convert.py`). The service is reached on the local network only, unless\n"
+"`texo_memory.allow_remote_convert` is set, as for the embeddings: an original leaves the hub for the converter\n"
+"and for nothing else. A text file needs no service; a sensitive document (no text kept) is refused. Without a\n"
+"service the route says so and the conversion stays on the machine of the person (`ingest.py` of the core),\n"
+"as before. `GET /texo/metrics` says the state of the service (`texo_memory_convert_info`).\n"
 "\n"
 "A document has no state: it is in the memory or not. A lead takes one out (`document/remove`): what the\n"
 "memory brought in goes, an attachment the people put on the record stays theirs.\n"
@@ -371,6 +381,7 @@ msgid ""
 "| `document/list` (`/texo/v1/document/...`) | one of `task_id` / `project_id` / `partner_id` (none: the company, or `company_id`) | the documents of that record |\n"
 "| `document/read` | `document_id`, `text` (default false), `max_chars`, `offset`, `format` (`json`, `okf`) | the document, with a slice of its text when asked (`text_next_offset` while more remains) |\n"
 "| `document/write` | `document_id` (an attachment of a record the person reads: it becomes a document, or a document gets its new reading; a different `fingerprint` sets `changed_on`), or `name` with `url` (a link) or `data` (a file in base64, max 20 MB) and one anchor (none: the company, or `company_id`); `summary`, `keywords`, `read_on`, `fingerprint`, `keep_text`, `text` (the converted text, max 5 MB) | the document written |\n"
+"| `document/convert` | `document_id` | the file converted by the service of the hub, the text kept next to it, the document in the memory; `converter`, `chars` |\n"
 "| `document/remove` | `document_id` | lead only: the document out of the memory |\n"
 "| `document/attachment` | `attachment_id` | the file of an attachment the person may read: name, type, size, sha256, record, content in base64 (max 20 MB) |\n"
 "| `confirm` | `note_id`, `expires` (optional, `YYYY-MM-DD`) | a note re-checked today: an active rule by a lead, a fact or a procedure by whoever may write it |\n"
@@ -435,6 +446,11 @@ msgid ""
 "\n"
 "## Changelog\n"
 "\n"
+"### 20.0.1.5.0\n"
+"\n"
+"- `document/convert`: the file of an attachment converted by the conversion service named in the hub (docling-serve,\n"
+"  local network only unless the administrator opts in), the text kept next to the original.\n"
+"\n"
 "### 20.0.1.3.0\n"
 "\n"
 "- `valid_from` on the notes and `superseded_on` set by a change of state; the search takes `as_of`: the facts and\n"
@@ -480,6 +496,12 @@ msgstr ""
 #: code:addons/texo_memory/controllers/main.py:0
 msgid "%(concept)s does not exist: the record is %(real)s."
 msgstr "%(concept)s non esiste: il record è %(real)s."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/convert.py:0
+msgid "%(key)s is one of %(apis)s."
+msgstr "%(key)s è uno tra %(apis)s."
 
 #. module: texo_memory
 #. odoo-python
@@ -848,6 +870,7 @@ msgstr "Allegato"
 
 #. module: texo_memory
 #. odoo-python
+#: code:addons/texo_memory/controllers/main.py:0
 #: code:addons/texo_memory/models/ir_attachment.py:0
 msgid "Attachment %s does not exist or is not visible to you."
 msgstr "L'allegato %s non esiste o non è visibile per te."
@@ -1048,6 +1071,7 @@ msgstr "Descrizione"
 #: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_mail_message__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__display_name
+#: model:ir.model.fields,field_description:texo_memory.field_memory_convert__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__display_name
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note__display_name
@@ -1082,6 +1106,12 @@ msgstr "Documento"
 #: code:addons/texo_memory/models/ir_attachment.py:0
 msgid "Document %s does not exist or is not visible to you."
 msgstr "Il documento %s non esiste o non è visibile per te."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/ir_attachment.py:0
+msgid "Document %s keeps no text: a sensitive document is not converted."
+msgstr "Il documento %s non conserva testo: un documento sensibile non viene convertito."
 
 #. module: texo_memory
 #: model:ir.model.fields,field_description:texo_memory.field_memory_optout_wizard__document_count
@@ -1301,6 +1331,7 @@ msgstr "Quanti finding raccoglie questa lezione."
 #: model:ir.model.fields,field_description:texo_memory.field_ir_attachment__id
 #: model:ir.model.fields,field_description:texo_memory.field_mail_message__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_anchor_mixin__id
+#: model:ir.model.fields,field_description:texo_memory.field_memory_convert__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_document_passage__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_lesson__id
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note__id
@@ -1534,6 +1565,11 @@ msgid "Memory Anchor Mixin"
 msgstr "Mixin di aggancio della memoria"
 
 #. module: texo_memory
+#: model:ir.model,name:texo_memory.model_memory_convert
+msgid "Memory Document Conversion"
+msgstr "Conversione dei documenti della memoria"
+
+#. module: texo_memory
 #: model:ir.model,name:texo_memory.model_memory_document_passage
 msgid "Memory Document Passage"
 msgstr "Passaggio di un documento della memoria"
@@ -1700,6 +1736,17 @@ msgstr "Riepilogo prossima attività"
 #: model:ir.model.fields,field_description:texo_memory.field_memory_note__activity_type_id
 msgid "Next Activity Type"
 msgstr "Tipo prossima attività"
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/convert.py:0
+msgid ""
+"No conversion service is named for this hub (%s): convert the document on "
+"your machine (ingest.py of the core) and write its text with document_write."
+msgstr ""
+"Nessun servizio di conversione è indicato per questo hub (%s): converti il "
+"documento sulla tua macchina (ingest.py del core) e scrivi il suo testo con "
+"document_write."
 
 #. module: texo_memory
 #: model_terms:ir.ui.view,arch_db:texo_memory.view_memory_document_form
@@ -2478,6 +2525,22 @@ msgstr ""
 
 #. module: texo_memory
 #. odoo-python
+#: code:addons/texo_memory/models/convert.py:0
+msgid ""
+"The conversion service at %(url)s did not answer in %(timeout)s s or gave no"
+" text (%(error)s)."
+msgstr ""
+"Il servizio di conversione su %(url)s non ha risposto in %(timeout)s s o non "
+"ha dato testo (%(error)s)."
+
+#. module: texo_memory
+#. odoo-python
+#: code:addons/texo_memory/models/convert.py:0
+msgid "The conversion service at %s answered without a text."
+msgstr "Il servizio di conversione su %s ha risposto senza testo."
+
+#. module: texo_memory
+#. odoo-python
 #: code:addons/texo_memory/models/ir_attachment.py:0
 msgid "The converted text is larger than %s MB."
 msgstr "Il testo convertito supera %s MB."
@@ -2531,8 +2594,8 @@ msgid ""
 "The first day the record holds; empty, since it was written. With expires "
 "and the day it was superseded, what the memory knew on a given day (as_of)."
 msgstr ""
-"Il primo giorno in cui il record vale; vuoto, da quando è stato scritto. Con "
-"la scadenza e il giorno in cui è stato superato, ciò che la memoria sapeva "
+"Il primo giorno in cui il record vale; vuoto, da quando è stato scritto. Con"
+" la scadenza e il giorno in cui è stato superato, ciò che la memoria sapeva "
 "in un dato giorno (as_of)."
 
 #. module: texo_memory

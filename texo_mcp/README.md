@@ -87,6 +87,10 @@ an unknown redirect, a request without PKCE.
 
 ## Changelog
 
+### 20.0.1.4.0
+
+- The tool `document_convert`.
+
 ### 20.0.1.3.0
 
 - The tools `context` and `search` take `max_tokens`.

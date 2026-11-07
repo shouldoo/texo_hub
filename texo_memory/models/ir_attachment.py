@@ -417,6 +417,45 @@ class IrAttachment(models.Model):
         result['role'] = role
         return result
 
+    def _texo_convert(self):
+        """Convert the file of a document, or of an attachment of a record the user may read, with the
+        service of the hub (memory.convert): the text is kept next to the original, the document is in the
+        memory and read today; a document that keeps no text (sensitive) is refused. The summary of the
+        answer says the converter and the size of the text."""
+        self.ensure_one()
+        role = self.env.user._texo_check_role()
+        if not self.has_access('read'):
+            raise UserError(self.env._("Attachment %s does not exist or is not visible to you.", self.id))
+        if self.type != 'binary' or not self.raw:
+            raise UserError(self.env._("Attachment %s has no file: it is a link.", self.id))
+        if self.texo_text_of_id or not (self.res_model and self.res_id) or self.res_field:
+            raise UserError(self.env._("Attachment %s is not a document of a record.", self.id))
+        if self.texo_document and not self.texo_keep_text:
+            raise UserError(self.env._("Document %s keeps no text: a sensitive document is not converted.", self.id))
+        if self.file_size > MAX_ATTACHMENT:
+            raise UserError(self.env._("Attachment %s is larger than %s MB.", self.id, MAX_ATTACHMENT // (1024 * 1024)))
+        raw = _bytes(self.raw)
+        if self._texo_is_text():
+            text = raw.decode('utf-8', errors='replace')
+            converter = 'text'
+        else:
+            text = self.env['memory.convert']._convert(self.name, raw, self.mimetype)
+            converter = self.env['memory.convert']._param('texo_memory.convert_api', 'str', 'docling') or 'docling'
+        if len(text.encode()) > MAX_TEXT:
+            raise UserError(self.env._("The converted text is larger than %s MB.", MAX_TEXT // (1024 * 1024)))
+        vals = {'texo_document': True, 'texo_read_on': fields.Date.context_today(self)}
+        fingerprint = hashlib.sha256(raw).hexdigest()
+        if self.texo_fingerprint and self.texo_fingerprint != fingerprint:
+            vals['texo_changed_on'] = fields.Datetime.now()
+        vals['texo_fingerprint'] = fingerprint
+        # sudo: the memory's own fields of an attachment the user reads, as document_write does
+        self.sudo().write(vals)
+        document = self.sudo(False)
+        document._texo_store_text(text)
+        result = document._texo_summary()[0]
+        result.update({'role': role, 'converter': converter, 'chars': len(text)})
+        return result
+
     def _texo_text_name(self):
         """The name of the converted text: the name of the original with .md for its extension."""
         self.ensure_one()

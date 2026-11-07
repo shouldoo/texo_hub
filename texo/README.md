@@ -92,6 +92,11 @@ odoo -c <conf> -d test_cohub20 -i texo --test-tags /texo --stop-after-init --htt
 
 ## Changelog
 
+### 20.0.1.4.0
+
+- `models/net.py`: the rule of the local network every module shares for the services the hub calls (embeddings,
+  reranker, conversion).
+
 ### 20.0.1.3.0
 
 - Read-only hub tokens: a choice of the key wizard; every write refuses them, the MCP server hides the write tools.

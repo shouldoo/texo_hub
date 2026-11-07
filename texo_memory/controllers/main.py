@@ -225,6 +225,16 @@ class TexoMemoryController(http.Controller):
             industry, activities=activities, sections=sections, rules=rules, project_templates=project_templates,
             company_id=company_id, apply=apply, lang=lang)
 
+    @http.route('/texo/v1/document/convert', **HUB_ROUTE)
+    def document_convert(self, document_id):
+        """Convert the file of an attachment with the conversion service of the hub, when one is named: the
+        text next to the original, the document in the memory."""
+        request.env.user._texo_check_role()
+        attachment = request.env['ir.attachment'].browse(int(document_id)).exists()
+        if not attachment or not attachment.has_access('read'):
+            raise MissingError(request.env._("Attachment %s does not exist or is not visible to you.", document_id))
+        return attachment._texo_convert()
+
     @http.route('/texo/v1/document/remove', **HUB_ROUTE)
     def document_remove(self, document_id):
         """A lead takes a document out of the memory."""
