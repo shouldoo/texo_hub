@@ -51,6 +51,30 @@ class TestBudget(MemoryCase):
             tight, self.env['project.task'].browse(self.task.id), 6)
         self.assertIn("* Budget: 200 tokens asked", "".join(f['text'] for f in okf['files']))
 
+    def test_the_milestones_and_the_review_queue_are_cut_too(self):
+        self.project.allow_milestones = True
+        Milestone = self.env['project.milestone']
+        open_ones = [Milestone.create({'name': f'Open {n}', 'project_id': self.project.id,
+                                       'deadline': f'2027-0{n + 1}-01'}) for n in range(5)]
+        self.task.milestone_id = open_ones[4]
+        for n in range(3):
+            self.env['memory.lesson'].with_user(self.lead)._agent_lesson(
+                f'Draft finding {n} about the returns route', 'Check the route of the returns before closing.', ['returns'])
+        lead_pack = self.env['memory.note'].with_user(self.lead)._agent_context(task_id=self.task.id, messages=6)
+        self.assertEqual(len(lead_pack['project']['milestones']), 5)
+        self.assertTrue(lead_pack.get('pending_lessons'), "the lead's review queue is in the whole pack")
+        tight = self.env['memory.note'].with_user(self.lead)._agent_context(task_id=self.task.id, messages=6,
+                                                                         max_tokens=MIN_TOKENS)
+        trimmed = tight['budget']['trimmed']
+        self.assertIn('pending_lessons:0', trimmed)
+        self.assertEqual(tight.get('pending_lessons'), [])
+        self.assertIn('milestones:3', trimmed)
+        self.assertLess(trimmed.index('pending_lessons:0'), trimmed.index('milestones:3'))
+        self.assertLess(trimmed.index('milestones:3'), trimmed.index('rule_body:500'))
+        self.assertEqual([m['name'] for m in tight['project']['milestones']], ['Open 0', 'Open 1', 'Open 2', 'Open 4'],
+                         "the first open milestones, and the task's wherever it was")
+        self.assertEqual(tight['task']['milestone']['id'], open_ones[4].id)
+
     def test_the_search_keeps_what_fits_and_never_nothing(self):
         Note = self.env['memory.note'].with_user(self.member)
         whole = Note._agent_search_report('warehouse returns', scope='facts', limit=8)
