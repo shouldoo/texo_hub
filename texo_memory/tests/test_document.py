@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import HttpCase, tagged
 from odoo.tools import mute_logger
@@ -30,6 +30,65 @@ class TestDocument(MemoryCase):
 
     def attachment_on(self, record, name='spec.pdf', raw=b'%PDF-1.4 fictional spec'):
         return self.env['ir.attachment'].create({'name': name, 'res_model': record._name, 'res_id': record.id, 'raw': raw})
+
+    def test_the_conversion_service_of_the_hub(self):
+        """With a service named, an attachment of a record is converted by the hub: the text next to the
+        original, the document in the memory; without one, a refusal that sends the agent to its machine; a
+        service outside the local network is refused without the opt-in; a text needs no service; a
+        sensitive document is not converted."""
+        from unittest.mock import MagicMock, patch
+
+        from ..models import convert
+        Params = self.env['ir.config_parameter'].sudo()
+        attachment = self.attachment_on(self.task, raw=b'%PDF-1.4 the act')
+        Attachment = attachment.with_user(self.member)
+        self.assertEqual(self.env['memory.convert']._state(), 'off')
+        with self.assertRaisesRegex(UserError, "No conversion service|Nessun servizio di conversione"):
+            Attachment._texo_convert()
+        Params.set_str(convert.PARAM_ENDPOINT, 'https://docling.example.com')
+        with self.assertLogs('odoo.addons.texo_memory.models.convert', 'WARNING'):
+            self.assertEqual(self.env['memory.convert']._state(), 'unavailable')
+        with self.assertRaisesRegex(UserError, "No conversion service|Nessun servizio di conversione"), \
+                self.assertLogs('odoo.addons.texo_memory.models.convert', 'WARNING'):
+            Attachment._texo_convert()
+        Params.set_str(convert.PARAM_ENDPOINT, 'http://docling:5001/')
+        self.assertEqual(self.env['memory.convert']._state(), 'configured')
+        calls = []
+
+        def fake_post(url, files=None, data=None, timeout=None):
+            calls.append((url, files['files'][0], data, timeout))
+            answer = MagicMock()
+            answer.raise_for_status.return_value = None
+            answer.json.return_value = {'status': 'success', 'document': {'md_content': '# The act\n\n## Art. 1\n\nReturns within thirty days of the delivery.'}}
+            return answer
+
+        with patch.object(convert.requests, 'post', fake_post):
+            result = Attachment._texo_convert()
+        self.assertEqual(calls[0][:2], ('http://docling:5001/v1/convert/file', 'spec.pdf'))
+        self.assertEqual((calls[0][2]['to_formats'], calls[0][3]), ('md', convert.DEFAULT_TIMEOUT))
+        self.assertEqual((result['id'], result['converter'], result['has_text']), (attachment.id, 'docling', True))
+        self.assertTrue(attachment.texo_document)
+        self.assertEqual(attachment.texo_read_on, fields.Date.today())
+        self.assertIn('thirty days', attachment.texo_text)
+        self.assertEqual(attachment.texo_text_ids.name, 'spec.md')
+        found = self.env['memory.note'].with_user(self.member)._agent_search('thirty days', scope='documents')
+        self.assertEqual([r['id'] for r in found], [attachment.id], "the text is searched, and its passage named")
+        self.assertEqual(found[0]['passage']['path'], 'Art. 1')
+        # a service that does not answer, a sensitive document, a text file
+        def timeout(*args, **kwargs):
+            raise convert.requests.Timeout("slow")
+
+        with patch.object(convert.requests, 'post', timeout), self.assertRaisesRegex(UserError, "did not answer|non ha risposto"):
+            Attachment._texo_convert()
+        attachment.sudo().texo_keep_text = False
+        with self.assertRaisesRegex(UserError, "sensitive|sensibile"):
+            Attachment._texo_convert()
+        attachment.sudo().texo_keep_text = True
+        text_file = self.attachment_on(self.task, name='note.md', raw=b'# A note\n\nPlain text needs no service.')
+        with patch.object(convert.requests, 'post', timeout):
+            result = text_file.with_user(self.member)._texo_convert()
+        self.assertEqual(result['converter'], 'text')
+        self.assertTrue(text_file.texo_document)
 
     def test_a_summary_never_holds_a_credential(self):
         with self.assertRaisesRegex(UserError, "credential"):
@@ -244,6 +303,28 @@ class TestDocumentRoutes(HttpCase):
             'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'})
 
     # The 404 at the end is expected: odoo.http logs every client error as a warning.
+    def test_convert_route(self):
+        from unittest.mock import MagicMock, patch
+
+        from ..models import convert
+        with mute_logger('odoo.http'):
+            refused = self._post('document/convert', {'document_id': self.attachment.id})
+        self.assertEqual(refused.status_code, 422, "no service named")
+        self.env['ir.config_parameter'].sudo().set_str(convert.PARAM_ENDPOINT, 'http://docling:5001')
+
+        def fake_post(url, files=None, data=None, timeout=None):
+            answer = MagicMock()
+            answer.raise_for_status.return_value = None
+            answer.json.return_value = {'document': {'md_content': '# Spec\n\nThe spec of the service.'}}
+            return answer
+
+        with patch.object(convert.requests, 'post', fake_post):
+            answer = self._post('document/convert', {'document_id': self.attachment.id})
+        self.assertEqual(answer.status_code, 200)
+        self.assertEqual((answer.json()['converter'], answer.json()['has_text']), ('docling', True))
+        with mute_logger('odoo.http'):
+            self.assertEqual(self._post('document/convert', {'document_id': 999999}).status_code, 404)
+
     @mute_logger('odoo.http')
     def test_write_list_read_remove(self):
         fetched = self._post('document/attachment', {'attachment_id': self.attachment.id}).json()

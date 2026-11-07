@@ -87,6 +87,10 @@ an unknown redirect, a request without PKCE.
 
 ## Changelog
 
+### 20.0.1.4.0
+
+- The tool `document_convert`.
+
 ### 20.0.1.2.0
 
 - The tools `search` (`as_of`), `note` and `note_update` (`valid_from`).

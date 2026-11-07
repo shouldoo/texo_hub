@@ -25,7 +25,6 @@ user, so the access rules apply. Without the extension vector on the database th
 installs, warns, and the search stays lexical.
 """
 import hashlib
-import ipaddress
 import json
 import logging
 import threading
@@ -39,6 +38,7 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import SQL, config, html2plaintext, str2bool
 
+from odoo.addons.texo.models.net import is_local_host
 from odoo.addons.texo_memory.models import fulltext
 from odoo.addons.texo_memory.models.memory_document_passage import PASSAGES_PER_HIT  # noqa: F401
 from odoo.addons.texo_memory.models.project_task import EPISODE_MESSAGE_TYPES
@@ -77,8 +77,6 @@ JOB_IDENTITY = 'texo_vector.embed_pending'
 CANDIDATES = 60
 DOCUMENT_CANDIDATES = 200
 
-# the hosts an endpoint may have without the opt-in: the compose network, the machine itself
-LOCAL_SUFFIXES = ('.localhost', '.local', '.internal', '.lan')
 
 
 def text_hash(text):
@@ -239,13 +237,8 @@ class MemoryEmbedding(models.Model):
     @staticmethod
     def _is_local(host):
         """A loopback, private or link-local address; a name without a domain (a compose
-        service, the machine itself) or with a local one."""
-        try:
-            address = ipaddress.ip_address(host)
-        except ValueError:
-            host = host.lower()
-            return host == 'localhost' or '.' not in host or host.endswith(LOCAL_SUFFIXES)
-        return address.is_loopback or address.is_private or address.is_link_local
+        service, the machine itself) or with a local one (texo/models/net.py: the rule of the hub)."""
+        return is_local_host(host)
 
     @api.model
     def _endpoint(self):
