@@ -49,22 +49,27 @@ class TexoMemoryController(http.Controller):
         return dict(request.env['memory.note']._agent_rules_text(RULES, company_id, activity), role=role)
 
     @http.route('/texo/v1/memory/context', readonly=True, **HUB_ROUTE)
-    def context(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None, format='json'):
+    def context(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None, format='json',
+                max_tokens=None):
+        """The pack; with max_tokens, cut to fit (the messages of the task, the outlines, the lessons, the
+        texts of the project, the texts of the rules, in this order; never a rule), and it says what was cut."""
         request.env.user._texo_check_role()
         Note = request.env['memory.note']
-        pack = Note._agent_context(task_id, project_id, messages, company_id, activity)
+        pack = Note._agent_context(task_id, project_id, messages, company_id, activity, max_tokens=max_tokens)
         if as_okf(format):
             return Note._okf_context(pack, Note._agent_context_record(task_id, project_id, company_id), messages)
         return pack
 
     @http.route('/texo/v1/memory/search', readonly=True, **HUB_ROUTE)
     def search(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None, show_expired=False,
-               as_of=None):
+               as_of=None, max_tokens=None):
         """The results, and how the search ran: mode (the one used), rerank (off, skipped, applied,
-        unavailable), latency_ms. as_of (YYYY-MM-DD): the facts and procedures that held on that day."""
+        unavailable), latency_ms. as_of (YYYY-MM-DD): the facts and procedures that held on that day.
+        max_tokens: the results that fit, an entry too long skipped for the next, never none."""
         request.env.user._texo_check_role()
         return request.env['memory.note']._agent_search_report(query, related_terms, scope, applies_to, limit,
-                                                               mode=mode, show_expired=bool(show_expired), as_of=as_of)
+                                                               mode=mode, show_expired=bool(show_expired), as_of=as_of,
+                                                               max_tokens=max_tokens)
 
     @http.route('/texo/v1/memory/read', readonly=True, **HUB_ROUTE)
     def read(self, note_id=None, lesson_id=None, fact_id=None, max_chars=6000, concept=None, format='json'):

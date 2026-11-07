@@ -182,6 +182,12 @@ expired, unverified (180 days) or `source_changed` rules, and the lessons of the
 the known ones) the rules of every level are those of that activity and of every activity, and the
 pack says which (`activities`).
 
+With `max_tokens` the pack is cut to about that many tokens (four characters each), in a fixed order: the
+messages of the task, then the outlines of the facts, the procedures and the documents of each level, the
+lessons, the description and the present of the project, and last the texts of the binding rules, shortened but
+never dropped: a rule binds whatever the budget. The pack says the budget, its size and what was cut (`budget`;
+in OKF, a line of the section Session of `index.md`).
+
 ## Search
 
 - Notes (rules, their drafts included, facts and procedures), lessons and documents: PostgreSQL full-text
@@ -203,6 +209,9 @@ pack says which (`activities`).
   (`keywords`); the search finds it by those words too, the meaning brought by the agent that writes.
   They go through the leak filter with the lesson. A task has its own (`texo_keywords`, given
   with the session note): in the vector of the episode they weigh B, above the description and the chatter.
+- **`max_tokens`**: the results that fit in about that many tokens (four characters each), in the order of the
+  search; an entry too long for what is left is skipped for the next; the first entry always stays, its snippet
+  cut: an answer is never empty. The answer says the budget, its size and how many entries were skipped (`budget`).
 - **`as_of`** (`YYYY-MM-DD`): the facts and procedures that held on that day, superseded and archived ones
   included: started by then (`valid_from`, else the day they were written), not yet expired, not yet superseded
   (`superseded_on`); a draft never held. «What was the tariff in February?» is asked this way.
@@ -414,6 +423,12 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.4.0
+
+- `max_tokens` on `memory/context` (the pack cut in a fixed order: the messages of the task, the outlines of the
+  facts, procedures and documents, the lessons, the texts of the project, the texts of the binding rules, never a
+  rule dropped; the pack says what was cut) and on `memory/search` (the results that fit, never none).
 
 ### 20.0.1.3.0
 

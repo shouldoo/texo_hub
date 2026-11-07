@@ -1,6 +1,7 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 import hashlib
+import json
 import time
 from datetime import timedelta
 
@@ -31,6 +32,20 @@ MAX_CHAIN = 6
 SNIPPET = 160
 # The updates of the project in the log of an OKF pack: the recent ones; the whole history with project/log.
 PACK_LOG = 3
+# a token is about four characters, as the measure counts them (eval_memoria.py); the smallest budget a pack
+# or a search may be asked to fit
+CHARS_PER_TOKEN = 4
+MIN_TOKENS = 200
+# what a budget cuts, in order, before the texts of the rules: the messages of the task, the outlines of the
+# facts and procedures, the documents, the lessons, the description of the project and its present
+BUDGET_STEPS = (('messages', 2), ('facts', 5), ('procedures', 5), ('documents', 5), ('lessons', 3),
+                ('description', 1000), ('now', 800), ('rule_body', 500))
+
+
+def tokens_of(data):
+    """The tokens of a JSON answer or of a text, as the measure estimates them."""
+    text = data if isinstance(data, str) else json.dumps(data, ensure_ascii=False, default=str)
+    return len(text) // CHARS_PER_TOKEN
 # The title weighs most, then the keywords, then the text; plain words, Italian and English
 # stems side by side.
 SEARCH_TSV = (
@@ -326,11 +341,61 @@ class MemoryNote(models.Model):
         return record
 
     @api.model
-    def _agent_context(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None):
+    def _agent_context(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None,
+                       max_tokens=None):
         """The context pack of a task or project, or of the organisation itself when
         neither is given: deterministic, budgeted, same for every assistant. With the
         activity of the session, the records of that activity and those of every
-        activity."""
+        activity. With max_tokens, cut to fit (_agent_budget): the pack says what was cut."""
+        pack = self._agent_context_whole(task_id, project_id, messages, company_id, activity)
+        return self._agent_budget(pack, max_tokens) if max_tokens else pack
+
+    @api.model
+    def _agent_budget(self, pack, max_tokens):
+        """The pack cut to at most max_tokens (about four characters each), in a fixed order: the
+        messages of the task, the outlines of the facts and procedures, the documents, the lessons,
+        the description and the present of the project, then the texts of the binding rules,
+        shortened but never dropped: a rule binds whatever the budget. The pack says the budget,
+        its size and what was cut (budget: max_tokens, tokens, trimmed)."""
+        max_tokens = max(int(max_tokens), MIN_TOKENS)
+        trimmed = []
+        for step, keep in BUDGET_STEPS:
+            if tokens_of(pack) <= max_tokens:
+                break
+            if step == 'messages' and pack.get('task') and len(pack['task'].get('messages') or []) > keep:
+                pack['task']['messages'] = pack['task']['messages'][:keep]
+                trimmed.append(f"messages:{keep}")
+            elif step in ('facts', 'procedures', 'documents'):
+                cut = False
+                for level in pack['levels']:
+                    if len(level.get(step) or []) > keep:
+                        level[step] = level[step][:keep]
+                        cut = True
+                if cut:
+                    trimmed.append(f"{step}:{keep}")
+            elif step == 'lessons' and len(pack.get('lessons') or []) > keep:
+                pack['lessons'] = pack['lessons'][:keep]
+                trimmed.append(f"lessons:{keep}")
+            elif step == 'description' and pack.get('project') and len(pack['project'].get('description') or '') > keep:
+                pack['project']['description'] = pack['project']['description'][:keep] + " [...]"
+                trimmed.append(f"description:{keep}")
+            elif step == 'now' and pack.get('project') and pack['project'].get('now') \
+                    and len(pack['project']['now'].get('description') or '') > keep:
+                pack['project']['now']['description'] = pack['project']['now']['description'][:keep] + " [...]"
+                trimmed.append(f"now:{keep}")
+            elif step == 'rule_body':
+                cut = False
+                for level in pack['levels']:
+                    for rule in level.get('rules') or []:
+                        if len(rule.get('body') or '') > keep:
+                            rule['body'], rule['truncated'], cut = rule['body'][:keep], True, True
+                if cut:
+                    trimmed.append(f"rule_body:{keep}")
+        pack['budget'] = {'max_tokens': max_tokens, 'tokens': tokens_of(pack), 'trimmed': trimmed}
+        return pack
+
+    @api.model
+    def _agent_context_whole(self, task_id=None, project_id=None, messages=5, company_id=None, activity=None):
         record = self._agent_context_record(task_id, project_id, company_id)
         activities = self.env['memory.note.activity']._from_codes(activity)
         today = fields.Date.context_today(self)
@@ -458,6 +523,10 @@ class MemoryNote(models.Model):
             okf.entry(w['title'], f"/{w['concept']}.md", f"stale: {w['stale']}") if 'stale' in w
             else f"* Project {w['project_id']}: {w['warning']}" for w in pack['warnings']]))
         meta = [f"* Role: {pack['role']}"] + ([f"* Activities: {', '.join(pack['activities'])}"] if pack.get('activities') else [])
+        if pack.get('budget'):
+            budget = pack['budget']
+            meta.append(f"* Budget: {budget['max_tokens']} tokens asked, {budget['tokens']} in the JSON pack; cut: "
+                        + (", ".join(budget['trimmed']) or "nothing"))
         sections.append(("Session", meta))
         files = [('index.md', okf.index(sections, version=True))] + concepts
         files += [(f"{okf.concept_id(rule)}.md", rule._okf_concept(today)) for rule in binding]
@@ -593,8 +662,30 @@ class MemoryNote(models.Model):
         return sorted(results, key=lambda r: (-r['score'], -r['id'])), 'lexical', 'off'
 
     @api.model
+    def _agent_search_budget(self, results, max_tokens):
+        """The results that fit in max_tokens, in order: an entry too long for what is left is skipped and
+        the next tried; the first entry always stays, its snippet cut, so an answer is never empty.
+        Gives (results, {max_tokens, tokens, skipped})."""
+        max_tokens = max(int(max_tokens), MIN_TOKENS)
+        kept, skipped, used = [], 0, 0
+        for entry in results:
+            size = tokens_of(entry)
+            if used + size <= max_tokens:
+                kept.append(entry)
+                used += size
+            elif not kept:
+                entry = dict(entry, snippet=(entry.get('snippet') or '')[:80])
+                for key in ('passages', 'passage'):
+                    entry.pop(key, None)
+                kept.append(entry)
+                used += tokens_of(entry)
+            else:
+                skipped += 1
+        return kept, {'max_tokens': max_tokens, 'tokens': used, 'skipped': skipped}
+
+    @api.model
     def _agent_search_report(self, query, related_terms=None, scope='all', applies_to=None, limit=5, mode=None,
-                             show_expired=False, as_of=None):
+                             show_expired=False, as_of=None, max_tokens=None):
         """What a search route answers: the results and how the search ran, so a degraded answer
         is seen for what it is: mode, the mode used (lexical when the vectors were asked and did
         not answer); rerank, what the reranker did (off: none configured; skipped: not a hybrid
@@ -603,8 +694,11 @@ class MemoryNote(models.Model):
         began = time.monotonic()
         results, mode_used, rerank = self._agent_search_run(query, related_terms, scope, applies_to, limit, mode,
                                                             show_expired, as_of)
-        return {'results': results, 'mode': mode_used, 'rerank': rerank,
-                'latency_ms': int((time.monotonic() - began) * 1000)}
+        report = {'results': results, 'mode': mode_used, 'rerank': rerank}
+        if max_tokens:
+            report['results'], report['budget'] = self._agent_search_budget(results, max_tokens)
+        report['latency_ms'] = int((time.monotonic() - began) * 1000)
+        return report
 
     @api.model
     def _agent_search_extra(self, query, related_terms, scope, limit):
