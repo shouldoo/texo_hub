@@ -37,9 +37,11 @@ PACK_LOG = 3
 CHARS_PER_TOKEN = 4
 MIN_TOKENS = 200
 # what a budget cuts, in order, before the texts of the rules: the messages of the task, the outlines of the
-# facts and procedures, the documents, the lessons, the description of the project and its present
+# facts and procedures, the documents, the lessons, the draft lessons of the lead's review (the review gives
+# them whole), the milestones (the first open ones and the task's stay), the description of the project and its
+# present
 BUDGET_STEPS = (('messages', 2), ('facts', 5), ('procedures', 5), ('documents', 5), ('lessons', 3),
-                ('description', 1000), ('now', 800), ('rule_body', 500))
+                ('pending_lessons', 0), ('milestones', 3), ('description', 1000), ('now', 800), ('rule_body', 500))
 
 
 def tokens_of(data):
@@ -354,6 +356,7 @@ class MemoryNote(models.Model):
     def _agent_budget(self, pack, max_tokens):
         """The pack cut to at most max_tokens (about four characters each), in a fixed order: the
         messages of the task, the outlines of the facts and procedures, the documents, the lessons,
+        the draft lessons of the review, the milestones (the first open ones and the task's stay),
         the description and the present of the project, then the texts of the binding rules,
         shortened but never dropped: a rule binds whatever the budget. The pack says the budget,
         its size and what was cut (budget: max_tokens, tokens, trimmed)."""
@@ -376,6 +379,16 @@ class MemoryNote(models.Model):
             elif step == 'lessons' and len(pack.get('lessons') or []) > keep:
                 pack['lessons'] = pack['lessons'][:keep]
                 trimmed.append(f"lessons:{keep}")
+            elif step == 'pending_lessons' and len(pack.get('pending_lessons') or []) > keep:
+                pack['pending_lessons'] = pack['pending_lessons'][:keep]
+                trimmed.append(f"pending_lessons:{keep}")
+            elif step == 'milestones' and pack.get('project') and len(pack['project'].get('milestones') or []) > keep:
+                # the roadmap comes open first, by deadline: the first ones stay, and the task's wherever it was
+                milestones = pack['project']['milestones']
+                task_milestone = ((pack.get('task') or {}).get('milestone') or {}).get('id')
+                kept = milestones[:keep] + [m for m in milestones[keep:] if m['id'] == task_milestone]
+                pack['project']['milestones'] = kept
+                trimmed.append(f"milestones:{keep}")
             elif step == 'description' and pack.get('project') and len(pack['project'].get('description') or '') > keep:
                 pack['project']['description'] = pack['project']['description'][:keep] + " [...]"
                 trimmed.append(f"description:{keep}")

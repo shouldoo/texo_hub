@@ -194,7 +194,9 @@ pack says which (`activities`).
 
 With `max_tokens` the pack is cut to about that many tokens (four characters each), in a fixed order: the
 messages of the task, then the outlines of the facts, the procedures and the documents of each level, the
-lessons, the description and the present of the project, and last the texts of the binding rules, shortened but
+lessons, the draft lessons of a lead's review queue (`review` gives them whole), the milestones (the first three,
+open ones by deadline, and the task's stay), the description and the present of the project, and last the texts
+of the binding rules, shortened but
 never dropped: a rule binds whatever the budget. The pack says the budget, its size and what was cut (`budget`;
 in OKF, a line of the section Session of `index.md`).
 
@@ -434,6 +436,12 @@ without a recent update, the confirmation,
 the routes with their status codes, the opt-out, the demo data reaching the agent, the lessons of the pack by tag and activity, the search that puts the lessons with every word first, by prefix and by keywords, the stored vector of the documents, the outline of the pack, the facts (pack, append, version, stale and expired, who archives, the search past what the person may not read, the opt-out, the routes), the OKF rendering (rules, facts and lessons as concepts with their trust and sources, a fact gone stale with its document, the pack as an index with the binding rules and a log, the routes by concept id).
 
 ## Changelog
+
+### 20.0.1.7.0
+
+- The budget of the pack also cuts the draft lessons of a lead's review queue (to none: `review` gives them whole)
+  and the milestones (the first three and the task's), before the texts of the project and of the rules. On the
+  busiest task of each demo the smallest pack goes down by 50 to 160 tokens, nothing binding lost.
 
 ### 20.0.1.6.0
 
