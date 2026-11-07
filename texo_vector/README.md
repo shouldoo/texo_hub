@@ -31,7 +31,7 @@ the next run of the cron.
 |---|---|
 | `lexical` | the words, as `texo_memory` does: every word first, then some, prefixes, Italian and English stems |
 | `semantic` | the records nearest to the question by cosine among those the person may read; `score` is the similarity |
-| `hybrid` | both, fused by reciprocal rank (`models/hybrid.py`, K = 10): a vector and a lexical hit of every word of the question (a code, a name, an acronym) weigh 2, a lexical hit of some words, the fill of the lexical search, weighs 0.5. The values that, on the two sets of the workspace, give the hybrid the paraphrases the vectors find (facts 11 of 14, lessons 16 of 17, episodes 20 of 20) without losing one hit of the words; `score` is the fused rank |
+| `hybrid` | both, fused by reciprocal rank (`models/hybrid.py`, K = 10): a vector and a lexical hit of every word of the question (a code, a name, an acronym) weigh 2, a lexical hit of some words, the fill of the lexical search, weighs 0.25: it lifts a vector hit by one place, not two. The values that, on the two sets of the workspace and then on the four demo sets of the packs, give the hybrid the paraphrases the vectors find without losing one hit of the words; `score` is the fused rank |
 
 Without `mode` the configured one applies (`texo_vector.mode`, `hybrid` by default). Every hit of a
 semantic or hybrid search says which search found it (`match`: `lexical`, `semantic`, `both`) and its
@@ -161,6 +161,12 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.5.0
+
+- The hybrid search: a lexical hit of some words weighs 0.25 instead of 0.5 in the fusion (`models/hybrid.py`).
+  Measured on the four demo sets of the packs (689 questions): the mrr of the hybrid rises on every set
+  (0.881 to 0.891 on average), one hit more in all, no hit of every word lost.
 
 ### 20.0.1.4.0
 
