@@ -200,6 +200,20 @@ class TestMemoryNote(MemoryCase):
         self.assertEqual([f['title'] for f in found], ['Picking type'])
         self.assertEqual(self.env['memory.note'].with_user(self.outsider)._agent_search('picking returns'), [])
 
+    def test_an_act_number_is_one_word_as_in_the_text(self):
+        from ..models import fulltext
+        self.assertEqual(fulltext.words('DM 106/2020'), ['dm', '106/2020'])
+        self.assertEqual(fulltext.words('D.Lgs. n. 117/2017, Odoo 17.0'), ['d.lgs', '117/2017', 'odoo', '17.0'])
+        self.assertEqual(fulltext.words("a/b) | (c & !d:*"), ['a/b'], "never an operator of to_tsquery")
+        act = self.note_as(self.lead, state='active', name='Iscrizione al registro',
+                           body="Ai sensi del D.Lgs. n. 117/2017 l'iscrizione segue il DM 106/2020.")
+        self.note_as(self.lead, state='active', name='Numeri sparsi', body="Nel 2020 il DM ha contato 106 domande.")
+        Note = self.env['memory.note'].with_user(self.member)
+        found = Note._agent_search('DM 106/2020')
+        self.assertEqual((found[0]['id'], found[0]['words']), (act['id'], 'all'), "the act, by every word of its number")
+        self.assertEqual(Note._agent_search('D.Lgs. 117/2017')[0]['id'], act['id'])
+        self.assertEqual(Note._agent_search("a/b) | (c & !d:*"), [])
+
     def test_the_pack_carries_the_project_and_its_present(self):
         self.project.write({'description': '<p>Returns are a separate flow.</p>', 'allow_milestones': True})
         milestone = self.env['project.milestone'].create({'name': 'Returns live', 'project_id': self.project.id})
