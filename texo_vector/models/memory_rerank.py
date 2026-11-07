@@ -1,7 +1,7 @@
 # Copyright 2026 Daniele Lucarelli
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 """The optional reranker: a cross-encoder reads the question and each of the first results of the
-hybrid search together and puts them in a new order.
+hybrid search together and scores them; its order is fused with the order of the search (hybrid.blend).
 
 Off unless an endpoint is configured. Measured on the evaluation sets of the demo customers: it puts the right document first where the hybrid left it
 second or third (a design studio: mrr 0.86 to 0.97-1.00) and changes nothing where the hybrid was
@@ -23,6 +23,7 @@ from odoo.tools import html2plaintext
 
 from odoo.addons.texo_memory.models.project_task import EPISODE_MESSAGE_TYPES
 
+from . import hybrid
 from .memory_embedding import PARAM_ALLOW_REMOTE
 
 _logger = logging.getLogger(__name__)
@@ -144,13 +145,14 @@ class MemoryNote(models.Model):
 
     @api.model
     def _reranked(self, query, entries):
-        """The entries in the order of the reranker (each with its score as rerank), or as they are."""
+        """The entries in the order of the reranker fused with theirs (each with its score as rerank), or as
+        they are."""
         return self._rerank_apply(query, entries)[0]
 
     @api.model
     def _rerank_apply(self, query, entries):
-        """(the entries in the order of the reranker, each with its score as rerank, whether it
-        answered); as they are when it did not."""
+        """(the entries in their new order, the order they had fused with the one of the reranker
+        (hybrid.blend), each with its score as rerank, whether it answered); as they are when it did not."""
         Embedding = self.env['memory.embedding']
         if len(entries) < 2:
             return entries, False
@@ -158,6 +160,4 @@ class MemoryNote(models.Model):
         scores = Embedding._rerank_scores(query, [self._rerank_text(entry, size) for entry in entries])
         if scores is None:
             return entries, False
-        for entry, score in zip(entries, scores, strict=True):
-            entry['rerank'] = round(score, 4)
-        return sorted(entries, key=lambda entry: -entry['rerank']), True
+        return hybrid.blend(entries, scores), True

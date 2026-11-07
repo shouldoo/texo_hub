@@ -77,6 +77,21 @@ class TestRerank(VectorCase):
             self.ids(mode='lexical')
         self.assertFalse(fake.calls)
 
+    def test_the_order_of_the_reranker_is_fused_with_the_order_of_the_search(self):
+        from ..models import hybrid
+
+        def ids(scores):
+            return [e['id'] for e in hybrid.blend([{'id': i} for i in range(1, len(scores) + 1)], scores)]
+
+        self.assertEqual(ids([0.1, 0.9]), [2, 1], "two neighbours swap when the reranker says so")
+        # a far result the reranker puts first climbs a few places, not over the first of the search:
+        # a record asked by its exact title stays where the words and the vectors put it
+        self.assertEqual(ids([0.5, 0.4, 0.3, 0.2, 0.9]), [1, 5, 2, 3, 4])
+        self.assertEqual(ids([0.5, 0.4, 0.3, 0.2, 0.1]), [1, 2, 3, 4, 5], "agreeing, nothing moves")
+        blended = hybrid.blend([{'id': 1, 'ranks': {'lexical': 1}}, {'id': 2}], [0.25, 0.75])
+        self.assertEqual((blended[0]['rerank'], blended[0]['ranks']), (0.75, {'rerank': 1}))
+        self.assertEqual(blended[1]['ranks'], {'lexical': 1, 'rerank': 2}, "the explanation keeps every rank")
+
     def test_the_reranker_reads_the_chatter_of_a_task(self):
         """The description of a task is often one line: the reranker reads its chatter too, newest first,
         where the episode says what happened."""

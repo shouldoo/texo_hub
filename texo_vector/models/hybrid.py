@@ -42,6 +42,13 @@ ORDER = {'both': 0, 'lexical': 1, 'semantic': 2}
 # (0.2) a hit of today may pass the one above it (Sim does the same, by rank)
 HALF_LIFE_DAYS = 90
 MAX_BOOST = 0.2
+# the reranker does not replace the order of the fusion, it is fused with it, by rank as the two searches
+# are: each result of the pool gains weight / (K + rank) from its place in the fusion and from its place in the
+# reranker, the reranker weighing half again as much (two neighbours swap when it says so, a far one climbs a
+# few places). The measure is in the docstring of blend()
+RERANK_K = 10
+WEIGHT_RERANK = 1.5
+WEIGHT_ORDER = 1.0
 
 
 def weight(entry, match):
@@ -104,3 +111,27 @@ def with_recency(entries, boost, today):
             entry['recency'] = round(factor, 4)
             entry['score'] = round(entry['score'] * factor, 4)
     return sorted(entries, key=lambda e: (-e['score'], ORDER.get(e.get('match'), 1), -e['id']))
+
+
+def blend(entries, scores, k=RERANK_K):
+    """The entries of the pool in their new order: the order they had (the fusion) and the order of the
+    reranker's scores, fused by rank. Each entry keeps its score of the reranker (rerank) and gets its rank
+    in it among its ranks; at equal blend, the order of the fusion.
+
+    The reranker used to replace the order of the fusion. Measured on the four demo sets of the packs (689
+    questions, bge-reranker-v2-m3, pool 10 of 800 characters) and on 212 records searched by their exact
+    title: without the reranker 662 hits, mrr 0.89, 205 titles first; the reranker alone 660, 0.911, 197:
+    it took the first place from a record asked by its own title; fused with the order of the fusion at
+    1.5 (as at 1.2; 2.0 gives 662, 0.916, 198) 663, 0.915, 200. The titles still lost are documents, where
+    the reranker reads the passage chosen for the hit; keeping first a result of every word of the question
+    gained one title and cost 0.03 of mrr on a set: a rule that is not here."""
+    by_score = sorted(range(len(entries)), key=lambda i: -scores[i])
+    rerank_rank = {index: rank for rank, index in enumerate(by_score, 1)}
+    blended = []
+    for index, entry in enumerate(entries):
+        entry['rerank'] = round(scores[index], 4)
+        entry.setdefault('ranks', {})['rerank'] = rerank_rank[index]
+        value = WEIGHT_ORDER / (k + index + 1) + WEIGHT_RERANK / (k + rerank_rank[index])
+        blended.append((-value, index, entry))
+    return [entry for _value, _index, entry in sorted(blended, key=lambda x: (x[0], x[1]))]
+

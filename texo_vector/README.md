@@ -52,9 +52,12 @@ answer (within 10 s) the search is lexical and the log says so once per call.
 
 ## The reranker (optional)
 
-A cross-encoder reads the question and each of the first results of the hybrid search together and puts them
-in a new order (`models/memory_rerank.py`). It finds nothing new: it reorders what the search found. **Off**
-until `texo_vector.rerank_endpoint` names a service:
+A cross-encoder reads the question and each of the first results of the hybrid search together and scores
+them (`models/memory_rerank.py`); its order is fused with the order of the search, by rank, the reranker
+weighing half again as much (`hybrid.blend()`): two neighbours swap when it says so, a far result climbs a few
+places, and a record asked by its exact title is not pushed down from the first place by a passage that
+speaks longer of the same thing. It finds nothing new: it reorders what the search found. **Off** until
+`texo_vector.rerank_endpoint` names a service:
 
 | Parameter | Default | What |
 |---|---|---|
@@ -72,6 +75,12 @@ on a design studio the right document goes first more often (mrr 0.86 to 0.97 wi
 characters, to 1.00 with 20 of 2000), on an association whose hybrid was right already nothing changes (0.96 to
 0.94); the passage named first is the same. On a CPU it costs **7 s per search** (30 s with 20 long results):
 turn it on where an accelerator serves it.
+
+Measured again on the four demo sets of the packs (689 questions, pool 10 of 800 characters, on a GPU) and on
+212 records searched by their exact title: without the reranker 662 hits in the first five, mrr 0.89, 205
+titles first; with the reranker fused with the search 663, 0.915, 200 (when its order replaced the search's:
+660, 0.911, 197). The titles still lost are documents. A search costs about 330 ms instead of 55: keep it off
+unless the measure on your sets asks for it.
 
 ## The vectors
 
@@ -161,6 +170,13 @@ they were. Where the extension `vector` is missing the tests with vectors are sk
 `pgvector/pgvector:pg17`.
 
 ## Changelog
+
+### 20.0.1.6.0
+
+- The reranker no longer replaces the order of the hybrid search: its order is fused with it by rank
+  (`hybrid.blend()`, the reranker weighing 1.5, the search 1), and each result says its rank in the reranker
+  (`ranks.rerank`). Measured on the four demo sets: 663 hits and mrr 0.915 against 660 and 0.911; 200 of 212
+  records searched by their exact title first, against 197.
 
 ### 20.0.1.5.0
 
