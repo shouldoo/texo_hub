@@ -4,8 +4,9 @@
 
 The ranking needs the tsvector operators, which the ORM cannot express: the ids come
 from SQL and the records go through the ORM afterwards, so the access rules apply. The
-words are reduced to letters, digits and underscores before they reach to_tsquery, so a
-query can never carry its operators.
+words are reduced to letters, digits and underscores, with the dots, slashes and at signs
+that join them as the parser of PostgreSQL does (WORD), before they reach to_tsquery, so
+a query can never carry its operators.
 
 The access rules are in the query too: the ORM gives the sub-query of the ids the user
 may read (model._search(domain), the record rules included), and SQL ranks only those.
@@ -19,6 +20,12 @@ import re
 from odoo.tools import SQL
 
 CONFIGS = ('simple', 'italian', 'english')
+# A word of the query as the PostgreSQL parser cuts the text: an act number (106/2020), a date (07/11/2026),
+# an abbreviation (D.Lgs), a version or an amount (17.0, 9.000) and an address stay one word, since the
+# tsvector holds them whole; split on the dot or the slash they matched nothing, and a question made of an act
+# number never held all its words. Only letters, digits, underscores, dots, slashes and at signs: never an
+# operator of to_tsquery.
+WORD = re.compile(r'[\w.]+@\w+(?:\.\w+)+|\w+(?:[./]\w+)+|\w+')
 # Below this rank a hit matched only some of the words, in a long text: noise.
 MIN_SCORE = 0.01
 # A word this long or longer also matches as a prefix: «migraz» finds «migrazione».
@@ -29,7 +36,7 @@ MAX_WORDS = 12
 def words(query, related_terms=None):
     """The distinct words of the query and of the related terms, at most MAX_WORDS."""
     text = " ".join([query or ''] + list(related_terms or []))
-    return list(dict.fromkeys(w.lower() for w in re.findall(r'\w+', text) if len(w) > 1))[:MAX_WORDS]
+    return list(dict.fromkeys(w.lower() for w in WORD.findall(text) if len(w) > 1))[:MAX_WORDS]
 
 
 def _group(word):

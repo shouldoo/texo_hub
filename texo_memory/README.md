@@ -435,6 +435,14 @@ the routes with their status codes, the opt-out, the demo data reaching the agen
 
 ## Changelog
 
+### 20.0.1.6.0
+
+- The full-text search cuts the question as PostgreSQL cuts the text (`models/fulltext.py`, `WORD`): an act
+  number (106/2020), a date, an abbreviation (D.Lgs), a version or an amount (17.0, 9.000) and an address stay
+  one word. Split on the dot or the slash they matched nothing, so a question made of an act number never held
+  all its words and lost the place the fusion keeps for a hit of every word. Of 1,210 questions, codes and
+  terms of the demo sets, 81 did not match their own words; none does now.
+
 ### 20.0.1.5.0
 
 - `document/convert`: the file of an attachment converted by the conversion service named in the hub (docling-serve,
